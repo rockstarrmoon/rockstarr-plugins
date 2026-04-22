@@ -184,6 +184,18 @@ front-matter so the digest can pick them up without bot-specific code.
   that earns a reply on its own, Message 4 names the ceiling (not
   the pain) in the "X gets attention only when there is time, which
   is never" shape. Self-check pass added as drafting rule 7.
+- `0.1.3` — `draft-icp-campaign` tightens Messages 3 and 4 and
+  narrows the anchor-phrase rule. Anchor phrase now appears verbatim
+  in Message 2 ONLY — Messages 3 and 4 do not repeat it (repetition
+  reads as scripted and kills the conversational tone). Message 3
+  drops the trailing permission softener ("fine if I send another
+  note?" / "OK to stay in touch?") — that kind of line is filler,
+  not invitation. Message 4 is renamed from "Ceiling close" to
+  "Respectful close" and capped at two or three sentences: one
+  specific "weeks get full"–style acknowledgment + one open-door
+  line + stop. No anchor restatement, no ceiling restatement, no
+  well-wishes, no chase. Rule 4 rewritten, Rule 6 rewritten, new
+  Rule 7 added for the softener ban, self-check pass updated.
 - Deferred to later versions: `force-send-today`, `refresh-lead-list`,
   `gcal-auto-booking`, weighted multi-campaign pacing, cross-bot touch
   caps.
