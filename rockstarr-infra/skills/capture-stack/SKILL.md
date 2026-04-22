@@ -59,6 +59,38 @@ For each category, capture:
 2. Whether admin access has been granted to Rockstarr (yes / pending / no).
 3. Any notes (multiple accounts, sub-accounts, region, etc.).
 
+## Variant-specific follow-up keys
+
+After the main categories, some variants need extra configuration. Ask
+these only when the matching tool was selected. Like the main categories,
+each is its own `AskUserQuestion` turn — no batching.
+
+### LI outreach tool = Sales Nav only
+
+The `rockstarr-outreach-salesnav` plugin refuses to run without these
+keys. Capture every one during intake:
+
+| Key                             | Type              | Prompt / guidance                                                                                       |
+|---------------------------------|-------------------|---------------------------------------------------------------------------------------------------------|
+| `outreach_tool`                 | fixed             | Always `salesnav` for this variant. Write it; don't ask.                                                |
+| `linkedin_expected_profile_url` | URL               | The client's personal LinkedIn profile URL (the account sends will go out from). Full `https://www.linkedin.com/in/...` form. |
+| `outreach_daily_run_time`       | HH:MM (24h)       | What local time of day the daily send loop should fire. Default `"09:00"` client local.                 |
+| `outreach_daily_preview`        | boolean           | Write the daily preview file before sending? Default `true`. Offer `true` / `false`.                    |
+| `booking_mode`                  | automated / manual | Should the bot drive the booking link itself (`automated`) or does the client book manually (`manual`)? |
+| `availability_source`           | booking_link / gcal | Where does the bot read availability from? Booking link form, or Google Calendar?                      |
+| `booking_link_url`              | URL               | Ask **only if** `availability_source: booking_link`. The booking URL (Calendly, GrowthAmp calendar, etc.). |
+| `booking_link_required_fields`  | list              | Ask **only if** `availability_source: booking_link`. Which fields the form requires (e.g., `[email, phone, company]`). Free-text; accept a comma-separated list and normalize to a YAML sequence. |
+| `gcal_id`                       | string            | Ask **only if** `availability_source: gcal`. The Google Calendar ID to read availability from.          |
+
+Rules:
+
+- Do not hand the booking link to the lead. Ever. `booking_link_url` is
+  for the bot to drive the form, not to share in messages.
+- If `booking_mode: manual`, still capture `availability_source` — the
+  bot reads it to propose times in replies, even though a human books.
+- If the client is on a different LI outreach tool (Interceptly,
+  MeetAlfred, Dripify, Waalaxy), skip this whole section.
+
 ## Steps
 
 1. If `/rockstarr-ai/00_intake/stack.md` already exists, read it first and
@@ -68,13 +100,22 @@ For each category, capture:
 2. Ask each category as a separate `AskUserQuestion` call. Single question
    per turn; no batching.
 
-3. Write `/rockstarr-ai/00_intake/stack.md`:
+3. If the LI outreach tool answer was "Sales Nav only", ask each
+   variant-specific key from the table above, one `AskUserQuestion` per
+   turn. Skip the booking-link keys or the `gcal_id` key based on the
+   `availability_source` answer.
 
-   ```markdown
+4. Write `/rockstarr-ai/00_intake/stack.md`. The file has three sections:
+   front-matter, the categories table, and — when the LI outreach tool
+   is Sales Nav only — an "Outreach configuration" block at the bottom.
+
+   Front-matter and table:
+
+   ~~~markdown
    # ---
    client_id: "<from client.toml>"
    captured_at: "<ISO>"
-   capture_skill_version: "0.1.0"
+   capture_skill_version: "0.2.0"
    # ---
 
    # <Client Name> — Stack
@@ -82,11 +123,33 @@ For each category, capture:
    | Category         | Tool                 | Access    | Notes        |
    |------------------|----------------------|-----------|--------------|
    | CRM              | The Growth Amplifier | granted   | ...          |
-   | LI outreach tool | Interceptly          | pending   | ...          |
+   | LI outreach tool | Sales Nav only       | pending   | ...          |
    | ...              | ...                  | ...       | ...          |
-   ```
+   ~~~
 
-4. Compute the **variant enable list** — the list of Rockstarr bot
+   When `LI outreach tool = Sales Nav only`, append this YAML block
+   under a `## Outreach configuration (Sales Nav variant)` heading:
+
+   ~~~yaml
+   outreach_tool: salesnav
+   linkedin_expected_profile_url: https://www.linkedin.com/in/<handle>
+   outreach_daily_run_time: "09:00"
+   outreach_daily_preview: true
+   booking_mode: automated
+   availability_source: booking_link
+   booking_link_url: https://calendly.com/<client>/<slug>
+   booking_link_required_fields:
+     - email
+     - phone
+     - company
+   # gcal_id only present when availability_source: gcal
+   ~~~
+
+   Omit the "Outreach configuration" block entirely when the client is
+   on a different LI outreach tool. Only include the key for the chosen
+   `availability_source` — booking-link keys OR `gcal_id`, never both.
+
+5. Compute the **variant enable list** — the list of Rockstarr bot
    plugin names that match this stack. Map:
 
    - CRM = The Growth Amplifier → `rockstarr-ops-bot-ga`,
@@ -115,7 +178,7 @@ For each category, capture:
    - Content Bot and Social Bot (base) are installed for all clients who
      purchased Content / Social.
 
-5. Print the variant enable list to the user with a clear CTA:
+6. Print the variant enable list to the user with a clear CTA:
 
    > Hand this list to the Rockstarr installer. They will enable these
    > plugins in the client's marketplace record.
