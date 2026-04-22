@@ -170,6 +170,20 @@ front-matter so the digest can pick them up without bot-specific code.
 
 - `0.1.0` — initial cut. 19 skills, Sales Nav only, booking link OR
   Google Calendar (manual book) for availability.
+- `0.1.1` — `draft-icp-campaign` sequence tightened: Message 1 blank
+  (LinkedIn default), Message 2 acknowledge/tease, Message 3 invite
+  engagement, Message 4 respectful close. No prose-body changes to
+  other skills.
+- `0.1.2` — `draft-icp-campaign` hardened further: campaign ICP now
+  derives from `00_intake/client-profile.md` via an interactive,
+  non-destructive per-campaign clarification pass (adjustments
+  NEVER write back to `client-profile.md`). Six hard Sequence rules
+  added: no "following up" language anywhere, no em dashes in the
+  sequence, never announce absence of pitch, anchor phrase stays
+  verbatim across Messages 2/3/4, Message 2 is a curiosity opener
+  that earns a reply on its own, Message 4 names the ceiling (not
+  the pain) in the "X gets attention only when there is time, which
+  is never" shape. Self-check pass added as drafting rule 7.
 - Deferred to later versions: `force-send-today`, `refresh-lead-list`,
   `gcal-auto-booking`, weighted multi-campaign pacing, cross-bot touch
   caps.
