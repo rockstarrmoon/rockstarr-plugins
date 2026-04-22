@@ -65,23 +65,210 @@ The structure is defined in Section 2.3 of the Rockstarr AI Growth
 Operating System deployment model. Do not change it in this plugin
 without coordinating a deployment-model version bump.
 
-## Setup
+## Getting started — step-by-step
 
-1. Install this plugin from the Rockstarr marketplace (it is enabled
-   by default for every active client).
-2. Run `scaffold-client` once per new client.
-3. Drop the client's Getting Started Workbook into
-   `/rockstarr-ai/00_intake/client-workbook.docx`.
-4. Run `ingest-workbook`, then `generate-style-guide`, then
-   `capture-stack`. This is the intake sequence.
-5. As supporting materials arrive, drop them into
-   `/rockstarr-ai/01_knowledge_base/raw/` (first-party) or
-   `/rockstarr-ai/01_knowledge_base/raw/third-party/` (reference
-   material) and run `kb-ingest`. You can also hand `kb-ingest` an
-   https URL directly and it will fetch, clean, and tag the page.
+Welcome aboard. This is your walkthrough for getting the Rockstarr AI
+Growth Operating System up and running in your Cowork workspace. By
+this point, the Rockstarr team has already provisioned your private
+marketplace and sent you your marketplace URL — so you're ready to
+install.
 
-After that, bot plugins take over drafting; `approve` and `publish-log`
-are used by every bot's review/ship loop.
+Plan on about an hour of focused time to get through the first
+install. The style-guide interview (step 6) is the longest piece and
+benefits from not being rushed.
+
+### Step 1 — Install the rockstarr-infra plugin
+
+Open Cowork and go to **Plugin Settings**. Add the custom
+marketplace URL the Rockstarr team sent you (it looks like
+`https://github.com/rockstarrmoon/mkt-<your-token>`), authorize
+GitHub when prompted, and flip on the **Sync updates** toggle so
+you automatically receive improvements over time.
+
+Once the marketplace is connected, install **rockstarr-infra**. This
+is the foundation plugin — the bots we'll add later depend on it.
+
+> Nothing else will be visible to install yet. Your bots will appear
+> after we've captured your tool stack in step 5.
+
+### Step 2 — Select your working folder
+
+In Cowork, select (or create) the folder on your computer that will
+hold all of your Rockstarr AI work. A folder named `RockstarrAI` on
+your Desktop works well. Everything the plugin creates will live
+inside this folder.
+
+### Step 3 — Scaffold the folder layout
+
+In Cowork, ask Claude to "scaffold the Rockstarr client folder." It
+will ask you for a short `client_id` (lowercase, hyphens only — e.g.
+`acme-corp`) and your company display name. Claude will then build
+out the full folder structure, a `client.toml` with your info, and a
+short README inside the folder.
+
+> This step is safe to re-run at any point if folders ever get
+> deleted or moved.
+
+### Step 4 — Drop in your Getting Started Workbook
+
+Before going further, make sure you've completed your Rockstarr AI
+Playbook / Getting Started Workbook (the `.docx` your Rockstarr
+strategist sent you). Save your completed copy as:
+
+```
+/rockstarr-ai/00_intake/client-workbook.docx
+```
+
+Then ask Claude to "ingest the workbook." It will read the document
+and turn it into three files you'll use throughout the system:
+
+- `client-profile.md` — your business, audience, and positioning
+- `stack.md` (first pass) — the tools you told us you use
+- `00_intake/samples/content-library.md` — voice samples extracted
+  from the workbook
+
+Take a few minutes to skim `client-profile.md` and make sure it
+reflects you accurately. Everything downstream uses it as the
+source of truth.
+
+### Step 5 — Capture your tool stack
+
+Ask Claude to "capture the stack." You'll answer a short interview
+about which tools you use for:
+
+- CRM (The Growth Amplifier, HubSpot, Pipedrive, Salesforce, Close)
+- LinkedIn outreach (Interceptly, MeetAlfred, Dripify, Waalaxy,
+  Sales Nav)
+- Website platform
+- Social scheduler (Publer is our default)
+- Email platform (Gmail or Outlook)
+- Analytics
+
+This writes the authoritative `00_intake/stack.md` and tells us
+which specific bot variants to turn on for you. Send the list back
+to your Rockstarr strategist — that's how we enable the right bots
+in your marketplace.
+
+### Step 6 — Seed your knowledge base (optional but highly recommended)
+
+Before the style-guide interview, give Claude some raw material to
+learn your voice from. The stronger the inputs here, the better
+every draft that follows.
+
+Drop content you have created or own the rights to into:
+
+```
+/rockstarr-ai/01_knowledge_base/raw/
+```
+
+Good things to include: existing blog posts, podcast transcripts,
+keynote or webinar decks, website copy, thought-leadership essays.
+
+If you have reference material you want the bots to be aware of but
+**not** imitate — competitor posts, industry research, articles you
+found useful — drop those into `raw/third-party/` instead. We keep
+these scopes strictly separate so your voice never gets diluted by
+someone else's.
+
+You can also give Claude a URL directly (e.g. "ingest this post:
+https://...") and it will fetch and clean it automatically.
+
+Once the files are in place, ask Claude to "ingest the knowledge
+base."
+
+### Step 7 — Build your style guide
+
+This is the most important step in the whole setup, and the one
+that earns the longest block of your time (budget 30–45 minutes).
+
+Ask Claude to "generate the style guide." It will:
+
+1. Pre-read your profile, samples, and first-party knowledge base,
+   and draft a first pass at every interview question — each marked
+   HIGH, MEDIUM, or LOW confidence — so you're never starting from
+   a blank page.
+2. Walk you through each question one at a time. You can confirm
+   Claude's pre-draft, amend it, reject it outright, or skip ahead.
+   The interview always runs in full, even when the pre-reads are
+   strong — this is where your voice gets made.
+3. Ask you to approve a short (≤120-word) positioning paragraph
+   before producing the final guide.
+4. Produce `00_intake/style-guide.md`, your authoritative voice
+   document, covering brand context, mission, brand approach,
+   personality, audience, tone, style rules, channel adaptation,
+   tone examples, and consistency principles.
+
+> Your style guide is the single reference every bot uses when
+> drafting. Take the time to get it right.
+
+### Step 8 — Review your intake artifacts
+
+Before turning on the drafting bots, read through these three files
+and fix anything that isn't right:
+
+- `00_intake/client-profile.md`
+- `00_intake/style-guide.md`
+- `00_intake/stack.md`
+
+Loop in your Rockstarr strategist if you want a second set of eyes.
+Edits now are cheap; edits after bots start drafting cost you
+content that doesn't sound like you.
+
+### Step 9 — Bots get turned on
+
+Once your intake is solid, let your Rockstarr strategist know. We
+will enable your bot plugins in your marketplace on our side. When
+they're ready, they'll show up in your Cowork Plugin Settings —
+install them the same way you installed rockstarr-infra.
+
+Your first-wave bundle typically includes:
+
+- **rockstarr-content-bot** — long-form drafting (blogs,
+  newsletters, articles)
+- **rockstarr-social-bot** — social scheduling and short-form posts
+- **rockstarr-outreach-bot** — LinkedIn outreach (matched to your
+  tool)
+- **rockstarr-reply-bot** — inbox handling (matched to Gmail or
+  Outlook)
+- **rockstarr-nurture-bot** — CRM-driven nurture (matched to your
+  CRM)
+- **rockstarr-ops-bot** — CRM operations automations (when
+  applicable)
+
+### Step 10 — Your day-to-day: draft, approve, publish
+
+Once the bots are installed, your day-to-day cycle looks like this:
+
+1. **Draft.** Ask a bot to ideate a topic, outline a post, draft a
+   newsletter, generate social posts, and so on. Drafts land in
+   `/rockstarr-ai/03_drafts/<channel>/`.
+2. **Review.** Open the draft. Edit freely until it's ready.
+3. **Approve.** When you're happy, say "approve this draft." Claude
+   moves the file into `/rockstarr-ai/04_approved/<channel>/` and
+   logs the approval.
+4. **Publish.** After the post goes live, the email sends, or the
+   LinkedIn message goes out, say "log that I published this."
+   Claude records the send into `/rockstarr-ai/05_published/` so
+   your weekly and monthly reports stay accurate.
+
+### Ongoing — keep the knowledge base fresh
+
+Whenever you produce new content or come across great reference
+material, drop it into the right folder (`raw/` for yours,
+`raw/third-party/` for reference) and ask Claude to "refresh the
+knowledge base." The bots will immediately have access to it on
+their next draft.
+
+If your positioning shifts materially — a new offer, a new audience,
+a rebrand — ask your Rockstarr strategist whether it's time to
+regenerate the style guide.
+
+### Need help?
+
+If anything in this walkthrough gets stuck, or a bot does something
+that surprises you, message your Rockstarr strategist. We're
+watching the rollout closely and will jump in. Don't fight it —
+that's what we're here for.
 
 ## Customization
 
@@ -95,32 +282,7 @@ are used by every bot's review/ship loop.
 
 ## What this plugin does not do
 
-- It does not install bot plugins. Installation happens by flipping
-  entries in the client's marketplace KV record — see the
-  `rockstarr-marketplace` repo and the deployment model Section 2.2.
 - It does not draft content, post to LinkedIn, send email, or run
   outreach. Those are the bot plugins' jobs.
 - It does not embed or vector-search the knowledge base. v1 is flat
   tagged markdown; embeddings are a v2 feature.
-
-## Versioning
-
-- `0.1.0` — initial v1 cut (first paying client, April 20, 2026).
-  Seven skills; style-guide prompt placeholder; kb v1 flat markdown.
-- `0.2.0` — naming tweaks per Jon's intake review (April 20, 2026):
-  LI outreach default is Interceptly; Growth Amplifier slug is `ga`
-  (never `gha`); never use "GHL". Added third-party KB scope with
-  its own raw/ and processed/ directories, plus https URL ingestion
-  via `WebFetch`. `generate-style-guide` now explicitly refuses
-  third-party content as a voice signal.
-- `0.3.0` — ported the Rockstarr Brand Voice and Style Architect
-  custom GPT prompt into `generate-style-guide` as the canonical
-  reference, and rewrote the skill as a hybrid flow: it pre-reads
-  profile + samples + first-party kb, drafts answers to each
-  interview question with confidence ratings, then walks the user
-  through confirming / amending / filling gaps one question at a
-  time before generating the guide in the GPT's fixed structure
-  (Brand Context, Mission, Brand Approach, Brand Personality,
-  Audience Definition, Tone Definition with contrast framing, Style
-  Rules, Channel Adaptation, Tone Examples, Consistency
-  Principles).
