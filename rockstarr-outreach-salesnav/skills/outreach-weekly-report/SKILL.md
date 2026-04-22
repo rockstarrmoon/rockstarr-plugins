@@ -91,8 +91,10 @@ _No SLA is enforced on these. This callout exists so nothing rots._
 
 - Continue / pause / tweak calls per campaign
   - <slug-a>: continue
-  - <slug-b>: tweak Step 2 copy — reply rate is solid but accept
-    rate slipped; try a shorter connect note.
+  - <slug-b>: tweak Message 2 copy — reply rate is solid but accept
+    rate slipped; accept rate is a function of the saved-search
+    filter (Message 1 is blank by spec), so review the ICP and the
+    saved search before changing any message body.
 - Any campaigns proposed for `stop-campaign` given the data
 - Backup: `/06_reports/data/outreach-tasks-backup-<iso_week>.xlsx`
   will be written by `backup-workbook` at end-of-week.
@@ -108,8 +110,9 @@ client's style guide for tone; this is a client-facing report.
 - If nothing interesting moved, say so honestly: "Quiet week —
   numbers are in range. Worth watching next week."
 - If a number moved dramatically, say *why* as a hypothesis, not a
-  conclusion: "Accept rate dropped from 28% to 14%. Likely the new
-  Step 1 copy. Suggest reverting for a week to isolate."
+  conclusion: "Accept rate dropped from 28% to 14% in <slug-b>.
+  Message 1 is blank by spec, so suspect the saved-search filter or
+  a change in the ICP's current environment — not the copy."
 - If the weekly cap bound (we hit 100 mid-week), flag it.
 - If `confirm-session` ever failed, surface it loudly in the
   heartbeat AND in this block.

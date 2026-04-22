@@ -103,22 +103,91 @@ first-party KB. No third-party paraphrase.
 
 ## Sequence
 
-### Step 1 — Connect note (day of send)
-[Body of the connect request. Max ~300 characters. No offer link.
-No ask. Tone per style guide — land on the "X, not Y" X side.]
+The four-message structure below is the canonical Rockstarr Sales
+Nav cadence. Each message has a specific, narrow purpose — do not
+collapse them, do not reorder them, do not rewrite them to "add
+value" or "sound more confident." The purpose notes are hard
+constraints, not vibes.
 
-### Step 2 — Follow-up (day of accept)
-[Body. Opens the conversation. Offers value. No booking link.]
+### Message 1 — Connect request (day of send)
 
-### Step 3 — Follow-up (accept + 3 days)
-[Body. Reinforces value, invites a reply.]
+**Body: BLANK.**
 
-### Step 4 — Follow-up (accept + 7 days)
-[Body. Soft break. Invites a reply or graceful exit.]
+Leave the connect-request note empty on purpose. LinkedIn's default
+behavior is a cleaner first touch than any custom note, and an
+empty note keeps Step 1 from eating into the post-accept conversation
+space. Do not write a connect note. Do not paste a pitch. Do not
+"introduce yourself briefly." Blank is the spec.
 
-> Note: the campaign's official 3-step sequence is Step 2 + Step 3 +
-> Step 4 above. Step 1 is the connect note; the sequence count refers
-> to the post-connect messages.
+### Message 2 — Connection accepted (day of accept)
+
+**Purpose.** Acknowledge the connection and set light context
+without pressure.
+
+The body must:
+- Thank them for connecting.
+- Mention that something new or interesting is launching soon (kept
+  vague — no product name, no offer name, no positioning).
+- Signal you will follow up later.
+- Stay neutral and low effort.
+
+The body must NOT:
+- Ask a question.
+- Pitch anything.
+- Include a call to action.
+- Include a positioning statement.
+- Use hype words, superlatives, or energy-raising language.
+
+Keep it short. Two or three sentences. Under ~400 characters.
+
+### Message 3 — First real touch (accept + 3 days)
+
+**Purpose.** Invite engagement without pressure.
+
+The body must:
+- Reference what you (the client) are exploring or launching.
+- Connect naturally to the core pain point from the ICP.
+- Share a short observation or pattern (grounded in first-party KB,
+  never third-party paraphrase).
+- Ask one soft, non-leading question.
+- Ask permission to continue (e.g., "fine to share more?" / "OK if
+  I send a quick note next week?").
+
+The body must NOT:
+- Pitch, name-drop customers, or quote stats without a first-party
+  source.
+- Ask a hard-commit question (no calendar asks, no "can we hop on a
+  call?").
+- Use leading questions that assume the pain.
+- Open with "Just following up."
+
+Keep it conversational and neutral. Short paragraphs.
+
+### Message 4 — Soft close (accept + 7 days)
+
+**Purpose.** Close the loop respectfully if they have not responded.
+
+The body must:
+- Acknowledge they are likely busy.
+- Communicate respect for their time.
+- Gently reference the core pain point one last time.
+- Leave the door open without pressure.
+- Be brief, calm, and final in tone.
+
+The body must NOT:
+- Guilt them for not responding.
+- Chase ("just bumping this," "following up again," "circling back").
+- Restate your value proposition.
+- Push for a reply. Make clear you are available IF the pain point
+  becomes relevant — do not ask them to confirm or respond.
+
+Short. Three or four sentences. Reads like a polite exit, not a
+last-ditch pitch.
+
+> Note: the campaign's official 3-step post-accept sequence is
+> Message 2 + Message 3 + Message 4 above. Message 1 is the connect
+> request (intentionally blank). The "3-step" sequence count in
+> front-matter refers to the post-connect messages.
 
 ## Booking flow
 - `booking_mode: automated` → propose-meeting-times is called when the
@@ -157,8 +226,12 @@ first-party KB.)
 3. **No invented proof.** No case studies, customer names, revenue
    figures, or dates the client has not already published.
    `[CLIENT TO CONFIRM]` for gaps.
-4. **Sales Nav character limits.** Keep Step 1 under ~300 characters.
-   Keep Step 2–4 short — this is LinkedIn, not an email sequence.
+4. **Sales Nav character limits + Message 1 rule.** Message 1
+   (connect request) is intentionally BLANK — LinkedIn's default is
+   cleaner than any custom note. Never fill it in, even if the ICP
+   screams for it. Keep Messages 2–4 short; this is LinkedIn, not an
+   email sequence. Message 2 under ~400 characters. Messages 3 and 4
+   short paragraphs, never more than a short scroll on mobile.
 5. **No booking link in copy.** Times are proposed later by
    `propose-meeting-times` and injected into reply drafts by
    `rockstarr-reply`. Never paste the booking URL into a sequence

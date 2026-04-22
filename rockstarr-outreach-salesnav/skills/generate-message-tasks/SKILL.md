@@ -27,14 +27,18 @@ For each lead:
 
 1. **Read the approved campaign spec** at
    `04_approved/outreach/campaign-<slug>.md`. Extract the bodies for
-   Step 2 (day of accept), Step 3 (accept + 3), Step 4 (accept + 7).
+   Message 2 (day of accept), Message 3 (accept + 3), Message 4
+   (accept + 7). Message 1 is the connect request and is
+   intentionally BLANK — it does not map to a `message-step-N` task.
 2. **Check idempotency.** If the lead already has Tasks rows of type
    `message-step-1`, `message-step-2`, `message-step-3` for this
    campaign (regardless of status), skip. Never create duplicates.
-3. **Create three tasks.** Append to Tasks:
-   - `message-step-1`, due = `accepted_on`
-   - `message-step-2`, due = `accepted_on + 3 business days`
-   - `message-step-3`, due = `accepted_on + 7 business days`
+3. **Create three tasks.** Append to Tasks (step numbers refer to the
+   post-connect sequence — step-1 is Message 2 in the campaign file,
+   step-2 is Message 3, step-3 is Message 4):
+   - `message-step-1` (campaign Message 2), due = `accepted_on`
+   - `message-step-2` (campaign Message 3), due = `accepted_on + 3 business days`
+   - `message-step-3` (campaign Message 4), due = `accepted_on + 7 business days`
    Each row:
    - `task_id` = generated
    - `lead_url` = the lead's URL

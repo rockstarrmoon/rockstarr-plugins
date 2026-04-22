@@ -73,11 +73,15 @@ For each lead selected:
    changed):
    - Log the skip with a reason to `_errors.md`.
    - Do not decrement the budget; move to the next lead.
-4. **Attach the note.** Use the campaign's Step 1 connect-note body
-   from `04_approved/outreach/campaign-<slug>.md`. If the body is
-   over 300 characters, truncate at the closest word boundary under
-   300 and log a warning to `_errors.md` (the client should fix the
-   approved copy). Submit.
+4. **Send the request WITHOUT a note.** Message 1 in the approved
+   campaign is intentionally BLANK — LinkedIn's default connect
+   behavior is the cleanest first touch and keeps Message 2 free to
+   do the real work. Do NOT attach a note, even if one is present in
+   the campaign file (it should not be). If the campaign's Message 1
+   section contains any body copy, treat it as a config error: log to
+   `_errors.md` asking the client to re-approve the campaign with
+   Message 1 blank, skip this lead, and do not decrement the budget.
+   Submit the connect request with no note.
 5. **Verify the send.** Wait for the confirmation UI. If the request
    fails or the UI does not confirm, log to `_errors.md` and skip
    without decrementing the budget.
@@ -85,7 +89,7 @@ For each lead selected:
    - `date` = today, ISO
    - `lead_url`
    - `campaign_slug`
-   - `note_sent` = exact body submitted (post-truncation if applied)
+   - `note_sent` = `""` (always empty — Message 1 is blank by spec)
    - `source` = `sales_nav`
 7. **Update Leads.** `state = connected`, `date_connected = today`.
 8. **Mark the Tasks row done.** `status = done`, `completed_at = now`.
@@ -124,9 +128,13 @@ Return a structured summary to the caller:
   rest of the week. Monday resets.
 - Do not send connects to leads in `state != queued`.
 - Do not send without a recent `confirm-session` pass.
-- Do not substitute or rewrite the connect note at send time. The
-  approved campaign body is the one that ships. If it's too long,
-  truncate at a word boundary and warn — do not paraphrase.
+- Do not attach a note to the connect request. Ever. Message 1 is
+  spec'd blank so LinkedIn's default behavior ships. If you find
+  yourself tempted to add "a quick intro" because the campaign feels
+  cold, stop — the cadence is designed to do its work in Messages
+  2–4, not in a 300-character note. If the approved campaign file
+  contains body copy under Message 1, treat it as a config error and
+  surface it to the client; do not silently send the note.
 - Do not retry on LinkedIn UI anomalies. Skip the lead, log to
   `_errors.md`, move on. A silent retry masks UI breakage the
   weekly report needs to surface.
