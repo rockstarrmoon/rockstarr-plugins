@@ -280,6 +280,10 @@ that's what we're here for.
   Rockstarr case-study interview prompt. Referenced by
   `rockstarr-content:draft-case-study` and any future bot that
   produces case-study output. Do not fork — update in place.
+- `skills/_shared/stop-slop/` — MIT-licensed stop-slop skill. Every
+  prose-producing Rockstarr bot must run this as the final pass before
+  writing a draft to `03_drafts/`. Shared SKILL.md + `references/`
+  (phrases, structures, examples); consumers wire it in, do not fork.
 
 ## Customization
 
