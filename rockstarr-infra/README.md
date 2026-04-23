@@ -223,16 +223,16 @@ install them the same way you installed rockstarr-infra.
 
 Your first-wave bundle typically includes:
 
-- **rockstarr-content-bot** — long-form drafting (blogs,
+- **rockstarr-content** — long-form drafting (blogs,
   newsletters, articles)
-- **rockstarr-social-bot** — social scheduling and short-form posts
-- **rockstarr-outreach-bot** — LinkedIn outreach (matched to your
+- **rockstarr-social** — social scheduling and short-form posts
+- **rockstarr-outreach** — LinkedIn outreach (matched to your
   tool)
-- **rockstarr-reply-bot** — inbox handling (matched to Gmail or
+- **rockstarr-reply** — inbox handling (matched to Gmail or
   Outlook)
-- **rockstarr-nurture-bot** — CRM-driven nurture (matched to your
+- **rockstarr-nurture** — CRM-driven nurture (matched to your
   CRM)
-- **rockstarr-ops-bot** — CRM operations automations (when
+- **rockstarr-ops** — CRM operations automations (when
   applicable)
 
 ### Step 10 — Your day-to-day: draft, approve, publish
@@ -270,15 +270,37 @@ that surprises you, message your Rockstarr strategist. We're
 watching the rollout closely and will jump in. Don't fight it —
 that's what we're here for.
 
+## Shared assets
+
+- `skills/_shared/references/style-guide-prompt.md` — canonical
+  Rockstarr Brand Voice and Style Architect prompt. (Currently lives
+  under `skills/generate-style-guide/references/`; other bots that
+  need voice rules should read from there.)
+- `skills/_shared/references/case-study-prompt.md` — canonical
+  Rockstarr case-study interview prompt. Referenced by
+  `rockstarr-content:draft-case-study` and any future bot that
+  produces case-study output. Do not fork — update in place.
+
 ## Customization
 
-- `skills/generate-style-guide/references/style-guide-prompt.md` is a
-  placeholder. Paste the real Rockstarr custom GPT prompt here to
-  finish v1 of the style-guide skill.
 - Bot variant mapping (which outreach / reply / CRM bots to enable for
   a given stack) lives inside `capture-stack`. When a new tool variant
   is added, update the table in `skills/capture-stack/SKILL.md` AND
   publish the matching bot plugin to the marketplace.
+- When porting a new Rockstarr custom GPT prompt into this plugin,
+  follow the `style-guide-prompt.md` / `case-study-prompt.md` pattern:
+  land the canonical text under `skills/_shared/references/` and have
+  the consuming skill reference it.
+
+## Backlog / future
+
+- `approvals-digest` — cross-bot infra skill that reads standardized
+  `awaiting-approval` front-matter from every `03_drafts/<channel>/`
+  and surfaces a single daily digest of items waiting on the client.
+  Not blocking v0.2 of the content bot, but the reason every draft a
+  Rockstarr bot writes must carry that front-matter. Every new drafting
+  skill across every bot should land with the front-matter in place so
+  the digest works the day it ships.
 
 ## What this plugin does not do
 
