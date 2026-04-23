@@ -101,6 +101,7 @@ cta_text: "exact CTA line in the body"
 cta_destination: "URL or action reference from stack.md"
 approval_status: "pending"
 awaiting_approval_since: "ISO timestamp"
+stop_slop_score: 41   # five-dimension score after the mandatory final pass
 # ---
 ```
 
@@ -182,10 +183,41 @@ pushed back on, clearly attributed, never paraphrased.)
    the lane is the client sounding like themselves with a point
    to make.
 
+### Final pass — stop-slop (mandatory)
+
+Before writing the file, run the shared stop-slop skill at
+`rockstarr-infra/skills/_shared/stop-slop/SKILL.md` on the full
+draft body (hook, stance line, each H2 body, closing, CTA copy).
+Order is fixed: the style guide shapes the draft first; stop-slop
+then strips the AI tells that slip through even on-voice writing.
+Running them the other way round would scrub voice-specific turns
+of phrase the style guide wants in.
+
+Thought-leadership pieces are especially prone to "LinkedIn voice"
+drift: throat-clearing openers, binary contrasts, em-dash-heavy
+rhythm. stop-slop is the gate that catches those before the file
+lands in `03_drafts/`.
+
+What stop-slop catches on this lane:
+
+- "Here's the thing" / "What's interesting is" / "The truth is"
+  openers.
+- "Not X, it's Y" framings where the stance deserves a direct
+  statement.
+- Em dashes — swap for periods, commas, or a rewrite.
+- Vague declaratives standing in for a concrete claim.
+- Quotable-sounding sentences that read as a machine-written pull
+  quote.
+
+After the pass, record a `stop_slop_score` in the front-matter
+and surface it in the chat summary. Scores below 35/50 get
+flagged for the reviewer.
+
 ### After writing
 
 1. Print a summary in chat: title, stance in one line, word
-   count, CTA destination, any `[CLIENT TO CONFIRM]` markers.
+   count, CTA destination, any `[CLIENT TO CONFIRM]` markers,
+   and the stop-slop score.
 2. End with:
 
    > Thought-leadership draft landed at
@@ -215,3 +247,6 @@ from `04_approved/content/` and republishes it.
 - Do not move the file to `04_approved/`. That is `approve`'s
   job.
 - Do not bulk-draft multiple TL pieces in one run. One per call.
+- Do not skip the stop-slop pass. TL that reads as AI-written
+  undercuts the stance — stop-slop is the difference between
+  "the client said this" and "a model said this".

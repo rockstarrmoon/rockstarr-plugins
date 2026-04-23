@@ -31,6 +31,13 @@ identities changed:
 - **New monthly cadence.** `ideate-topics` runs once per month,
   `content-calendar` lays the picks on the calendar, per-piece
   drafting runs on its scheduled date.
+- **Mandatory stop-slop pass (added in 0.2.1).** Every drafting
+  skill in this plugin runs the shared stop-slop skill at
+  `rockstarr-infra/skills/_shared/stop-slop/` as the final step
+  before writing to `03_drafts/`. Style guide shapes voice;
+  stop-slop strips the AI tells that survive even on-voice
+  writing. Structural artifacts (topic lists, calendars,
+  outlines, interview transcripts) are exempt.
 
 ## Lanes and cadence
 
@@ -54,12 +61,12 @@ drafts generated.
 | `ideate-topics` | UPDATED | Monthly. Reads profile, style guide, first-party KB, publish log, AND stack-cadence. Proposes 8–12 ranked angles ONLY for enabled lanes. Output: `02_inputs/content-topics_YYYY-MM.md`. |
 | `content-calendar` | NEW | Monthly. Slots the user's picks across the month. Blog outline-to-publish paths first; TL next; newsletters anchored to preferred weekday; LinkedIn newsletters aligned to an approved TL. Output: `02_inputs/content-calendar_YYYY-MM.md`. |
 | `outline-blog` | UPDATED | Outline-first gate for the researched blog lane. Approval required before `draft-blog` runs. |
-| `draft-blog` | IDENTITY SWAP | Researched, informational blog. Consumes an approved outline, produces a full post citing first-party KB (and optionally third-party references). Replaces v0.1's `draft-article`. |
-| `draft-thought-leadership` | NEW (renamed) | Shorter, opinion-driven, single-shot piece. Weight from POV, not research. Replaces v0.1's `draft-blog`. |
-| `draft-article` | DEPRECATED | Back-compat shim. Asks the user which lane they meant and routes to `draft-blog` or `draft-thought-leadership`. Removed in v0.3. |
-| `draft-newsletter` | UPDATED | Single-shot email newsletter. CTA now links the month's approved blog + TL pieces on the client's website. |
-| `draft-case-study` | NEW | Quarterly. Interview-driven via `AskUserQuestion` using the Rockstarr custom-GPT case-study prompt (sourced from rockstarr-infra). Transcript in `02_inputs/content/`; draft only after every required question is answered. |
-| `repurpose` | NEW | Takes one approved long-form piece and fans it into LinkedIn post, newsletter highlight, X/Threads thread, and (only when `records_videos=true`) a short video script. |
+| `draft-blog` | IDENTITY SWAP | Researched, informational blog. Consumes an approved outline, produces a full post citing first-party KB (and optionally third-party references). Mandatory stop-slop final pass. Replaces v0.1's `draft-article`. |
+| `draft-thought-leadership` | NEW (renamed) | Shorter, opinion-driven, single-shot piece. Weight from POV, not research. Mandatory stop-slop final pass. Replaces v0.1's `draft-blog`. |
+| `draft-article` | DEPRECATED | Back-compat shim. Asks the user which lane they meant and routes to `draft-blog` or `draft-thought-leadership`. Does not draft. Removed in v0.3. |
+| `draft-newsletter` | UPDATED | Single-shot email newsletter. CTA links the month's approved blog + TL pieces. Mandatory stop-slop pass on subject lines, preheader, and body. |
+| `draft-case-study` | NEW | Quarterly. Interview-driven via `AskUserQuestion` using the Rockstarr custom-GPT case-study prompt (sourced from rockstarr-infra). Transcript in `02_inputs/content/`; polished draft only after every required question is answered. Mandatory stop-slop on the polished prose; transcript exempt. |
+| `repurpose` | NEW | Takes one approved long-form piece and fans it into LinkedIn post, newsletter highlight, X/Threads thread, and (only when `records_videos=true`) a short video script. Mandatory stop-slop pass per derivative. |
 | `publish-wp` | DEFER | WordPress publish connector. Builds when first client's stack lights up. |
 | `publish-ga` | DEFER | GrowthAmp blog publish connector. Builds when first client's stack lights up. |
 | `publish-linkedin-newsletter` | DEFER | Republish an approved TL piece as a LinkedIn newsletter via Chrome MCP. Builds when first client's `linkedin_newsletters_per_month >= 1`. |
@@ -80,32 +87,44 @@ already have produced:
   first-party processed files.
 - `rockstarr-infra/skills/_shared/references/case-study-prompt.md`
   — the shared interview script for `draft-case-study`.
+- `rockstarr-infra/skills/_shared/stop-slop/SKILL.md` — the
+  shared stop-slop skill every drafting skill runs as its final
+  pass. MIT-licensed, based on
+  [hardikpandya/stop-slop](https://github.com/hardikpandya/stop-slop).
 
 If any of these are missing or out of date, skills refuse and
 point the user back at the relevant infra skill.
 
 ## rockstarr-infra dependencies
 
-v0.2 of this plugin requires a paired bump to rockstarr-infra.
-Changes needed there:
+The infra dependencies required by this plugin are shipped as of
+rockstarr-infra v0.4:
 
-1. **`capture-stack` — add the content-cadence block.** Six new
-   fields with defaults: `blogs_per_month` (0),
-   `thought_leadership_per_month` (0),
-   `email_newsletters_per_month` (0),
-   `linkedin_newsletters_per_month` (0), `records_videos`
-   (false), `case_studies_per_quarter` (1).
-2. **`scaffold-client` — add content subdirectories.** New dirs:
+1. **`capture-stack`** — content-cadence block with six fields:
+   `blogs_per_month`, `thought_leadership_per_month`,
+   `email_newsletters_per_month`,
+   `linkedin_newsletters_per_month`, `records_videos`,
+   `case_studies_per_quarter`.
+2. **`scaffold-client`** — content subdirectories:
    `02_inputs/content/` (case-study interview transcripts),
    `04_approved/content/`, `05_published/content/`,
-   `06_reports/monthly/`. `03_drafts/content/` already exists.
-3. **Shared reference: `skills/_shared/references/case-study-prompt.md`.**
-   Port of the Rockstarr custom-GPT case-study interview prompt.
+   `06_reports/monthly/`.
+3. **Shared reference:
+   `skills/_shared/references/case-study-prompt.md`** — the
+   Rockstarr custom-GPT case-study interview prompt.
    `draft-case-study` reads from this path.
-4. **(Future backlog) `approvals-digest`.** Every draft this
-   plugin emits carries `awaiting_approval_since` front-matter so
-   a future infra digest can surface pending reviews across bots
-   without bot-specific code.
+4. **Shared skill: `skills/_shared/stop-slop/`** — MIT-licensed
+   stop-slop skill (derived from
+   [hardikpandya/stop-slop](https://github.com/hardikpandya/stop-slop)).
+   Every drafting skill in this plugin calls it as the mandatory
+   final pass. Every other Growth-OS bot that produces prose
+   (social, outreach, reply, nurture) calls the same canonical
+   copy — one upstream skill, zero drift.
+
+**(Future backlog) `approvals-digest`.** Every draft this plugin
+emits carries `awaiting_approval_since` front-matter so a future
+infra digest can surface pending reviews across bots without
+bot-specific code.
 
 ## Drafting rules (non-negotiable)
 
@@ -139,6 +158,14 @@ Applied by every drafting skill.
    in "References" sections with explicit attribution and a link.
 8. **Cadence is binding.** Skills refuse to emit drafts for lanes
    the client does not publish (cadence 0 in `stack.md`).
+9. **stop-slop is the mandatory final pass.** Every drafting skill
+   runs `rockstarr-infra/skills/_shared/stop-slop/` on its prose
+   output immediately before writing the file. Order: style guide
+   shapes the voice, then stop-slop strips AI tells. A draft that
+   skips the pass ships broken. Every prose-emitting skill writes
+   a `stop_slop_score` to the draft's front-matter and surfaces it
+   in the chat summary. Structural artifacts (topic lists,
+   calendars, outlines, interview transcripts) are exempt.
 
 ## Folder contract (reads and writes)
 
@@ -153,6 +180,7 @@ rockstarr-content reads:
   04_approved/content/                     (draft-newsletter, repurpose)
   05_published/_publish.log                (avoid recent topic repeats)
   rockstarr-infra/skills/_shared/references/case-study-prompt.md
+  rockstarr-infra/skills/_shared/stop-slop/     (final pass, every drafting skill)
 
 rockstarr-content writes:
   02_inputs/content-topics_YYYY-MM.md      (ideate-topics)
@@ -225,6 +253,17 @@ On-demand
     naming.
   - Paired bump to `rockstarr-infra` required (see dependencies
     section).
+- `0.2.1` — mandatory stop-slop pass.
+  - Every drafting skill (`draft-blog`,
+    `draft-thought-leadership`, `draft-newsletter`,
+    `draft-case-study`, `repurpose`) runs the shared stop-slop
+    skill at `rockstarr-infra/skills/_shared/stop-slop/` as the
+    final step before writing. Structural artifacts (topic lists,
+    calendars, outlines, interview transcripts) are exempt.
+  - Every draft carries a `stop_slop_score` in front-matter and
+    in the chat summary. Scores below 35/50 flag for review.
+  - Depends on `rockstarr-infra` v0.4 which ships the shared
+    stop-slop skill.
 - `0.3.0` (planned) — remove `draft-article` shim; wire publish
   connectors as signed clients request them.
 

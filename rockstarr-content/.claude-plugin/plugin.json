@@ -1,7 +1,7 @@
 {
   "name": "rockstarr-content",
-  "version": "0.2.0",
-  "description": "Rockstarr AI long-form drafting plugin. Four publishing lanes (researched blog, thought leadership, email newsletter, LinkedIn newsletter) gated by the client's stack cadence, plus interview-driven case studies and repurposed derivatives. Every lane drafts in the client's approved voice from first-party knowledge base material; third-party sources live in References only. Monthly planning pass (ideate → pick → calendar → approve) then per-piece drafting on the calendar's schedule. All outputs land in 03_drafts/content/ for human review. Requires rockstarr-infra v0.4+ for the content-cadence stack fields and shared case-study prompt.",
+  "version": "0.2.1",
+  "description": "Rockstarr AI long-form drafting plugin. Four publishing lanes (researched blog, thought leadership, email newsletter, LinkedIn newsletter) gated by the client's stack cadence, plus interview-driven case studies and repurposed derivatives. Every lane drafts in the client's approved voice from first-party knowledge base material; third-party sources live in References only. Every prose output runs through the shared stop-slop skill as a mandatory final pass before landing in 03_drafts/content/. Monthly planning pass (ideate → pick → calendar → approve) then per-piece drafting on the calendar's schedule. Requires rockstarr-infra v0.4+ for content-cadence stack fields, the shared case-study prompt, and the shared stop-slop skill.",
   "author": {
     "name": "Rockstarr & Moon"
   }

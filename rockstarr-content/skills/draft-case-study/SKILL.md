@@ -202,6 +202,7 @@ cta_destination: "URL or action reference from stack.md"
 video_testimonial_headline: "short headline from question 13, if provided"
 approval_status: "pending"
 awaiting_approval_since: "ISO timestamp"
+stop_slop_score: 43   # five-dimension score after the mandatory final pass on the polished case-study prose (quote excluded)
 # ---
 ```
 
@@ -273,10 +274,48 @@ credibility, not urgency.]
 Destination: [URL or action reference from stack.md]
 ```
 
+## Final pass — stop-slop (mandatory)
+
+Before writing the polished case-study file at
+`03_drafts/content/case-study-[slug].md`, run the shared stop-slop
+skill at `rockstarr-infra/skills/_shared/stop-slop/SKILL.md` on
+the full polished prose: the transformation headline, descriptive
+subhead, hook, Overview, Challenge, Solution, Before/After, and
+Conclusion. The optional quote is NOT rewritten — customer quotes
+are reproduced as-given.
+
+The interview transcript at
+`02_inputs/content/case-study-interview-[slug].md` is exempt. It
+is a structured Q&A log, not prose for publication. Running
+stop-slop on it would distort the raw interview record the
+reviewer needs for audit.
+
+Order is fixed: the custom-GPT case-study prompt shapes the
+structure and voice; stop-slop then strips the AI tells that
+sneak into the polish pass.
+
+What stop-slop catches on this lane especially hard:
+
+- Formulaic "Challenge / Solution / Results" transitions that
+  read as template prose.
+- Vague declaratives in the Overview ("The impact was
+  transformative") — case studies live on specific numbers.
+- Em dashes between before / after statements — replace with
+  periods or restructured sentences.
+- Narrator-from-a-distance framing ("The team discovered that…")
+  — name the person, their role, what they did.
+- Quotable-sounding lines in the Conclusion that read as a
+  machine-written pull quote.
+
+After the pass, record a `stop_slop_score` in the front-matter
+and surface it in the chat summary. Scores below 35/50 get
+flagged for the reviewer.
+
 ## After writing
 
 1. Print a summary in chat: customer, anonymity choice, key
-   metrics, any `[CLIENT TO CONFIRM]` markers, CTA destination.
+   metrics, any `[CLIENT TO CONFIRM]` markers, CTA destination,
+   and the stop-slop score.
 2. End with:
 
    > Case-study draft landed at
@@ -307,3 +346,8 @@ Destination: [URL or action reference from stack.md]
   belong in the researched blog lane instead.
 - Do not move the file to `04_approved/`. That is `approve`'s
   job.
+- Do not skip the stop-slop pass on the polished case study.
+  Do not run stop-slop on the interview transcript — that file
+  is an audit record, not prose for publication.
+- Do not rewrite the optional customer quote through stop-slop.
+  Customer quotes are reproduced as given.

@@ -105,6 +105,7 @@ cta_text: "exact primary CTA line in the body"
 cta_destination: "URL or action reference from stack.md"
 approval_status: "pending"
 awaiting_approval_since: "ISO timestamp"
+stop_slop_score: 40   # five-dimension score after the mandatory final pass across subject lines, preheader, and body
 # ---
 ```
 
@@ -207,10 +208,42 @@ style guide.]
 7. **No invented facts.** No made-up stats, customer stories, or
    dates. Use `[CLIENT TO CONFIRM]` for gaps.
 
+### Final pass — stop-slop (mandatory)
+
+Before writing the file, run the shared stop-slop skill at
+`rockstarr-infra/skills/_shared/stop-slop/SKILL.md` on:
+
+1. Every subject-line option (all three).
+2. The preheader.
+3. The full newsletter body — opener, intro, each section, close,
+   CTA line.
+
+Short-form copy is where AI tells are loudest. A subject line
+that reads like a marketing-automation template loses the open.
+stop-slop runs after the style guide has shaped the copy; order
+matters.
+
+What stop-slop catches on this lane:
+
+- Generic openers ("Hope you had a great week", "Quick update
+  for you", "In today's fast-paced world") — the style guide
+  bans these anyway, stop-slop is the second gate.
+- "Not X, it's Y" subject lines.
+- Em dashes in subject / preheader / body.
+- Vague declaratives in the close ("The takeaway is clear").
+- Metronomic rhythm — three short sentences in a row in the
+  intro is common newsletter drift.
+- Meta-joiners ("In this issue…", "This week I want to talk
+  about…") — let the opener do the work.
+
+After the pass, record a `stop_slop_score` in the front-matter
+and surface it in the chat summary with the subject-line picks.
+
 ### After writing
 
 1. Print a summary: subject line picks, word count, CTA
-   destination, any `[CLIENT TO CONFIRM]` markers.
+   destination, any `[CLIENT TO CONFIRM]` markers, and the
+   stop-slop score.
 2. End with:
 
    > Newsletter draft landed at
@@ -232,3 +265,6 @@ style guide.]
 - Do not paraphrase third-party content as the client's take.
 - Do not bulk-draft multiple weeks of newsletters in one run. One
   issue per call.
+- Do not skip the stop-slop pass, especially on the subject
+  lines. A subject line that reads as AI-written loses the open
+  and breaks the rest of the work.

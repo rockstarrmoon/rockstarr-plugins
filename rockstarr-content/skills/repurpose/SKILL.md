@@ -116,6 +116,7 @@ produced_at: "ISO timestamp"
 style_guide_version: "matched from style-guide.md front-matter"
 approval_status: "pending"
 awaiting_approval_since: "ISO timestamp"
+stop_slop_score: 39       # five-dimension score after the mandatory final pass on this derivative
 # ---
 ```
 
@@ -218,11 +219,41 @@ Read the full piece → [URL]
    `stack.md.website_base_url + /blog/<slug>` (or the client's
    actual pattern). Do not invent.
 
+## Final pass — stop-slop (mandatory, per derivative)
+
+Before writing EACH derivative file, run the shared stop-slop
+skill at `rockstarr-infra/skills/_shared/stop-slop/SKILL.md` on
+that derivative's prose:
+
+- **LinkedIn post** — hook line, body paragraphs, closing line,
+  PS.
+- **Newsletter highlight** — full 150-to-250-word body plus the
+  one-line CTA.
+- **X / Threads thread** — every post in the thread. Short-form
+  copy is where AI tells are loudest; each post gets its own
+  pass.
+- **Video script** (when `records_videos=true`) — every spoken
+  line, hook through CTA.
+
+Derivatives skip the pass at their peril. Short-form channels
+surface patterns that a 2000-word blog can hide behind length.
+A LinkedIn post with three em dashes or a thread with three
+"Here's the thing" openers reads as a model wrote it.
+
+Order is fixed: the source piece (already stop-slopped at draft
+time) shapes the argument; each derivative's compression pass
+may introduce new AI tells, which stop-slop strips before the
+file lands.
+
+Record a `stop_slop_score` per derivative in its front-matter.
+If any derivative scores below 35/50, flag it in the summary.
+
 ## After writing
 
 1. Print a summary in chat: derivative list, file paths, source
-   piece, any skipped derivatives and the reason (e.g., "video
-   script skipped — records_videos=false").
+   piece, stop-slop score per derivative, any skipped derivatives
+   and the reason (e.g., "video script skipped —
+   records_videos=false").
 2. End with:
 
    > Derivatives landed in `03_drafts/`. Each is a separate
@@ -246,3 +277,6 @@ Read the full piece → [URL]
 - Do not repurpose a newsletter or a derivative of a derivative.
   Source must be an approved long-form piece (blog, TL, or case
   study).
+- Do not skip the stop-slop pass on a derivative because the
+  source piece already ran it. Compression introduces new AI
+  tells — every derivative is its own prose event.

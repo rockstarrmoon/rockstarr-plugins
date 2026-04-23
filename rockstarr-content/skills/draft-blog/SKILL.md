@@ -103,6 +103,7 @@ cta_text: "exact CTA line in the body"
 cta_destination: "URL or action reference"
 approval_status: "pending"
 awaiting_approval_since: "ISO timestamp"
+stop_slop_score: 42   # sum of the five-dimension score after the mandatory final pass (min 35 to proceed without a flag)
 # ---
 ```
 
@@ -195,11 +196,42 @@ know, and why they can credibly make this argument. Pulled from
    within ±20%. If the topic demands more, say so in a short
    summary at the end of the run and let the human decide.
 
+### Final pass — stop-slop (mandatory)
+
+Before writing the file, run the shared stop-slop skill at
+`rockstarr-infra/skills/_shared/stop-slop/SKILL.md` on the full
+draft body (every prose section — title, intro, H2 sections,
+closing, CTA copy, About block). Order is fixed: style guide
+shapes the draft first; stop-slop then strips the AI tells that
+survive even on-voice writing. Running them the other way round
+would scrub voice-specific turns of phrase the style guide
+wants in.
+
+What stop-slop catches on this lane:
+
+- Filler openers ("Here's the thing", "What's interesting is").
+- "Not X, it's Y" binary contrasts and negative listings.
+- Passive voice and inanimate-subject phrasing ("the decision
+  emerges", "the framework delivers").
+- Em dashes — replace with periods, commas, or a restructured
+  sentence.
+- Three-in-a-row same-length sentences (metronome rhythm).
+- Vague declaratives ("The implications are significant") — name
+  the specific implication.
+- Meta-joiners ("The rest of this post will show…") — let the
+  writing move without narrating itself.
+
+After the pass, record a one-line `stop_slop_score` in the
+summary printed to chat (the 5-dimension check from stop-slop's
+scoring rubric). If the score is below 35/50, flag it in the
+summary so the reviewer can decide whether to re-draft.
+
 ### After writing
 
 1. Print a summary in chat: title, slug, word count, H2 list,
    references count, any inline `[CLIENT TO CONFIRM]` markers,
-   and any style-guide pairs the draft consciously leans toward.
+   any style-guide pairs the draft consciously leans toward,
+   and the stop-slop score.
 2. End with:
 
    > Researched-blog draft landed at
@@ -223,3 +255,5 @@ know, and why they can credibly make this argument. Pulled from
 - Do not move the file to `04_approved/`. That is `approve`'s
   job.
 - Do not bulk-draft multiple blogs in one run. One per call.
+- Do not skip the stop-slop pass. A researched blog that ships
+  without it ships broken.
