@@ -74,6 +74,15 @@ already produced:
 - `/rockstarr-ai/01_knowledge_base/index.md` with first-party processed
   files (campaign copy cites first-party proof).
 
+`rockstarr-infra` must also expose:
+
+- `skills/_shared/stop-slop/` — mandatory final pass on every draft.
+  The prose-producing skills in this plugin (`draft-icp-campaign`,
+  `outreach-weekly-report`) call it after the style-guide pass and
+  before the file lands in `03_drafts/` or `06_reports/`. If
+  `stop-slop` is not discoverable, these skills refuse and point the
+  user back at `rockstarr-infra`.
+
 If `stack.md` is missing any of the outreach keys, skills refuse to run
 and point the user back at `rockstarr-infra:capture-stack`.
 
@@ -196,6 +205,18 @@ front-matter so the digest can pick them up without bot-specific code.
   line + stop. No anchor restatement, no ceiling restatement, no
   well-wishes, no chase. Rule 4 rewritten, Rule 6 rewritten, new
   Rule 7 added for the softener ban, self-check pass updated.
+- `0.1.4` — Stop-slop integration per the Growth OS cross-bot
+  contract. `draft-icp-campaign` gains Drafting rule 8: after the
+  self-check rewrites, the campaign spec prose and all three
+  sequence message bodies (Messages 2, 3, 4) must pass
+  `rockstarr-infra:stop-slop` as the final pre-write pass. Order is
+  style-guide first, stop-slop last. `outreach-weekly-report` adds
+  an equivalent requirement for the prose blocks (week-over-week
+  bullets, "What Rachel / Jon should notice," and the narrative
+  portion of "Actions for next week"); tables, heartbeat lines, and
+  the stale-task callout are exempt as structural artifacts. Both
+  skills refuse if `stop-slop` is not discoverable. Produced-by
+  stamps bumped.
 - Deferred to later versions: `force-send-today`, `refresh-lead-list`,
   `gcal-auto-booking`, weighted multi-campaign pacing, cross-bot touch
   caps.

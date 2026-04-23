@@ -117,6 +117,25 @@ client's style guide for tone; this is a client-facing report.
 - If `confirm-session` ever failed, surface it loudly in the
   heartbeat AND in this block.
 
+## Stop-slop pass (mandatory)
+
+Before writing the report file, run every prose block through
+`rockstarr-infra:stop-slop` as the final pass. The prose blocks in
+this report are:
+
+- `### Week-over-week` bullets
+- `## What Rachel / Jon should notice` paragraphs
+- `## Actions for next week` narrative bullets (the `continue /
+  pause / tweak` reasoning text, not the slug labels themselves)
+
+The tables, heartbeat lines, and stale-task callout are structural
+artifacts and are exempt. Fix any slop flags (filler phrases, binary
+contrasts, passive voice, em dashes, vague declaratives, metronomic
+rhythm) before the report lands in `/06_reports/weekly/`. Order is
+style-guide first, stop-slop last. If stop-slop is unavailable,
+refuse and tell the user `rockstarr-infra` needs to be installed or
+updated.
+
 ## What NOT to do
 
 - Do not invent metrics. Everything in the tables traces to

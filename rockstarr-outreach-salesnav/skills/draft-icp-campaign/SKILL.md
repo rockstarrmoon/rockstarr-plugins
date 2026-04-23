@@ -40,6 +40,10 @@ for the slug, this skill offers to reuse it or re-derive fresh from
   README). If `outreach_tool` is not `salesnav`, refuse.
 - `02_inputs/outreach/lead-lists/<slug>.md` exists and contains a
   `saved_search_url` pointing at a Sales Nav saved search.
+- **`rockstarr-infra:stop-slop` is available.** This skill is
+  mandatory on every prose artifact produced here (campaign spec,
+  sequence bodies). If `stop-slop` is not discoverable, refuse and
+  tell the user `rockstarr-infra` needs to be installed or updated.
 
 If any of the above is missing, stop and tell the user exactly
 which file is missing and which upstream skill produces it.
@@ -161,7 +165,7 @@ Front-matter:
 campaign_slug: "kebab-case-slug"
 derived_from: "00_intake/client-profile.md"
 derived_at: "ISO timestamp"
-produced_by: "rockstarr-outreach-salesnav/draft-icp-campaign@0.1.3"
+produced_by: "rockstarr-outreach-salesnav/draft-icp-campaign@0.1.4"
 scope: "campaign-only"
 authority_note: "This file governs only this campaign. It does NOT override 00_intake/client-profile.md. Update the profile via rockstarr-infra:ingest-workbook + approve."
 overrides:
@@ -224,7 +228,7 @@ saved_search_url: "https://www.linkedin.com/sales/search/..."
 target_lead_count: 250
 cadence: "day-of-accept, accept+3, accept+7"
 daily_send_cap_contribution: "round-robin share of 20/day + 100/week"
-produced_by: "rockstarr-outreach-salesnav/draft-icp-campaign@0.1.3"
+produced_by: "rockstarr-outreach-salesnav/draft-icp-campaign@0.1.4"
 produced_at: "ISO timestamp"
 style_guide_version: "matched from style-guide.md"
 anchor_phrase: "<verbatim anchor phrase from per-campaign ICP>"
@@ -486,12 +490,25 @@ first-party KB.)
    - Message 4 is three sentences or fewer? If longer, cut.
    - Message 4 ends with a well-wish ("good luck," "wishing you") or
      a chase ("just bumping")? If yes, rewrite.
+8. **Stop-slop final pass (mandatory).** After the self-check
+   rewrites are done, run the campaign spec prose AND the three
+   sequence message bodies (Messages 2, 3, 4) through
+   `rockstarr-infra:stop-slop` as the final pre-write pass. This is
+   the Growth OS contract: style-guide first, stop-slop last. Any
+   flags raised by stop-slop (filler phrases, formulaic structures,
+   passive voice, em dashes, vague declaratives, metronomic rhythm)
+   must be resolved before the file is written to
+   `03_drafts/outreach/`. Exemptions do not apply here — sequence
+   copy and campaign narrative are prose, not structural artifacts.
+   If stop-slop is unavailable, refuse and tell the user
+   `rockstarr-infra` needs to be installed or updated.
 
 ## After writing
 
 Print a summary in chat: slug, target lead count, sequence cadence,
-the anchor phrase (verbatim), any `[CLIENT TO CONFIRM]` markers, and
-the first-party sources cited. End with:
+the anchor phrase (verbatim), any `[CLIENT TO CONFIRM]` markers, the
+first-party sources cited, and confirmation that the stop-slop pass
+ran with no unresolved flags. End with:
 
 > Campaign draft landed at `03_drafts/outreach/campaign-<slug>.md`.
 > Per-campaign ICP at `02_inputs/outreach/icps/<slug>.md`.
