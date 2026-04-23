@@ -58,34 +58,61 @@ Create these directories and placeholder files under the workspace root:
 ## Steps
 
 1. Confirm the workspace root. Prefer the root of the Cowork-selected folder.
-2. Ask the user for `client_id` (kebab-case, e.g. `acme-corp`) and
-   `client_name` (display name) if not already supplied. `client_id` must
-   match `[a-z0-9-]+`.
-3. Create each directory above. Use `mkdir -p` semantics — never overwrite or
+
+2. Resolve the current plugin version. Read the `version` field from
+   `rockstarr-infra/.claude-plugin/plugin.json` (the plugin this skill
+   ships in). Call this `current_version`. If the file cannot be found,
+   skip the version stamp and log a warning — do not block scaffolding.
+
+3. Determine `client_id` and `client_name`:
+
+   - If `/rockstarr-ai/client.toml` already exists, read both values from
+     it. Do not ask the user again on re-runs.
+   - Otherwise, ask the user for `client_id` (kebab-case, must match
+     `[a-z0-9-]+`, e.g. `acme-corp`) and `client_name` (display name).
+
+4. Create each directory above. Use `mkdir -p` semantics — never overwrite or
    delete existing contents. If `/rockstarr-ai/` already exists, add only the
    missing subdirectories and leave the rest alone.
-4. Write `/rockstarr-ai/client.toml` **only if it does not already exist**:
 
-   ```toml
-   client_id     = "acme-corp"
-   client_name   = "Acme Corp"
-   created_at    = "2026-04-20T14:00:00Z"
-   rockstarr_infra_version = "0.1.0"
-   ```
+5. Write or update `/rockstarr-ai/client.toml`:
 
-5. Write `/rockstarr-ai/README.md` only if missing. One paragraph explaining
+   - **If the file is missing**, create it with:
+
+     ```toml
+     client_id     = "acme-corp"
+     client_name   = "Acme Corp"
+     created_at    = "<ISO 8601 timestamp, now>"
+     rockstarr_infra_version = "<current_version from step 2>"
+     ```
+
+   - **If the file exists**, do a line-level update of only the
+     `rockstarr_infra_version` line to `current_version`. Preserve
+     `client_id`, `client_name`, `created_at`, and any other fields or
+     comments the file already contains. If `rockstarr_infra_version`
+     is missing from the file, append it. No-op if the value is
+     already current.
+
+   This means every idempotent re-scaffold stamps the client with the
+   plugin version they're now on, so operators can tell at a glance
+   which clients have migrated to the latest layout.
+
+6. Write `/rockstarr-ai/README.md` only if missing. One paragraph explaining
    that this folder is managed by Rockstarr AI and that drafts live in
    `/03_drafts/`, approvals in `/04_approved/`, and shipped outputs in
    `/05_published/`.
-6. Do not create files inside `/01_knowledge_base/processed/`,
+
+7. Do not create files inside `/01_knowledge_base/processed/`,
    `/01_knowledge_base/raw/`, or their `third-party/` subdirectories.
    Those are managed by `kb-ingest`. Just create the empty directories.
 
 ## Output to the user
 
 After scaffolding, print a short summary: the workspace path, the
-`client_id`, and a checklist showing which directories were created vs. which
-already existed. End with a one-line next-step prompt:
+`client_id`, a checklist showing which directories were created vs.
+which already existed, and the `rockstarr_infra_version` stamp — before
+and after, if it changed on this run. End with a one-line next-step
+prompt:
 
 > Next: drop the client workbook (`.docx`) into `/rockstarr-ai/00_intake/`
 > and run `ingest-workbook`.
