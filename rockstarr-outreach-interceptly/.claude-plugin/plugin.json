@@ -1,0 +1,8 @@
+{
+  "name": "rockstarr-outreach-interceptly",
+  "version": "0.1.0",
+  "description": "Rockstarr AI LinkedIn outreach plugin for clients who run Interceptly. At install, the bot discovers the client's Interceptly accounts, interviews the client on the persona for each, and captures their own ICP-qualification and warm-reply rules. At run time it drives Interceptly via Chrome MCP: multi-account rotation, unread-replies-first then My-Tasks, per-reply ICP requalification, temperature-bucketed drafting under the client's approved voice, strict send-it authorization, Interceptly labels + follow-up tasks. Interceptly is source-of-truth; /rockstarr-ai/ holds the audit mirror, drafts, approvals, and reports.",
+  "author": {
+    "name": "Rockstarr & Moon"
+  }
+}
