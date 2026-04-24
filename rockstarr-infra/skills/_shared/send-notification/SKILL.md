@@ -61,9 +61,23 @@ The calling skill supplies:
   `default`). Selects which env-file address is used when `to` is not
   supplied. Unknown values fall back to `default`.
 - `subject` — plain-text subject line.
-- `body_text` — required. Plain-text body.
-- `body_html` — optional. HTML body. If provided, most mail clients
-  will show this instead of `body_text`.
+- `body_text` — required. Plain-text body (always include for
+  deliverability, even when also sending rendered content).
+- `body_markdown` — **preferred for client-bound notifications.**
+  Restricted markdown string. The Worker renders it into HTML with the
+  branded Rockstarr AI template. See the mailer README for the
+  supported primitive set. Cannot be combined with `body_html`.
+- `body_html` — optional. Pre-formed HTML body, passes through
+  unchanged. Escape hatch — skip the template entirely. Most bots
+  should use `body_markdown` instead.
+- `subtitle` — optional. One-line subtitle under the wordmark in the
+  rendered template (e.g. `"Daily digest · Acme Corp"`). Only used
+  when `body_markdown` is supplied.
+- `reply_hint` — optional. Footer one-liner in the rendered template.
+  Default: `"Reply to this email to respond."`. Only used when
+  `body_markdown` is supplied. Good places to customize:
+  - Digest / draft-ready: `"Reply to this email to respond — it reaches your Rockstarr strategist directly."`
+  - Support: `"Reply to this email to respond — it reaches the client directly."`
 - `tag` — optional. Short tag used for Resend analytics, e.g.,
   `approvals_digest`, `draft_ready`, `reply_needed`.
 - `reply_to` — optional override. Resolution order when omitted:
@@ -126,14 +140,19 @@ The calling skill supplies:
      "to": "<resolved recipient — string or array>",
      "subject": "<subject>",
      "text": "<body_text>",
+     "body_markdown": "<body_markdown, if provided>",
      "html": "<body_html, if provided>",
+     "subtitle": "<subtitle, if provided>",
+     "reply_hint": "<reply_hint, if provided>",
      "reply_to": "<resolved reply-to, if any>",
      "tag": "<tag, if provided>"
    }
    ```
 
    Omit optional keys that were not supplied. Do not send empty
-   strings — prefer to drop the key.
+   strings — prefer to drop the key. The Worker errors if both
+   `body_markdown` and `html` are present, so callers should pick one
+   path.
 
 4. Write the payload to a temp file (to avoid shell-escaping issues
    with quotes, emojis, or embedded newlines) and POST via Bash:
@@ -225,14 +244,29 @@ The calling skill supplies:
 
 ## Example call shapes
 
-Default-path notification (common case — no `to` supplied, routes to
-`ROCKSTARR_NOTIFY_TO`):
+Default-path daily digest (common case — rendered via the branded
+template):
 
 ```
 Invoke send-notification with:
-  subject   = "3 drafts awaiting your review"
-  body_text = "Open your workspace — 3 items are in /04_approved/ queue."
-  tag       = "approvals_digest"
+  subject       = "3 drafts awaiting your review"
+  subtitle      = "Daily digest · Acme Corp"
+  body_markdown = """
+    ## Three drafts ready
+
+    Open your workspace to review:
+
+    - **Blog:** why founder-led outbound wins in 2026
+    - **Newsletter:** Quiet week, sharp email
+    - **LinkedIn:** repurposed from Tuesday's post
+
+    ---
+
+    Reply to this email if anything looks off.
+  """
+  body_text     = "Three drafts ready: a blog, a newsletter, and a LinkedIn post. Open your Cowork workspace to review."
+  reply_hint    = "Reply to this email to respond — it reaches your Rockstarr strategist directly."
+  tag           = "approvals_digest"
 ```
 
 Urgent notification (routes to `ROCKSTARR_NOTIFY_URGENT_TO` if set,
@@ -240,15 +274,32 @@ otherwise the default):
 
 ```
 Invoke send-notification with:
-  notify_type = "urgent"
-  subject     = "Reply from Jane Doe needs your review"
-  body_text   = "Sales Nav thread: …"
-  tag         = "reply_needed"
+  notify_type   = "urgent"
+  subject       = "Reply from Jane Doe needs your review"
+  subtitle      = "Inbound reply · Acme Corp"
+  body_markdown = "## Jane Doe replied\n\nThread: ...\n\n**Next step:** approve or edit the draft reply in your workspace."
+  body_text     = "Jane Doe replied. Approve or edit the draft reply in your workspace."
+  reply_hint    = "Reply to this email to respond — it reaches your Rockstarr strategist directly."
+  tag           = "reply_needed"
 ```
 
 Explicit one-off recipient (overrides env routing entirely — used by
 `request-support` to route to `ai_support@rockstarrandmoon.com`, and by
 smoke tests):
+
+```
+Invoke send-notification with:
+  to            = "ai_support@rockstarrandmoon.com"
+  subject       = "[HIGH] Acme Corp: scaffold didn't seed the env file"
+  subtitle      = "Support request · Acme Corp"
+  body_markdown = "## Summary\n\nscaffold-client finished but `.rockstarr-mailer.env` wasn't created."
+  body_text     = "scaffold-client finished but .rockstarr-mailer.env wasn't created."
+  reply_hint    = "Reply to this email to respond — it reaches the client directly."
+  reply_to      = "jon@acmecorp.com"   # caller-supplied; overrides env default
+  tag           = "support_request"
+```
+
+Plain-text smoke test (skips the branded shell entirely):
 
 ```
 Invoke send-notification with:

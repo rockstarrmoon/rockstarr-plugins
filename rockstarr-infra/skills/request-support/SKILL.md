@@ -76,30 +76,46 @@ offer them an edit pass on the draft instead.
      `/rockstarr-ai/03_drafts/outreach/_errors.md`). Never include
      raw credentials or the mailer token.
 
-3. Draft the email body. Structure it so the support team can scan
-   it quickly:
+3. Draft the email in TWO formats. The Worker-side template renders
+   `body_markdown` into the branded HTML shell; `body_text` is the
+   plaintext fallback for deliverability and for clients that don't
+   render HTML.
 
-   ```
-   SUMMARY
+   **Markdown body** — structured for the support team to scan:
+
+   ````markdown
+   ## Summary
+
    <issue_summary>
 
-   DETAIL
+   ## Detail
+
    <issue_detail, verbatim from the client>
 
-   WORKSPACE
-   - client:            <client_name> (<client_id>)
-   - rockstarr-infra:   <version>
-   - installed plugins: <list or "(not captured)">
-   - urgency:           <blocker|high|normal|low>
+   ## Workspace
 
-   CONTEXT (if gathered)
-   <any log tails or file pointers, each fenced and labeled>
+   - **Client:** <client_name> (<client_id>)
+   - **rockstarr-infra:** <version>
+   - **Installed plugins:** <list or "(not captured)">
+   - **Urgency:** <blocker|high|normal|low>
 
-   — Sent from <client_name>'s Rockstarr AI workspace via /request-support
-   ```
+   ## Context
 
-   Keep it plain text. Never include the mailer bearer token, the
-   Resend API key, or any `NOTIFY_*` address in the body.
+   <any log tails as fenced code blocks, each labeled — omit this
+    section entirely if nothing was gathered>
+
+   ---
+
+   *Sent from <client_name>'s Rockstarr AI workspace via /request-support*
+   ````
+
+   **Plaintext body** — same content flattened, no markdown syntax.
+   Serves as the fallback for mail clients that strip HTML.
+
+   Never include the mailer bearer token, the Resend API key, or any
+   `NOTIFY_*` / `STRATEGIST_EMAIL` value in either body. If a captured
+   log tail contains anything that looks like a credential, redact it
+   as `<redacted>` before including.
 
 4. Compose the subject:
 
@@ -119,18 +135,23 @@ offer them an edit pass on the draft instead.
 6. On approval, invoke `send-notification` with:
 
    ```
-   to         = "ai_support@rockstarrandmoon.com"
-   reply_to   = <ROCKSTARR_NOTIFY_TO from env>
-   subject    = <subject from step 4>
-   body_text  = <body from step 3>
-   tag        = "support_request"
+   to            = "ai_support@rockstarrandmoon.com"
+   reply_to      = <ROCKSTARR_NOTIFY_TO from env>
+   subject       = <subject from step 4>
+   subtitle      = "Support request · <client_name>"
+   body_markdown = <markdown body from step 3>
+   body_text     = <plaintext body from step 3>
+   reply_hint    = "Reply to this email to respond — it reaches the client directly."
+   tag           = "support_request"
    ```
 
    `to` is explicit, so env-file routing rules don't apply — every
    support request from every client lands in the same R&M inbox.
    `reply_to` is set to the client's own notification address so
    Rachel or Jon can reply directly and the client sees it in the
-   mailbox they already monitor.
+   mailbox they already monitor. `reply_hint` matches the asymmetric
+   routing: the footer text stays accurate because the Reply really
+   does go to the client.
 
 7. On success, tell the client:
 
