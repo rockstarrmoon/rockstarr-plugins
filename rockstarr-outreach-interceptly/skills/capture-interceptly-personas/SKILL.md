@@ -1,15 +1,24 @@
 ---
 name: capture-interceptly-personas
-description: "This skill should be used at install time after discover-interceptly-accounts finishes, or whenever the user says \"capture Interceptly personas\", \"record the signatures for each managed account\", \"update the persona for <account>\", or \"refresh interceptly-accounts.md\". Interviews the client per managed account on account_label, Interceptly profile URL, LinkedIn profile URL, signature block, and persona notes (subject-matter lens, what this person is known for). Writes /00_intake/interceptly-accounts.md so draft-reply-interceptly can sign in the right voice under the right persona and confirm-session-interceptly can verify the active LinkedIn account."
+description: "This skill should be used at install time after discover-interceptly-accounts finishes, or whenever the user says \"capture Interceptly personas\", \"record the signatures for each managed account\", \"update the persona for a managed account\", or \"refresh interceptly-accounts.md\". Interviews the client per managed account on account_label, Interceptly profile URL, LinkedIn profile URL, signature block, and persona notes (subject-matter lens, what this person is known for). Writes /00_intake/interceptly-accounts.md so campaign sequences can be written under the right persona, so rockstarr-reply can draft replies under the right signer, and so confirm-session-interceptly can verify the active LinkedIn account."
 ---
 
 # capture-interceptly-personas
 
 This is the interview that turns the bare account list produced by
-`discover-interceptly-accounts` into the rich persona file the
-daily loop needs. Every managed account gets one row with a
-signature, a LinkedIn profile URL (for session confirmation), and
-free-text persona notes.
+`discover-interceptly-accounts` into the rich persona file every
+skill that touches Interceptly needs. Every managed account gets
+one row with a signature, a LinkedIn profile URL (for session
+confirmation), and free-text persona notes.
+
+`interceptly-accounts.md` is a shared artifact:
+
+- `draft-icp-campaign` (this plugin) reads it to match outbound
+  sequence copy to the right signer.
+- `rockstarr-reply` reads it so draft-reply signs under the right
+  persona.
+- `confirm-session-interceptly` reads the `linkedin_profile_url`
+  to verify the browser is on the correct LinkedIn account.
 
 Voice is one layer, captured in `style-guide.md`. Persona is a
 separate layer, captured here. A single client voice can sign
@@ -81,18 +90,18 @@ for. What is the subject-matter lens they speak from? What topics
 are natural for them and what topics would sound wrong in their
 voice?"
 
-This is the primary input for `draft-reply-interceptly` when it
-decides which persona to sign under if the thread could be handled
-by more than one.
+This is the primary input that lets both campaign drafting (this
+plugin) and reply drafting (rockstarr-reply) choose which persona
+to sign under if a message could go out under more than one.
 
 ### Question 5 — Default for uncategorized threads
 
 Options: `Yes — make this the default signer` / `No — ask at
 draft time`.
 
-"If a new reply arrives and `draft-reply-interceptly` cannot
-match the thread to a specific persona, should this be the default
-signer, or should the bot pause and ask?"
+"If a new reply arrives and rockstarr-reply cannot match the thread
+to a specific persona, should this be the default signer, or
+should the bot pause and ask?"
 
 Exactly one account may have `default_signer = true`. If the client
 picks Yes for a second account, warn them and ask which of the two
@@ -114,7 +123,7 @@ schema_version: 1
 
 # Interceptly accounts
 
-Source-of-truth for which personas the bot signs under. Voice is in
+Source-of-truth for which personas sign which messages. Voice is in
 style-guide.md; persona is here. Do not conflate them.
 
 ## <account_label 1>
@@ -139,22 +148,23 @@ style-guide.md; persona is here. Do not conflate them.
 ## Outputs
 
 - `/rockstarr-ai/00_intake/interceptly-accounts.md` — authoritative
-  persona file.
+  persona file, consumed by this plugin and by rockstarr-reply.
 
-## Gate on the daily loop
+## Gate on Interceptly work
 
-The daily loop refuses to run if any managed account in
-`outreach_accounts[]` is missing a row in this file, or if any row
-is missing `linkedin_profile_url` (which
-`confirm-session-interceptly` cannot function without). When the
-daily loop is blocked on this reason, point at this skill.
+Any Interceptly skill that needs an account's persona or
+LinkedIn URL refuses to run when a managed account in
+`outreach_accounts[]` is missing a row here, or when a row is
+missing `linkedin_profile_url` (`confirm-session-interceptly`
+cannot function without it). When a skill is blocked for this
+reason, point at this skill.
 
 ## Failure modes
 
 - **User skips LinkedIn profile URL.** Refuse to finalize the row.
   Explain that `confirm-session-interceptly` uses this as the
   wrong-account-sending check and wrong-account sending is the top
-  reputational risk in this bot.
+  reputational risk in the Interceptly pillar.
 - **User pastes a LinkedIn vanity URL that redirects.** Follow the
   redirect via Chrome MCP once; store the canonical URL the server
   returns. Fine to verify with the user.
@@ -174,3 +184,6 @@ daily loop is blocked on this reason, point at this skill.
   skill — discovery is the only writer for that list.
 - Do not ask voice questions here. Voice belongs to
   `style-guide.md`. Persona is a different layer.
+- Do not ask ICP qualification questions here. Those live in
+  `rockstarr-reply:capture-icp-qualifications` and write to
+  `00_intake/icp-qualifications.md`.

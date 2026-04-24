@@ -1,6 +1,6 @@
 ---
 name: qualify-lead
-description: "This skill should be used on every reply in the per-reply pipeline, or when the user says \"qualify this lead\", \"does this lead match our ICP\", or \"run ICP qualification on <lead>\". Reads the Interceptly right-panel (title, company, Work Experience) plus any optional LinkedIn fallback, checks the lead against /00_intake/icp-qualifications.md (tightened by the active campaign's per-campaign ICP overrides if any), and returns one of four verdicts: target / not_target / ambiguous / unknown — with the matching rule cited. Runs on every reply, not just once per lead — the lead's company or title may have changed since the last check."
+description: "This skill should be used on every reply in the per-reply pipeline, or when the user says \"qualify this lead\", \"does this lead match our ICP\", or \"run ICP qualification on this lead\". Reads the Interceptly right-panel (title, company, Work Experience) plus any optional LinkedIn fallback, checks the lead against /00_intake/icp-qualifications.md (tightened by the active campaign's per-campaign ICP overrides if any), and returns one of four verdicts: target / not_target / ambiguous / unknown — with the matching rule cited. Runs on every reply, not just once per lead — the lead's company or title may have changed since the last check."
 ---
 
 # qualify-lead
@@ -109,14 +109,16 @@ to do with it (draft, flag, skip).
 
 ## Semantics
 
-- `target` → proceed to `classify-reply` and
-  `draft-reply-interceptly`.
+- `target` → caller hands off to `rockstarr-reply:classify-reply`
+  and `rockstarr-reply:draft-reply`.
 - `not_target` → no draft (except the non-ICP yes three-option
   flow; `process-inbox` handles that branch). Label via the
   default mapping (`decline` → Not Interested; polite ack →
   Ignore). No follow-up task.
-- `ambiguous` → `flag-for-review`. No draft.
-- `unknown` → `flag-for-review` with a note asking the operator
+- `ambiguous` → caller hands off to
+  `rockstarr-reply:flag-for-review`. No draft.
+- `unknown` → caller hands off to
+  `rockstarr-reply:flag-for-review` with a note asking the operator
   to supply the missing context.
 
 ## Re-qualification

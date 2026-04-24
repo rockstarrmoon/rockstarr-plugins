@@ -1,14 +1,14 @@
 ---
 name: discover-interceptly-accounts
-description: "This skill should be used at install time when the user says \"discover the Interceptly accounts\", \"list my Interceptly accounts\", \"set up which accounts the bot manages\", or \"the client just added a new Interceptly account\". It opens https://dash.interceptly.ai/ via Chrome MCP, walks the SWITCH ACCOUNT popup to enumerate every account the client's Interceptly workspace exposes, and asks the client which subset the bot should manage — plus the rotation order. The chosen list is written to stack.md.outreach_accounts[]. It also enumerates the workspace's custom Labels so create-followup-task and apply-label know what exists. Re-runnable on demand when the roster changes."
+description: "This skill should be used at install time when the user says \"discover the Interceptly accounts\", \"list my Interceptly accounts\", \"set up which accounts the bot manages\", or \"the client just added a new Interceptly account\". It opens https://dash.interceptly.ai/ via Chrome MCP, walks the SWITCH ACCOUNT popup to enumerate every account the client's Interceptly workspace exposes, and asks the client which subset the bot should manage — plus the rotation order. The chosen list is written to stack.md.outreach_accounts[]. It also enumerates the workspace's custom Labels so rockstarr-reply's labeling + task skills know what exists. Re-runnable on demand when the roster changes."
 ---
 
 # discover-interceptly-accounts
 
 Install-time entry point for a client on Interceptly. This skill
 cannot be inferred or hardcoded — it has to read the client's real
-Interceptly workspace. Every downstream skill depends on the list
-it produces.
+Interceptly workspace. Every downstream skill — in this plugin AND
+in `rockstarr-reply` — depends on the list it produces.
 
 ## When to run
 
@@ -71,10 +71,13 @@ While here, open any account and visit its Labels view (or Inbox
 filter → Labels dropdown). Capture every label the workspace
 exposes. Write these to `/00_intake/interceptly-accounts.md` under a
 top-level `## Labels` section — they are shared across managed
-accounts inside a workspace. Call out which of the six defaults are
-present (`INTERESTED`, `Booked`, `Referral`, `Follow Up`,
-`Contact Later`, `Bad Fit`, plus `Ignore`, `Not Interested`) and
-surface any custom labels the client added.
+accounts inside a workspace, and `rockstarr-reply` reads this
+section when applying labels + mapping its internal classifications
+to Interceptly labels.
+
+Call out which of the defaults are present (`INTERESTED`, `Booked`,
+`Referral`, `Follow Up`, `Contact Later`, `Bad Fit`, `Ignore`,
+`Not Interested`) and surface any custom labels the client added.
 
 ### Step 5 — Present choices to the client
 
@@ -103,6 +106,10 @@ classifications: `interested`, `booked`, `referral`, `follow_up`,
 custom label, offer the eight options as `AskUserQuestion` answers.
 Write the result into `stack.md.label_mapping` as
 `"<Interceptly label>": "<internal classification>"`.
+
+This mapping is consumed primarily by `rockstarr-reply`'s labeling
+skills — the outreach plugin does not itself apply labels at run
+time.
 
 ### Step 7 — Write stack.md additions
 

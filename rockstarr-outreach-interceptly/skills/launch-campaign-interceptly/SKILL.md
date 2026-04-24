@@ -1,6 +1,6 @@
 ---
 name: launch-campaign-interceptly
-description: "This skill should be used when the user says \"launch the campaign\", \"configure this campaign in Interceptly\", \"set up the Interceptly campaign for <slug>\", or names an approved campaign spec in 04_approved/outreach/. It configures the approved campaign inside Interceptly via Chrome MCP — filter criteria, 3-step sequence copy, cadence — and records the Interceptly campaign id in the Campaigns sheet. STOPS at CONFIGURED, NOT STARTED. The client operator presses Start inside Interceptly; the bot never starts a campaign on its own."
+description: "This skill should be used when the user says \"launch the campaign\", \"configure this campaign in Interceptly\", \"set up the Interceptly campaign for the approved slug\", or names an approved campaign spec in 04_approved/outreach/. It configures the approved campaign inside Interceptly via Chrome MCP — filter criteria, 3-step sequence copy, cadence — and records the Interceptly campaign id in the Campaigns sheet of outreach-mirror.xlsx. STOPS at CONFIGURED, NOT STARTED. The client operator presses Start inside Interceptly; the bot never starts a campaign on its own."
 ---
 
 # launch-campaign-interceptly
@@ -127,8 +127,8 @@ Return a message the user can act on:
 > Campaign `<slug>` is configured under `<account_label>` but NOT
 > started. Press `Start` in Interceptly when you're ready.
 > Interceptly will send the connect note on the cadence you
-> configured. Every reply routes through the daily loop's inbox
-> pass.
+> configured. Every reply routes through `rockstarr-reply`'s daily
+> inbox pass.
 
 If scope is `all_accounts`, list every account under which the
 campaign was configured.

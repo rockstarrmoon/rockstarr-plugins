@@ -1,23 +1,31 @@
 ---
 name: confirm-session-interceptly
-description: "This skill should be used as the first step of every daily outreach run, again after every switch-account, or when the user says \"confirm the Interceptly session\", \"check we're signed in as the right account\", or \"verify the Interceptly session\". Opens https://dash.interceptly.ai/ via Chrome MCP, reads the active account in the left sidebar, visits the configured interceptly_profile_url + linkedin_profile_url for the expected account, and verifies both match. Mismatch or logged-out aborts the entire pass for that account with a loud _errors.md entry. Wrong-account sending is the top reputational risk in this variant — this check is non-negotiable."
+description: "This skill should be used as the first step of every Interceptly pass (outreach campaign configuration, rockstarr-reply's daily inbox + tasks loop), again after every switch-account, or when the user says \"confirm the Interceptly session\", \"check we're signed in as the right account\", or \"verify the Interceptly session\". Opens https://dash.interceptly.ai/ via Chrome MCP, reads the active account in the left sidebar, visits the configured interceptly_profile_url + linkedin_profile_url for the expected account, and verifies both match. Mismatch or logged-out aborts the entire pass for that account with a loud _errors.md entry. Wrong-account sending is the top reputational risk in this variant — this check is non-negotiable."
 ---
 
 # confirm-session-interceptly
 
-Safety gate. Runs at the start of every daily pass and again after
-every account switch. If this skill fails, the daily loop aborts
-— no inbox processing, no task processing, no sends, no labels.
+Safety gate. Runs at the start of every Interceptly pass — whether
+this plugin is configuring a campaign or `rockstarr-reply` is
+walking the inbox — and again after every account switch. If this
+skill fails, the caller aborts. No UI actions, no sends, no labels,
+no task writes.
+
+This skill is an explicit contract point between
+`rockstarr-outreach-interceptly` and `rockstarr-reply`. Both
+plugins call it. The Session sheet of `outreach-mirror.xlsx` holds
+its heartbeat rows.
 
 ## When to run
 
-- Step 1 of every scheduled daily run, BEFORE any account's inbox
-  or tasks are touched.
+- Step 1 of any Interceptly UI pass, BEFORE any inbox / tasks /
+  campaign work.
 - Immediately after every `switch-account` to the next managed
   account.
-- Before any on-demand `book-meeting`, `send-message`,
-  `apply-label`, `create-followup-task` that isn't already part
-  of an inbox / tasks run that just passed confirm.
+- Before any on-demand Chrome-MCP skill that acts on Interceptly
+  (stop-campaign, launch-campaign, or any reply-pipeline skill in
+  rockstarr-reply) that isn't already part of a run that just
+  passed confirm.
 - Whenever the user asks to verify the session manually.
 
 ## Inputs
@@ -84,11 +92,13 @@ On pass, append one row to the `Session` sheet of
 |---|---|
 | ts | `<ISO>` |
 | account_label | `<expected_account_label>` |
+| caller | `<plugin or skill that invoked confirm, e.g., 'rockstarr-outreach-interceptly:process-inbox'>` |
 | result | `pass` |
 | reason | (blank) |
 
 Quiet on pass — no chat noise. The heartbeat lets weekly reports
-see how often confirm failed.
+see how often confirm failed, and lets both plugins share one
+session-health record.
 
 ### Step 5 — On fail
 
@@ -97,14 +107,14 @@ Write a loud block to `/02_inputs/outreach/_errors.md`:
 ```
 ## <ISO timestamp> — confirm-session-interceptly FAIL (<reason>)
 
+Caller: <caller>
 Expected account: <expected_account_label>
 Expected Interceptly URL: <interceptly_profile_url>
 Expected LinkedIn URL: <linkedin_profile_url>
 Detected: <detected label / URL, or "(logged out)">
 
-Action: daily loop aborted for this account. Sign into the correct
-LinkedIn and Interceptly in Cowork's browser, then re-run the daily
-loop or call force-send-today (deferred to V1.1).
+Action: caller aborted for this account. Sign into the correct
+LinkedIn and Interceptly in Cowork's browser, then re-run.
 ```
 
 Also write the heartbeat row with `result = fail` and the reason.
@@ -128,7 +138,8 @@ decision, and it re-runs confirm.
 ## Why this is non-negotiable
 
 Multi-account rotation is the most boring and most important part
-of this bot. Walking managed accounts in order, with
-`confirm-session-interceptly` between each, is what keeps the
-wrong persona from replying on the wrong thread. If this check
-ever silently passes on the wrong account, it is a P0.
+of the Interceptly pillar. Walking managed accounts in order with
+`confirm-session-interceptly` between each is what keeps the wrong
+persona from replying on the wrong thread. If this check ever
+silently passes on the wrong account, it is a P0 for both this
+plugin and `rockstarr-reply`.

@@ -1,6 +1,6 @@
 ---
 name: create-followup-task
-description: "This skill should be used after apply-label completes in the per-reply pipeline, or when the user says \"create a follow-up task for <lead>\", \"schedule the bump\", or \"put <lead> on a 3-day timer\". Creates a task in Interceptly's Tasks tab with the correct timer from stack.md.followup_timers (defaults 2 / 3 / 5 / 5 business days for meeting_proposed / general / referral / cold_bump; Friday→Monday shift on meeting_proposed), and mirrors the task into the Tasks sheet of outreach-mirror.xlsx. Non-ICP Ignore and Not Interested do NOT get tasks — this skill refuses those paths."
+description: "This skill should be used after apply-label completes in the per-reply pipeline, or when the user says \"create a follow-up task\", \"schedule the bump\", or \"put this lead on a three-day timer\". Takes the follow-up-timer keyword proposed by rockstarr-reply:follow-up-timer (meeting_proposed / general / referral / cold_bump / none) and converts it to an Interceptly task with Interceptly's business-days math + Friday→Monday shift for meeting_proposed. Applies stack.md.followup_timers overrides. Mirrors the task into the Tasks sheet of outreach-mirror.xlsx. The `none` keyword is a no-op; Ignore / Not Interested / Bad Fit never get tasks."
 ---
 
 # create-followup-task
@@ -9,15 +9,24 @@ Schedules the bot's next touch on the thread. Interceptly holds
 the authoritative task; the mirror keeps a copy for client
 visibility.
 
+rockstarr-reply proposes; this skill disposes. rockstarr-reply's
+`follow-up-timer` skill returns a keyword (`meeting_proposed` /
+`general` / `referral` / `cold_bump` / `none`). This skill takes
+the keyword, applies `stack.md.followup_timers` overrides, runs
+the business-days math, and creates the Interceptly task.
+
 ## When to run
 
 - Immediately after `apply-label` returns success, for labels
-  that map to a timer (everything EXCEPT Ignore and Not
-  Interested — those are terminal).
+  that map to a timer (everything EXCEPT Ignore, Not Interested,
+  and Bad Fit — those are terminal).
+- After `process-inbox` / `process-my-tasks` receives an
+  `authorized-send` bundle from rockstarr-reply with a
+  non-`none` `proposed_followup_timer` keyword.
 - Called by `mark-booked` to create a meeting-reminder task if
   the client wants one (optional; off by default).
-- On demand when the user says "create a bump task for
-  `<lead>`" — validates timer and reason are known.
+- On demand when the user says "create a bump task for this
+  lead" — validates keyword and reason are known.
 
 ## Preconditions
 
@@ -30,26 +39,42 @@ visibility.
 ## Inputs
 
 - `thread_id` — Interceptly thread reference.
-- `reason` — one of: `meeting_proposed`, `general`, `referral`,
-  `cold_bump`, `book-meeting` (if routing to book-meeting),
+- `reason` — the follow-up-timer keyword from
+  `rockstarr-reply:follow-up-timer`: one of `meeting_proposed`,
+  `general`, `referral`, `cold_bump`, `none`. Plus the two
+  channel-side values this plugin generates itself:
+  `book-meeting` (from the `book-meeting-handoff` bundle) and
   `custom` (for `mark-booked`-initiated meeting reminders).
-- `days` — optional override; defaults to the
-  `stack.md.followup_timers` value for the reason.
+- `days` — optional override; if absent, this skill reads
+  `stack.md.followup_timers[reason]` and falls back to the
+  default day count below.
+
+If `reason` is `none`, refuse with a no-op message. This matches
+rockstarr-reply's contract: `none` means "the keyword-to-task
+contract declines this one."
 
 ## Behavior
 
 ### Step 1 — Resolve the timer
 
-Read `stack.md.followup_timers`. Defaults:
+Precedence:
 
-| reason | business days |
+1. Explicit `days` input — use it verbatim.
+2. Else `stack.md.followup_timers[reason]` — client override.
+3. Else the default day count below.
+
+| reason (keyword) | default business days |
 |---|---|
 | meeting_proposed | 2 |
 | general | 3 |
 | referral | 5 |
 | cold_bump | 5 |
+| flagged_review | 2 (only when caller is the flag branch) |
+| book-meeting | 0 (same-day) |
 
-If the reason is not in the map, use `general` as fallback.
+If the reason is `none`, refuse. If the reason is not in the map
+above and not in `stack.md.followup_timers`, fall back to
+`general` and log `fallback_reason: <original>` into the mirror.
 
 ### Step 2 — Business-day math + Friday→Monday shift
 
@@ -112,13 +137,17 @@ Append to the `Tasks` sheet of `outreach-mirror.xlsx`:
 
 ## Special case — book-meeting task
 
-When a `draft-reply-interceptly` Hot path determines the lead
-has agreed to a time AND supplied all required fields,
-`draft-reply-interceptly` asks THIS skill to create a
-`book-meeting` task instead of scheduling a bump. Use:
+When rockstarr-reply returns a `book-meeting-handoff` bundle,
+`process-inbox` / `process-my-tasks` routes directly to
+`book-meeting` — NOT through this skill. This skill is only
+involved if the pipeline wants a scheduled book-meeting task
+(rare; used when the lead agreed to a slot but supplied fields
+that need operator confirmation before the form runs).
+
+Inputs in that case:
 
 - reason = `book-meeting`
-- due_date = today (same-day)
+- days = 0 (same-day)
 - title = `Book meeting: <lead name>` + proposed time
 
 The `book-meeting` skill polls for these tasks (or is called

@@ -1,18 +1,18 @@
 ---
 name: send-message
-description: "This skill should be used when present-for-approval unlocks with 'send it' (or a clear equivalent) and returns {action: 'send', draft_path}, or when the user says \"send the approved reply for <lead>\", \"ship the message\", or \"send <lead>'s approved draft\". Pastes the approved body into Interceptly's composer via Chrome MCP using the React native-setter pattern, clicks Send (button match by text), logs the send to the Messages sheet, and returns success/failure. Refuses to run on drafts not in /04_approved/outreach/replies/."
+description: "This skill should be used when rockstarr-reply:present-for-approval unlocks with 'send it' (or a clear equivalent) and returns an authorized-send bundle, or when the user says \"send the approved reply for this lead\", \"ship the message\", or \"send the approved draft\". Pastes the approved body into Interceptly's composer via Chrome MCP using the React native-setter pattern, clicks Send (button match by text), logs the send to the Messages sheet, and returns success/failure. Refuses to run on drafts not in /04_approved/replies/."
 ---
 
 # send-message
 
 The only skill that actually posts a message to Interceptly.
-Runs AFTER `present-for-approval` has unlocked the draft. Ships
-one message per call.
+Runs AFTER `rockstarr-reply:present-for-approval` has unlocked
+the draft. Ships one message per call.
 
 ## When to run
 
-- Immediately after `present-for-approval` returns
-  `{action: "send", draft_path: ...}`.
+- Immediately after `rockstarr-reply:present-for-approval`
+  returns an `authorized-send` bundle with a `draft_path`.
 - Never independent of the per-reply pipeline. If someone calls
   this skill with a draft that is not in `/04_approved/` with
   `awaiting_approval: false` and `authorized_at` set, refuse.

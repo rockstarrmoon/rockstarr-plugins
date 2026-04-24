@@ -1,6 +1,6 @@
 ---
 name: metrics-daily
-description: "This skill should be used as the final step of the daily outreach loop, or when the user says \"roll up today's metrics\", \"close out the day\", or \"update the daily outreach scoreboard\". Writes one row per managed account into Metrics (Daily) — unreads processed, sends, labels applied (broken down by label), non-ICP declines, bookings, flags — and appends today's per-account summary into /05_published/outreach/YYYY-MM-DD.md. Runs AFTER every managed account's process-inbox + process-my-tasks have finished."
+description: "This skill should be used as the final step of the daily outreach loop, or when the user says \"roll up today's metrics\", \"close out the day\", or \"update the daily outreach scoreboard\". Writes one row per managed account into the Metrics (Daily) sheet — unreads processed, sends, labels applied (broken down by label), non-ICP declines, bookings, flags, session failures — and appends today's per-account summary into /05_published/outreach/YYYY-MM-DD.md. Runs AFTER every managed account's process-inbox + process-my-tasks have finished."
 ---
 
 # metrics-daily
@@ -19,9 +19,12 @@ End-of-day rollup. One row per managed account per day. Feeds
 
 - Daily loop has finished (or the user explicitly wants a mid-
   day snapshot). For mid-day, tag the row `partial = true`.
-- `outreach-mirror.xlsx` exists and the daily state sheets
-  (Messages, Labels, Tasks, Qualifications, Classifications,
-  Session, Flags, MeetingProposals) have today's rows.
+- `outreach-mirror.xlsx` exists and the daily state sheets owned
+  by this plugin (Campaigns, Session, Qualifications, Messages,
+  Labels, Tasks, MeetingProposals) have today's rows.
+- `/02_inputs/replies/_flags.md` (owned by
+  `rockstarr-reply:flag-for-review`) is read-only to this skill;
+  flag counts come from there.
 
 ## Inputs
 
@@ -46,13 +49,20 @@ today's activity:
 - **non_icp_declines** — count of Qualifications rows with
   verdict = `not_target` today.
 - **bookings** — count of Replies rows with
-  `classification = booked` today, for this account.
-- **flags** — count of Flags rows for this account today.
+  `classification = booked` today, for this account (written by
+  `mark-booked`).
+- **flags** — count of blocks in `/02_inputs/replies/_flags.md`
+  timestamped today for this account. If the file is missing,
+  treat as 0.
 - **tasks_created** — count of Tasks rows created today.
 - **tasks_completed** — count of Tasks rows completed today
   (for this account).
 - **session_failures** — count of Session sheet rows with
   `result = fail` today for this account.
+- **campaigns_configured_today** — count of Campaigns rows with
+  `configured_at` timestamped today.
+- **campaigns_stopped_today** — count of Campaigns rows whose
+  status changed to `paused` or `stopped` today.
 
 ### Step 2 — Write to Metrics (Daily)
 
@@ -78,6 +88,8 @@ Append one row per account to the `Metrics (Daily)` sheet:
 | tasks_created | N |
 | tasks_completed | N |
 | session_failures | N |
+| campaigns_configured_today | N |
+| campaigns_stopped_today | N |
 | partial | true/false |
 
 ### Step 3 — Append per-account summary to published log
@@ -103,6 +115,8 @@ Append to `/05_published/outreach/<YYYY-MM-DD>.md`:
 - Total bookings: N
 - Total flags: N
 - Session failures today: N
+- Campaigns configured today: N
+- Campaigns paused/stopped today: N
 
 ### Notes
 <any session failures, error-log highlights, or partial-day flags>
@@ -118,7 +132,7 @@ If `session_failures > 0` for any account, include a call-out
 block at the top of the daily log:
 
 ```
-> ⚠ Session failure(s) today: <account_label> — see
+> Session failure(s) today: <account_label> — see
 > /02_inputs/outreach/_errors.md. Resolve before the next
 > scheduled run.
 ```
@@ -138,6 +152,9 @@ A brief summary the caller can show the user:
 - **Some managed account's counts can't be aggregated** (mirror
   corruption). Write whatever is available and note the gap in
   the summary. The operator can rerun after fixing the mirror.
+- **`/02_inputs/replies/_flags.md` missing.** Treat flag count as
+  0 and note rockstarr-reply is not installed or has not yet
+  flagged anything.
 
 ## What NOT to do
 

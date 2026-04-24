@@ -1,6 +1,6 @@
 ---
 name: preview-queue
-description: "This skill should be used as the second step of the daily outreach loop (after confirm-session-interceptly passes), or when the user asks to \"preview today's queue\", \"show what the bot plans to do today\", or \"write the daily outreach preview\". Writes a markdown file at 02_inputs/outreach/queue-YYYY-MM-DD.md summarizing planned work per managed account: unread inbox count, overdue task count, due-today task count, active campaigns. Default enabled; togglable via stack.md.outreach_daily_preview=false."
+description: "This skill should be used as the second step of the daily outreach loop (after confirm-session-interceptly passes), or when the user asks to \"preview today's queue\", \"show what the bot plans to do today\", or \"write the daily outreach preview\". Writes a markdown file at 02_inputs/outreach/queue-YYYY-MM-DD.md summarizing planned work per managed account: unread inbox count, overdue task count, due-today task count, active campaigns, flagged-leads count. Default enabled; togglable via stack.md.outreach_daily_preview=false."
 ---
 
 # preview-queue
@@ -33,8 +33,8 @@ For each account in `outreach_accounts[]` order:
 1. If this is NOT the first account, just read the workbook
    state for the counts below — do NOT switch accounts in the
    browser here. This skill is non-sending and non-UI-driving
-   past the current account. Switch + confirm happen in the real
-   per-account pass, not in the preview.
+   past the current account. Switch + confirm happen in the
+   real per-account pass, not in the preview.
 2. If this IS the first account (already on screen from
    `confirm-session-interceptly`), read counts from Interceptly
    directly so the preview reflects Interceptly's actual state,
@@ -50,8 +50,10 @@ For each account, collect:
 - **Active campaigns.** Read the `Campaigns` sheet of
   `outreach-mirror.xlsx`; count rows with `status = running` or
   `started_at` set.
-- **Flagged leads.** Read `_flags.md`; count leads awaiting
-  human review.
+- **Flagged leads.** Read `/02_inputs/replies/_flags.md` (written
+  by `rockstarr-reply:flag-for-review`); count entries for this
+  account awaiting human review. If the file does not exist,
+  treat the count as 0 — no flags have been raised yet.
 
 ### Step 2 — Format the preview
 
@@ -77,6 +79,7 @@ accounts.
 - Overdue tasks: <N>
 - Due-today tasks: <N>
 - Active campaigns: <N>
+- Flagged leads awaiting review: <N>
 
 ### <account_label 2>
 
@@ -84,7 +87,7 @@ accounts.
 
 ## Flagged leads awaiting review
 
-<list from _flags.md — empty if none>
+<list from /02_inputs/replies/_flags.md — empty if none>
 
 ## Today's plan
 
@@ -123,6 +126,9 @@ who find the preview file noise instead of signal.
   unavailable this run."
 - **No managed accounts configured.** Refuse; point at
   `discover-interceptly-accounts`.
+- **rockstarr-reply not installed and `_flags.md` absent.** Drop
+  the flagged-leads section; write a footer noting
+  rockstarr-reply is not installed so no flag queue exists yet.
 
 ## What NOT to do
 
@@ -131,5 +137,5 @@ who find the preview file noise instead of signal.
   `confirm-session-interceptly`.
 - Do not draft, send, label, or create tasks from this skill.
   Preview is read-only.
-- Do not overwrite yesterday's queue file. Each date gets its own
-  file.
+- Do not overwrite yesterday's queue file. Each date gets its
+  own file.

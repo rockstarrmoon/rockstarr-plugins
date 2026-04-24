@@ -1,6 +1,6 @@
 ---
 name: propose-meeting-times
-description: "This skill should be used when draft-reply-interceptly decides a thread is Hot and needs meeting times, or when the user says \"propose meeting times\", \"find 2-3 slots for <lead>\", or \"pull availability\". Reads the client's availability source — either the booking-link page (Calendly / GrowthAmp / similar) via Chrome MCP, or Google Calendar via the shared calendar helper — and returns 2-3 proposed time slots in the next few business days. Optionally biases slots by lead-provided context ('Tuesdays after 3pm'). Shared skill; canonical source will migrate to rockstarr-infra/skills/_shared/ when both outreach variants and reply ship."
+description: "This skill should be used when rockstarr-reply:draft-reply decides a thread is Hot and needs meeting times, or when the user says \"propose meeting times\", \"find two or three slots for a lead\", or \"pull availability\". Reads the client's availability source — either the booking-link page (Calendly / GrowthAmp / similar) via Chrome MCP, or Google Calendar via the shared calendar helper — and returns 2-3 proposed time slots in the next few business days. Optionally biases slots by lead-provided context ('Tuesdays after 3pm'). Shared skill; canonical source will migrate to rockstarr-infra/skills/_shared/ when both outreach variants and reply ship."
 ---
 
 # propose-meeting-times
@@ -19,7 +19,7 @@ led) or `mark-booked` (client-led) records it.
 
 ## When to run
 
-- Called by `draft-reply-interceptly` when the thread is Hot
+- Called by `rockstarr-reply:draft-reply` when the thread is Hot
   (verdict=target + bucket=hot, or any bucket with
   `sub_type=meeting_proposed`).
 - On demand when the user says "propose 2-3 times for `<lead>`"
@@ -137,7 +137,7 @@ slot_count, source, preference_applied.
 
 - **booking_link page didn't render.** Retry once with a 3s
   wait. On second failure, return `source: "unavailable"` and
-  let `draft-reply-interceptly` fall back to "what times work
+  let `rockstarr-reply:draft-reply` fall back to "what times work
   for you this week?" language.
 - **gcal helper returns zero free slots in horizon.** Extend
   horizon to 10 business days and retry. If still zero, return

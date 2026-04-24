@@ -1,6 +1,6 @@
 ---
 name: capture-warm-reply-pattern
-description: "This skill should be used at install time after capture-icp-qualifications, or when the user says \"capture my warm-reply pattern\", \"interview me on how I reply to warm leads\", \"my reply style changed\", or \"update the warm-reply subsection of style-guide.md\". Interviews the client on their go-to move when a curious / warm ICP reply lands — structure, length, opening, closing, what to avoid — and appends the pattern as a subsection under style-guide.md's Channel Adaptation → LinkedIn replies section. The bot has no hardcoded reply pattern; draft-reply-interceptly reads this subsection on every warm-ICP draft."
+description: "This skill should be used at install time after capture-icp-qualifications, or when the user says \"capture my warm-reply pattern\", \"interview me on how I reply to warm leads\", \"my reply style changed\", or \"update the warm-reply subsection of style-guide.md\". Interviews the client on their go-to move when a curious / warm ICP reply lands — structure, length, opening, closing, what to avoid — and appends the pattern as a subsection under style-guide.md's Channel Adaptation → LinkedIn replies section. The bot has no hardcoded reply pattern; rockstarr-reply:draft-reply reads this subsection on every warm-ICP draft."
 ---
 
 # capture-warm-reply-pattern
@@ -14,7 +14,7 @@ in the same PR.
 
 The warm-reply pattern is where the single most common drafting
 mistake lives — "end with worth-a-chat fluff" or "end with a
-link." The pattern captured here tells `draft-reply-interceptly`
+link." The pattern captured here tells `rockstarr-reply:draft-reply`
 exactly what to end on. Thin answers produce thin drafts, which is
 fine feedback to refine the next time this skill runs.
 
@@ -154,7 +154,7 @@ this skill to refresh._
 ## Gate on the daily loop
 
 The daily loop does not hard-gate on this subsection. If it's
-missing, `draft-reply-interceptly` falls back to a neutral
+missing, `rockstarr-reply:draft-reply` falls back to a neutral
 warm-ICP template and flags every such draft with "warm-reply
 pattern not captured — replies may feel generic; run
 `capture-warm-reply-pattern`." So nothing BREAKS; drafts just read
@@ -167,7 +167,7 @@ as generic until the pattern is captured.
   content) and ask them to reconsider. If they insist, write it
   into the subsection with a visible comment —
   `# conflicts with bot design: booking link never pasted in
-  replies`. `draft-reply-interceptly` will still refuse to paste
+  replies`. `rockstarr-reply:draft-reply` will still refuse to paste
   the link; this is the one case where the captured pattern is
   overridden by design.
 - **Client gives thin one-word answers.** Write them as-is.
@@ -178,7 +178,7 @@ as generic until the pattern is captured.
 - Do not write a warm-reply pattern the client did not confirm.
   The whole point of this skill is that the bot has no hardcoded
   pattern of its own.
-- Do not copy the pattern into `draft-reply-interceptly` or
+- Do not copy the pattern into `rockstarr-reply:draft-reply` or
   anywhere else — it lives in `style-guide.md` and is read at
   draft time.
 - Do not overwrite unrelated parts of the style guide. This skill

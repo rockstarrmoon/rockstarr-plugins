@@ -1,6 +1,6 @@
 ---
 name: apply-label
-description: "This skill should be used after send-message returns success in the per-reply pipeline, when present-for-approval's let-it-hang option routes to label-only, or when the user says \"label this thread <label>\", \"tag <lead> as Not Interested\", or \"apply the <label> label\". Uses the Interceptly Labels UI via Chrome MCP (label.click() pattern) to toggle the proposed label on the current thread, with Labels-nav-bug recovery if the UI navigates away to Campaigns. Refuses to apply more than one label per thread per pipeline run — labels are single-value."
+description: "This skill should be used after send-message returns success in the per-reply pipeline, when rockstarr-reply:present-for-approval's let-it-hang option routes to label-only, or when the user says \"label this thread\", \"tag this lead as Not Interested\", or \"apply a label\". Uses the Interceptly Labels UI via Chrome MCP (label.click() pattern) to toggle the proposed label on the current thread, with Labels-nav-bug recovery if the UI navigates away to Campaigns. Refuses to apply more than one label per thread per pipeline run — labels are single-value."
 ---
 
 # apply-label
@@ -12,8 +12,8 @@ per pipeline run.
 
 - Immediately after `send-message` returns success, called by
   the per-reply pipeline.
-- From `present-for-approval` when the operator picks "let it
-  hang" — label-only, no send.
+- From `rockstarr-reply:present-for-approval` when the operator
+  picks "let it hang" — label-only, no send.
 - From `qualify-lead` → `process-inbox` → non-ICP decline path,
   label-only (no send, no task).
 - On demand when the user says "label `<lead>` as `<label>`" —

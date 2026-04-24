@@ -1,18 +1,19 @@
 ---
 name: book-meeting
-description: "This skill should be used when a book-meeting task fires in the daily loop (after the lead agreed to a specific time AND supplied the booking-link-required fields), or when the user says \"book the meeting for <lead>\", \"run the booking-link form\", or \"book this lead on the agreed time\". Runs only when stack.md.booking_mode=automated and availability_source=booking_link. Drives the booking-link page via Chrome MCP: selects the agreed slot, fills required fields, submits. On success calls mark-booked. On failure writes to _errors.md and creates a review-failure note so the operator can recover."
+description: "This skill should be used when a book-meeting task fires in the daily loop (after the lead agreed to a specific time AND supplied the booking-link-required fields), or when the user says \"book the meeting for this lead\", \"run the booking-link form\", or \"book this lead on the agreed time\". Runs only when stack.md.booking_mode=automated and availability_source=booking_link. Drives the booking-link page via Chrome MCP: selects the agreed slot, fills required fields, submits. On success calls mark-booked. On failure writes to _errors.md and creates a review-failure note so the operator can recover."
 ---
 
 # book-meeting
 
-Bot-led booking path. Runs AFTER `draft-reply-interceptly`
+Bot-led booking path. Runs AFTER `rockstarr-reply:draft-reply`
 confirms the lead has agreed to a specific slot AND the booking-
 link form's required fields are all supplied. Never guesses.
 
 ## When to run
 
 - `book-meeting` task fires in the daily loop (created by
-  `create-followup-task` via `draft-reply-interceptly` Hot path).
+  `create-followup-task` when `rockstarr-reply:draft-reply`
+  returns the `book-meeting-handoff` action).
 - On demand when the user says "book `<lead>` at `<time>`" — in
   which case the operator is providing the agreed slot explicitly.
 

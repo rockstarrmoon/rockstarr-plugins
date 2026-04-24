@@ -9,6 +9,14 @@ Human-readable wrap-up. The Friday artifact the client reads
 before Monday. Every metric on the page has a pointer back to the
 workbook so the client can audit.
 
+This plugin owns `outreach-mirror.xlsx` end to end (Campaigns,
+Session, Qualifications, Messages, Labels, Tasks, Replies,
+MeetingProposals, Metrics). The only reply-side surface this
+report reads is `/02_inputs/replies/_flags.md`, which
+`rockstarr-reply:flag-for-review` writes when drafting is
+refused or the operator asks to flag. If `_flags.md` is missing,
+render the report without a flagged-leads section.
+
 ## When to run
 
 - Automatically after `metrics-weekly` finishes.
@@ -29,18 +37,31 @@ workbook so the client can audit.
 ### Step 1 — Read metrics
 
 Read every `Metrics (Weekly)` row for the target ISO week.
+Capture `any_day_partial` per account — surfaces a data-quality
+caveat below.
 
 ### Step 2 — Read adjunct signals
 
-- `Flags` sheet — count of open (unresolved) flagged leads at
-  week end.
-- `_non_icp_log.md` — pull the 3-5 most recent not-target
-  rulings for the "refine icp-qualifications.md" callout.
-- `_errors.md` — count session failures, Chrome MCP drops,
-  Labels-nav-bug hits.
-- `Tasks` sheet — stale `review-reply` tasks (past due and
-  still pending).
-- `Replies` sheet — bookings this week with meeting_datetime.
+From `outreach-mirror.xlsx`:
+
+- `Campaigns` sheet — campaigns configured, paused, stopped this
+  week (based on `configured_at` / `paused_at` / `stopped_at`).
+- `Session` sheet — session-failure heartbeats this week.
+- `Tasks` sheet — stale `review-reply` and `flagged_review` tasks
+  (past due and still pending).
+- `Replies` sheet — bookings this week with `meeting_datetime`.
+- `Qualifications` sheet — `not_target` rulings this week (feed
+  the non-ICP highlights; pull `matching_rule` for the callout).
+
+From the filesystem:
+
+- `/02_inputs/replies/_flags.md` (owned by
+  `rockstarr-reply:flag-for-review`) — count of flagged leads
+  raised this week, and the subset still unresolved at week end.
+  If the file is missing, skip the flagged-leads section and note
+  that rockstarr-reply has not yet flagged anything.
+- `/02_inputs/outreach/_errors.md` — count session failures,
+  Chrome MCP drops, UI regressions.
 
 ### Step 3 — Render the report
 
@@ -58,7 +79,8 @@ schema_version: 1
 # Outreach — Week of <week_start>
 
 _Interceptly is source-of-truth; this report reads from the local
-audit mirror `/02_inputs/outreach/outreach-mirror.xlsx`._
+audit mirror `/02_inputs/outreach/outreach-mirror.xlsx` plus
+`/02_inputs/replies/_flags.md` for the flagged-leads signal._
 
 ## Headline numbers
 
@@ -82,6 +104,9 @@ processed, 52 sends, 4 bookings, 18 flagged, 0 session failures.">
 **Label distribution (this week):** interested=N,
 follow_up=N, ignore=N, not_interested=N, ...
 
+**Campaign changes this week:** configured=N, paused=N,
+stopped=N.
+
 ### <account_label 2>
 
 ... (same shape) ...
@@ -89,31 +114,37 @@ follow_up=N, ignore=N, not_interested=N, ...
 ## Bookings
 
 <bulleted list — one line per booking: lead_name (company),
-campaign, meeting_datetime, source (automated / manual).>
+campaign, meeting_datetime, source (automated / manual). Sourced
+from the Replies sheet.>
 
 ## Flagged leads still open
 
-<bulleted list of Flags rows with resolution = blank. Include
-the reason and the day flagged. If none, say "none.">
+<bulleted list of unresolved entries in /02_inputs/replies/_flags.md.
+Include the reason and the day flagged. If none, say "none." If
+the file is missing, say "rockstarr-reply has not flagged any
+leads yet.">
 
 ## Stale review-reply tasks
 
-<bulleted list of Tasks rows where task_type = review-reply AND
-due_date < today AND status = pending. If none, say "none.">
+<bulleted list of Tasks rows where task_type IN (review-reply,
+flagged_review) AND due_date < today AND status = pending. If
+none, say "none.">
 
-## Non-ICP Log highlights
+## Non-ICP highlights
 
-<3-5 most recent not-target rulings. For each: lead name,
-rule cited, date.>
+<3-5 most recent not_target rulings from the Qualifications sheet.
+For each: lead name, matching_rule cited, date.>
 
 > If you keep seeing patterns here that feel wrong, re-run
-> `capture-icp-qualifications` to tighten the rules.
+> `capture-icp-qualifications` to tighten the baseline rules.
+> `draft-icp-campaign` only narrows; the baseline lives in
+> `/00_intake/icp-qualifications.md`.
 
 ## Session + UI health
 
 - Session failures: N (per account if >0)
 - Chrome MCP drops: N
-- Labels-nav-bug hits: N
+- UI regressions (Interceptly / LinkedIn): N
 
 ## What Rachel / Jon should notice
 
@@ -126,12 +157,18 @@ shifting patterns. Examples the author might write:>
   last week is the signal.
 - Non-ICP declines climbed to X% on <account> — the ICP rules
   may be letting through roles that don't convert. Consider
-  refining.
+  re-running `capture-icp-qualifications`.
 - N stale review-reply tasks sitting past due — block calendar
   time to clear them Monday morning.
-- Zero session failures all week — confirm-session-interceptly
+- Zero session failures all week — `confirm-session-interceptly`
   doing its job.
 ```
+
+If `any_day_partial` was true for any account, add at the bottom:
+
+> Note: one or more daily rollups this week were marked partial.
+> Numbers may be floors rather than truth. Re-run `metrics-daily`
+> with the final flag after the affected day's loop completes.
 
 ### Step 4 — Return
 
@@ -155,6 +192,10 @@ Do NOT editorialize in the metrics tables. Tables are facts.
 
 - **Metrics (Weekly) row is missing for an account.** Skip
   that account's section with a one-line note and continue.
+- **`/02_inputs/replies/_flags.md` missing.** Drop the flagged-
+  leads section with the note above. This is expected if
+  rockstarr-reply is installed but has not flagged anything yet,
+  or if it is not installed at all.
 - **Prev-week deltas blank** (first week, or a missed week).
   Blank Δ is fine.
 - **Long bookings list** (>10 in a week). Cap the rendered list
@@ -163,10 +204,12 @@ Do NOT editorialize in the metrics tables. Tables are facts.
 ## What NOT to do
 
 - Do not fabricate bookings, flags, or error counts. Every
-  number in this report comes from the workbook.
+  number in this report comes from the workbook or from
+  `_flags.md`.
 - Do not editorialize numbers you don't have. If a metric is
   blank, say "no data" rather than assuming.
-- Do not write recommendations that require changing
-  `icp-qualifications.md` without telling the operator to re-
-  run `capture-icp-qualifications`. The bot carries zero
-  opinion on ICP rules.
+- Do not edit `_flags.md`. That file is owned by
+  `rockstarr-reply:flag-for-review`; this report only reads it.
+- Do not recommend changes to `icp-qualifications.md` without
+  pointing at `capture-icp-qualifications` — the file should
+  only be rewritten by that skill.

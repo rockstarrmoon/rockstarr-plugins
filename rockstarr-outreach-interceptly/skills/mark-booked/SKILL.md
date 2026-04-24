@@ -1,6 +1,6 @@
 ---
 name: mark-booked
-description: "This skill should be used whenever a lead has booked a meeting — whether the bot booked via book-meeting, or the client booked manually by phone, email, calendar, or any other path. Trigger phrases: \"mark this lead as booked\", \"<lead> booked a meeting\", \"I booked this lead manually\", \"log the booking\". This is the single source of truth for booking state in the Interceptly variant: it flips the Leads row last-label=Booked, mirrors the Booked label into Interceptly via apply-label, cancels pending Interceptly follow-up tasks for that lead, and writes a Replies row with label=Booked. Both the automated and manual booking paths converge here."
+description: "This skill should be used whenever a lead has booked a meeting — whether the bot booked via book-meeting, or the client booked manually by phone, email, calendar, or any other path. Trigger phrases: \"mark this lead as booked\", \"Jane booked a meeting\", \"I booked this lead manually\", \"log the booking\". This is the single source of truth for booking state in the Interceptly variant: it flips the Leads row last-label=Booked, mirrors the Booked label into Interceptly via apply-label, cancels pending Interceptly follow-up tasks for that lead, and writes a Replies row with label=Booked. Both the automated and manual booking paths converge here."
 ---
 
 # mark-booked
