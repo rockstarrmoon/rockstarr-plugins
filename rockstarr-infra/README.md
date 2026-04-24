@@ -21,6 +21,7 @@ depend on files produced by these skills.
 | `capture-stack`          | Interview client on CRM / LI tool / website / scheduler / email / analytics.             |
 | `approve`                | Promote a draft from `03_drafts/` to `04_approved/` with approval metadata.              |
 | `publish-log`            | Record a shipped output in `05_published/<channel>/` for metrics review.                 |
+| `request-support`        | Draft + send a support email to `ai_support@rockstarrandmoon.com` on client approval.    |
 
 ## Folder contract
 
@@ -284,6 +285,14 @@ that's what we're here for.
   prose-producing Rockstarr bot must run this as the final pass before
   writing a draft to `03_drafts/`. Shared SKILL.md + `references/`
   (phrases, structures, examples); consumers wire it in, do not fork.
+- `skills/_shared/send-notification/` — cross-bot helper that sends a
+  single email from Rockstarr AI to the client via the Rockstarr
+  mailer at `mail.rockstarrandmoon.com`. Used by the planned
+  approvals-digest skill and by any bot that needs to emit an
+  out-of-band notification (draft ready, reply landed, digest rollup).
+  Reads the bearer token from `/rockstarr-ai/00_intake/.rockstarr-mailer.env`
+  (seeded by `scaffold-client`, filled in at onboarding). Do not bypass —
+  drift here creates real inbox-deliverability risk.
 
 ## Customization
 
@@ -308,7 +317,12 @@ that's what we're here for.
 
 ## What this plugin does not do
 
-- It does not draft content, post to LinkedIn, send email, or run
-  outreach. Those are the bot plugins' jobs.
+- It does not draft content, post to LinkedIn, or run outreach. Those
+  are the bot plugins' jobs. It does provide the `send-notification`
+  helper bots use for out-of-band email to the client, but it does not
+  decide when those notifications fire.
+- It does not send email on behalf of the client to third parties
+  (leads, teammates). That flows through `rockstarr-reply-<variant>`
+  using the client's own Gmail or Outlook OAuth.
 - It does not embed or vector-search the knowledge base. v1 is flat
   tagged markdown; embeddings are a v2 feature.

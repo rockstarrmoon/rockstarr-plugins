@@ -28,6 +28,7 @@ Create these directories and placeholder files under the workspace root:
 /rockstarr-ai/
   /00_intake/
     samples/                              # optional voice samples the client drops in
+    .rockstarr-mailer.env                 # mailer bearer + client_id (seeded as template; filled at onboarding)
   /01_knowledge_base/
     /raw/
     /raw/third-party/                     # third-party reference material
@@ -102,7 +103,48 @@ Create these directories and placeholder files under the workspace root:
    `/03_drafts/`, approvals in `/04_approved/`, and shipped outputs in
    `/05_published/`.
 
-7. Do not create files inside `/01_knowledge_base/processed/`,
+7. Seed the mailer env template at
+   `/rockstarr-ai/00_intake/.rockstarr-mailer.env` only if missing:
+
+   ```
+   # Rockstarr AI mailer — credentials and routing for
+   # skills/_shared/send-notification.
+   # DO NOT commit. Rachel or Jon fills in ROCKSTARR_MAILER_TOKEN and the
+   # NOTIFY_* addresses during onboarding. ROCKSTARR_CLIENT_ID defaults
+   # to this client's client_id; change only if this workspace ever
+   # needs to send as a different tenant.
+
+   ROCKSTARR_MAILER_TOKEN=
+   ROCKSTARR_CLIENT_ID=<client_id>
+
+   # Default recipient for most notifications (drafts ready, digests,
+   # publish confirmations). Required — send-notification aborts if
+   # this is empty and no explicit `to` is passed.
+   ROCKSTARR_NOTIFY_TO=
+
+   # Optional override for urgent items (inbound reply needs a fast
+   # answer, outreach broke, session logged out). If set, takes
+   # precedence over ROCKSTARR_NOTIFY_TO when the caller passes
+   # notify_type=urgent. Leave empty to route urgent to the default.
+   ROCKSTARR_NOTIFY_URGENT_TO=
+   ```
+
+   Substitute the real `client_id` into the template before writing.
+   Leave `ROCKSTARR_MAILER_TOKEN` and every `NOTIFY_*` address empty —
+   onboarding is where Rachel or Jon pastes the real values. The
+   `send-notification` helper aborts cleanly with a clear message if
+   the token or the resolved recipient is empty, so the system fails
+   loud rather than silently.
+
+   If the file already exists, do NOT overwrite its contents. On
+   re-run, it is OK to APPEND any of the four supported keys that are
+   missing entirely (e.g. an older workspace scaffolded before the
+   NOTIFY_* fields were added) — preserve every existing line verbatim
+   and only add the missing keys with empty values. If a legacy file
+   still has `ROCKSTARR_NOTIFY_DIGEST_TO`, leave it in place untouched;
+   the helper simply ignores unknown keys.
+
+8. Do not create files inside `/01_knowledge_base/processed/`,
    `/01_knowledge_base/raw/`, or their `third-party/` subdirectories.
    Those are managed by `kb-ingest`. Just create the empty directories.
 
