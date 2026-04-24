@@ -124,19 +124,46 @@ The calling skill supplies:
 4. Write the payload to a temp file (to avoid shell-escaping issues
    with quotes, emojis, or embedded newlines) and POST via Bash:
 
+   Capture curl's exit code AND verbose output so the response
+   interpreter (step 5) can distinguish a sandbox-level egress block
+   from a Worker-level error:
+
    ```bash
    payload=$(mktemp)
    cat > "$payload" <<'JSON'
    <payload>
    JSON
-   curl -sS -X POST https://mail.rockstarrandmoon.com/send \
+   curl_out=$(curl -sS -v -X POST https://mail.rockstarrandmoon.com/send \
      -H "Authorization: Bearer $ROCKSTARR_MAILER_TOKEN" \
      -H "Content-Type: application/json" \
-     --data @"$payload"
+     --data @"$payload" 2>&1)
+   curl_exit=$?
    rm -f "$payload"
    ```
 
-5. Interpret the response:
+5. Interpret the response. Handle the sandbox-egress case BEFORE the
+   generic error cases — its failure mode (curl exit 56 plus an
+   `HTTP/1.1 403 Forbidden` from the CONNECT proxy, often carrying an
+   `X-Proxy-Error: blocked-by-allowlist` header) looks superficially
+   like an unrelated 403 but is actually a Cowork-level block, not a
+   Worker-level one.
+
+   - **Egress blocked by Cowork allowlist** — curl exit 56 AND the
+     verbose output contains `blocked-by-allowlist` (or
+     `403 Forbidden` specifically from `CONNECT`). Do NOT retry. Show
+     the user this exact message:
+
+     > The Cowork sandbox can't reach `mail.rockstarrandmoon.com` yet.
+     > To fix:
+     >
+     > 1. Open **Cowork → Settings → Capabilities**
+     > 2. Add `mail.rockstarrandmoon.com` to the Network Allowlist
+     > 3. Save
+     > 4. **Open a new Cowork conversation** — the allowlist is pinned
+     >    at session start, so your current chat can't pick up the
+     >    change
+     >
+     > Then ask the new conversation to retry this email.
 
    - `{"ok": true, "message_id": "..."}` — success. Return the
      `message_id` to the caller.
@@ -147,9 +174,9 @@ The calling skill supplies:
    - `{"error": "resend_failed", ...}` — Resend rejected the send
      (bounce, suppression, verification issue). Show `detail` so the
      user can triage in the Resend dashboard. Do not auto-retry.
-   - Non-2xx with no JSON body — transient hiccup. Retry once after a
-     two-second wait. If it still fails, abort and surface the HTTP
-     status.
+   - Non-2xx with no JSON body AND not an egress block — transient
+     hiccup. Retry once after a two-second wait. If it still fails,
+     abort and surface the HTTP status.
 
 6. Append one line to `/rockstarr-ai/05_published/_mailer.log` (create
    the file if missing):

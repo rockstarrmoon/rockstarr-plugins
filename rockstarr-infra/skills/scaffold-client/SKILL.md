@@ -148,6 +148,44 @@ Create these directories and placeholder files under the workspace root:
    `/01_knowledge_base/raw/`, or their `third-party/` subdirectories.
    Those are managed by `kb-ingest`. Just create the empty directories.
 
+9. Mailer-reachability preflight (warning only, never blocks scaffold).
+   Run a short probe from the workspace's bash sandbox:
+
+   ```bash
+   curl -sS -m 5 -o /dev/null -w "%{http_code}" \
+     https://mail.rockstarrandmoon.com/healthz
+   ```
+
+   Three outcomes:
+
+   - **`200`** — the sandbox can reach the Rockstarr mailer. Include
+     a `✓ mailer reachable` line in the output summary and move on.
+   - **curl exit 56 with proxy `403` or `blocked-by-allowlist` in the
+     output** — sandbox egress is blocked. Print a WARNING block in
+     the output summary (do not abort the scaffold):
+
+     > ⚠ Heads up: the Cowork sandbox can't reach `mail.rockstarrandmoon.com`
+     > yet. Your scaffold is complete, but bot notifications will fail
+     > until you:
+     >
+     > 1. Open **Cowork → Settings → Capabilities**
+     > 2. Add `mail.rockstarrandmoon.com` to the Network Allowlist
+     > 3. Save
+     > 4. **Open a new Cowork conversation** — the allowlist is pinned
+     >    at session start, so your current chat can't pick up the
+     >    change until you open a new one.
+
+   - **Any other failure** (DNS miss, connection timeout, 5xx from the
+     Worker, etc.) — print a shorter warning noting the failure and
+     advising the user to re-run the probe from their next chat:
+
+     > ⚠ Mailer probe returned `<outcome>`. Scaffold is complete; check
+     > with Rockstarr support if notifications do not work.
+
+   This preflight is advisory. Never block scaffolding on its
+   result — a client may legitimately be setting up offline and
+   intend to enable networking later.
+
 ## Output to the user
 
 After scaffolding, print a short summary: the workspace path, the

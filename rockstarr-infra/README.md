@@ -92,6 +92,35 @@ is the foundation plugin — the bots we'll add later depend on it.
 > Nothing else will be visible to install yet. Your bots will appear
 > after we've captured your tool stack in step 5.
 
+### Step 1b — Allow the Rockstarr AI mailer
+
+Rockstarr bots email you notifications — draft-ready pings,
+approvals digests, urgent replies — through a Rockstarr-controlled
+mail service at `mail.rockstarrandmoon.com`. Cowork's sandbox
+enforces an outbound network allowlist by default, so the mail
+service needs to be explicitly permitted before anything can reach
+it.
+
+Open **Cowork → Settings → Capabilities** and add this host to
+the Network Allowlist:
+
+```
+mail.rockstarrandmoon.com
+```
+
+Save.
+
+> **Important:** the allowlist is read once when a Cowork
+> conversation starts. Your current chat was created *before* the
+> change, so it can't see the new entry. **Close this conversation
+> and start a new one in the same workspace before continuing.** From
+> the new chat, everything in the rest of this walkthrough works
+> normally.
+
+If your Cowork plan is Team or Enterprise, your workspace admin may
+need to make this change on your behalf. Ask them to allowlist
+`mail.rockstarrandmoon.com` in the workspace's Capabilities settings.
+
 ### Step 2 — Select your working folder
 
 In Cowork, select (or create) the folder on your computer that will
