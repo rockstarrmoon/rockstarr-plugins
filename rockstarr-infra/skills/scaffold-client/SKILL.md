@@ -127,6 +127,14 @@ Create these directories and placeholder files under the workspace root:
    # precedence over ROCKSTARR_NOTIFY_TO when the caller passes
    # notify_type=urgent. Leave empty to route urgent to the default.
    ROCKSTARR_NOTIFY_URGENT_TO=
+
+   # Reply-To for any bot email sent to this client. When the client
+   # hits Reply on a digest / draft-ready / urgent notification, it
+   # routes here. Defaults to the assigned Rockstarr strategist.
+   # Override only if a different person on the R&M team owns this
+   # account. The Worker's shared fallback (hello@rockstarrandmoon.com)
+   # applies only if this field is empty.
+   ROCKSTARR_STRATEGIST_EMAIL=rachel@rockstarrandmoon.com
    ```
 
    Substitute the real `client_id` into the template before writing.
@@ -137,12 +145,15 @@ Create these directories and placeholder files under the workspace root:
    loud rather than silently.
 
    If the file already exists, do NOT overwrite its contents. On
-   re-run, it is OK to APPEND any of the four supported keys that are
+   re-run, it is OK to APPEND any of the five supported keys that are
    missing entirely (e.g. an older workspace scaffolded before the
-   NOTIFY_* fields were added) — preserve every existing line verbatim
-   and only add the missing keys with empty values. If a legacy file
-   still has `ROCKSTARR_NOTIFY_DIGEST_TO`, leave it in place untouched;
-   the helper simply ignores unknown keys.
+   NOTIFY_* or STRATEGIST fields were added) — preserve every existing
+   line verbatim and only add the missing keys. When appending a
+   missing `ROCKSTARR_STRATEGIST_EMAIL`, seed it with the default
+   `rachel@rockstarrandmoon.com` rather than an empty value; all other
+   appended keys seed empty. If a legacy file still has
+   `ROCKSTARR_NOTIFY_DIGEST_TO`, leave it in place untouched; the
+   helper simply ignores unknown keys.
 
 8. Do not create files inside `/01_knowledge_base/processed/`,
    `/01_knowledge_base/raw/`, or their `third-party/` subdirectories.

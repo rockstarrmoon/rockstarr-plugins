@@ -38,6 +38,7 @@ using the client's own Gmail or Outlook OAuth.
   ROCKSTARR_NOTIFY_TO=<default recipient for this workspace>
   # optional:
   ROCKSTARR_NOTIFY_URGENT_TO=<recipient for notify_type=urgent>
+  ROCKSTARR_STRATEGIST_EMAIL=<R&M strategist that replies route to>
   ```
 
   The token is the shared Rockstarr mailer bearer, issued during
@@ -65,8 +66,13 @@ The calling skill supplies:
   will show this instead of `body_text`.
 - `tag` — optional. Short tag used for Resend analytics, e.g.,
   `approvals_digest`, `draft_ready`, `reply_needed`.
-- `reply_to` — optional override; default is the mailer's
-  `DEFAULT_REPLY_TO` (`hello@rockstarrandmoon.com`).
+- `reply_to` — optional override. Resolution order when omitted:
+  1. `ROCKSTARR_STRATEGIST_EMAIL` from the env file (per-client).
+  2. The mailer's `DEFAULT_REPLY_TO` fallback
+     (`hello@rockstarrandmoon.com` — shared R&M inbox).
+  Most client-bound emails should rely on (1). Callers that route to a
+  non-client recipient (e.g. `request-support` → `ai_support@...`) pass
+  an explicit `reply_to` to override this chain.
 
 ## Steps
 
@@ -80,6 +86,9 @@ The calling skill supplies:
      did not pass an explicit `to`. May be empty if caller always
      passes `to`.
    - `ROCKSTARR_NOTIFY_URGENT_TO` — optional.
+   - `ROCKSTARR_STRATEGIST_EMAIL` — optional; when present, used as
+     the default `reply_to` for any send where the caller did not
+     pass one explicitly.
 
    Ignore any unknown keys (e.g. a legacy `ROCKSTARR_NOTIFY_DIGEST_TO`
    left in place from an older scaffold).
@@ -104,7 +113,12 @@ The calling skill supplies:
    default. Unknown `notify_type` values fall through to rule 3 as if
    the caller had passed `default`.
 
-3. Assemble the JSON payload:
+3. Assemble the JSON payload. Resolve `reply_to` in this order:
+
+   1. Caller-supplied `reply_to` → use it.
+   2. Else if `ROCKSTARR_STRATEGIST_EMAIL` is set and non-empty → use it.
+   3. Else → omit the field and let the Worker's `DEFAULT_REPLY_TO`
+      fallback kick in.
 
    ```json
    {
@@ -113,7 +127,7 @@ The calling skill supplies:
      "subject": "<subject>",
      "text": "<body_text>",
      "html": "<body_html, if provided>",
-     "reply_to": "<reply_to, if provided>",
+     "reply_to": "<resolved reply-to, if any>",
      "tag": "<tag, if provided>"
    }
    ```
