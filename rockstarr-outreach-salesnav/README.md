@@ -40,7 +40,7 @@ coordination across outreach + nurture, SLA escalations) belong in
 | `detect-accepts` | Detect newly accepted connections and flip `Leads.state=accepted`. |
 | `generate-message-tasks` | On accept, seed a 3-step sequence at day-of-accept / +3 / +7. |
 | `send-scheduled-messages` | Execute `message-step-N` and follow-up tasks due today via Sales Nav messaging. |
-| `detect-replies` | Pull inbound messages, append to Replies, cancel pending tasks for the lead, hand the thread to `rockstarr-reply`. |
+| `detect-replies` | Pull inbound messages, append to Replies, cancel pending tasks for the lead, drive `rockstarr-reply` synchronously to stage a draft per inbound, then fire one urgent client email summarizing every newly-staged draft via `rockstarr-infra:notify-reply-ready`. |
 | `send-approved-reply` | Send a reply approved by `rockstarr-reply`, seed a 2-day follow-up task. |
 | `propose-meeting-times` | Read the availability source (booking link OR Google Calendar) and return 2–3 proposed slots for the reply. Ships inline for V0.1; will migrate to `rockstarr-infra/skills/_shared/`. |
 | `book-meeting` | Automated booking path: drive the booking-link form via Chrome MCP once the lead has agreed to a time and supplied the required fields. |
@@ -82,6 +82,24 @@ already produced:
   before the file lands in `03_drafts/` or `06_reports/`. If
   `stop-slop` is not discoverable, these skills refuse and point the
   user back at `rockstarr-infra`.
+- `skills/notify-reply-ready/` — fired by `detect-replies` at the end
+  of each run as a single urgent email summarizing every reply draft
+  staged on this pass. Ships in `rockstarr-infra >= 0.8.0`. If
+  unavailable, `detect-replies` still stages drafts and creates the
+  `review-reply` tasks but skips the urgent email and surfaces an
+  `infra_too_old` entry in its `notify_skipped_reasons` output. The
+  next morning's `approvals-digest` covers the gap.
+
+This plugin also requires:
+
+- `rockstarr-reply >= 0.2.0` — the build that writes the v0.8.0
+  front-matter contract `notify-reply-ready` reads (`channel: "reply"`
+  + `source_channel`, `inbound_excerpt`, `draft_body`, `path_relative`,
+  optional `draft_options[]`). `detect-replies` validates the contract
+  on every staged path before handing the list off and drops paths
+  with incomplete front-matter.
+- `rockstarr-mailer >= 0.2.1` — claude:// URL scheme support for the
+  per-draft deep-link in the urgent email.
 
 If `stack.md` is missing any of the outreach keys, skills refuse to run
 and point the user back at `rockstarr-infra:capture-stack`.
@@ -148,7 +166,7 @@ At `stack.md.outreach_daily_run_time` (client's local time):
 2. `preview-queue` — write `queue-<date>.md` (if `outreach_daily_preview: true`).
 3. `detect-accepts` → `generate-message-tasks` — seed sequences.
 4. `send-scheduled-messages` — execute message-step-N + follow-up tasks due today.
-5. `detect-replies` — route inbound to `rockstarr-reply`; cancel pending tasks for the lead.
+5. `detect-replies` — capture inbound, cancel pending tasks for the lead, drive `rockstarr-reply` synchronously to stage a draft per inbound, fire one urgent email summarizing the batch.
 6. `daily-connect` — compute budget, round-robin across campaigns, send connects.
 7. `metrics-daily` — roll up today's numbers per campaign; update ISO-week totals.
 
@@ -170,10 +188,15 @@ loop). Event-driven paths — `send-approved-reply`, `book-meeting`,
 | Start / stop | Client triggers `register-campaign` and `stop-campaign`. The bot never starts or stops a campaign on its own. |
 
 No SLA on `review-reply` approvals — stale items surface in the weekly
-report's "bot heartbeat" callout. A cross-bot daily approvals digest
-is on `rockstarr-infra`'s backlog; when it ships, the `review-reply`
-drafts this bot writes will carry standardized `awaiting-approval`
-front-matter so the digest can pick them up without bot-specific code.
+report's "bot heartbeat" callout. The cross-bot
+`rockstarr-infra:approvals-digest` runs every morning and surfaces every
+still-pending `review-reply` (and every other awaiting-approval draft
+across bots) on the standardized front-matter contract that
+`rockstarr-reply >= 0.2.0` writes. The `notify-reply-ready` urgent
+email fired by `detect-replies` is an *acceleration* of the digest for
+the just-staged drafts, not a replacement — a draft staged at 9:14am
+appears in the urgent email at 9:15am AND in the next morning's
+digest if it hasn't been approved by then.
 
 ## Versioning
 
@@ -217,6 +240,23 @@ front-matter so the digest can pick them up without bot-specific code.
   the stale-task callout are exempt as structural artifacts. Both
   skills refuse if `stop-slop` is not discoverable. Produced-by
   stamps bumped.
+- `0.1.5` — `notify-reply-ready` integration. `detect-replies` now
+  drives `rockstarr-reply` synchronously to stage a reply draft per
+  inbound (instead of just signalling), accumulates the resulting
+  paths into `staged_paths[]`, and at end-of-run fires a single
+  urgent client email via `rockstarr-infra:notify-reply-ready` that
+  summarizes every newly-staged draft with a `claude://` deep-link
+  per card. Empty batch = silent skip (the feature). `detect-replies`
+  validates each staged path's front-matter against the v0.8.0
+  contract before the call and drops paths with incomplete
+  front-matter into `notify_skipped_reasons`. Output block gains
+  `drafts_staged`, `book_meeting_handoffs`, `notify_message_id`, and
+  `notify_skipped_reasons[]`. Requires `rockstarr-infra >= 0.8.0`,
+  `rockstarr-reply >= 0.2.0`, `rockstarr-mailer >= 0.2.1`. Existing
+  `rockstarr-reply not installed` and per-thread error fallbacks
+  preserved — those paths skip the urgent email and let the next
+  morning's `approvals-digest` cover the gap. No other skills
+  changed.
 - Deferred to later versions: `force-send-today`, `refresh-lead-list`,
   `gcal-auto-booking`, weighted multi-campaign pacing, cross-bot touch
   caps.
