@@ -85,6 +85,13 @@ Create these directories and placeholder files under the workspace root:
      client_name   = "Acme Corp"
      created_at    = "<ISO 8601 timestamp, now>"
      rockstarr_infra_version = "<current_version from step 2>"
+
+     [approvals]
+     # Pending count above which the weekly strategist backlog alert
+     # fires. Default 25. Edit per-client based on their volume and
+     # SLA. Read by skills/approvals-backlog-alert; also informs
+     # the daily digest's rendered-list cap.
+     strategist_alert_threshold = 25
      ```
 
    - **If the file exists**, do a line-level update of only the
@@ -93,6 +100,11 @@ Create these directories and placeholder files under the workspace root:
      comments the file already contains. If `rockstarr_infra_version`
      is missing from the file, append it. No-op if the value is
      already current.
+
+     If the `[approvals]` block is missing entirely, append it with
+     the default `strategist_alert_threshold = 25`. Never overwrite
+     an existing `[approvals]` block — operators tune the threshold
+     per-client and that customization is sticky.
 
    This means every idempotent re-scaffold stamps the client with the
    plugin version they're now on, so operators can tell at a glance
@@ -155,11 +167,59 @@ Create these directories and placeholder files under the workspace root:
    `ROCKSTARR_NOTIFY_DIGEST_TO`, leave it in place untouched; the
    helper simply ignores unknown keys.
 
-8. Do not create files inside `/01_knowledge_base/processed/`,
+8. Wire the approval-related scheduled tasks. Two recurring jobs
+   need to exist in this client's Cowork for the approvals system
+   to fire on its own. Use `mcp__scheduled-tasks__create_scheduled_task`
+   to register each.
+
+   Before creating, call `mcp__scheduled-tasks__list_scheduled_tasks`
+   and check whether a task with the matching `taskName` already
+   exists. If it does, leave it alone — operators sometimes adjust
+   the cron locally and re-runs of scaffold-client should never
+   stomp on those edits. If it does not exist, create it.
+
+   **Daily approvals digest (client-bound):**
+
+   ```
+   taskName       = "approvals-digest"
+   cronExpression = "0 6 * * *"        # 6:00 am local
+   prompt         = "Run the approvals-digest skill in
+                    rockstarr-infra. Email the daily digest if
+                    there are pending items in
+                    /rockstarr-ai/03_drafts/; otherwise exit
+                    silently."
+   ```
+
+   **Weekly backlog alert (strategist-bound):**
+
+   ```
+   taskName       = "approvals-backlog-alert"
+   cronExpression = "0 8 * * 1"        # Monday 8:00 am local
+   prompt         = "Run the approvals-backlog-alert skill in
+                    rockstarr-infra. Email the strategist if
+                    pending count exceeds the
+                    [approvals].strategist_alert_threshold in
+                    client.toml; otherwise exit silently."
+   ```
+
+   Both crons evaluate in the user's local timezone (per the
+   schedule skill's contract). If the client wants a different
+   time or weekday, ASK — never assume — and override the cron
+   with their preferred slot before creating the task. The
+   threshold for the backlog alert is config in `client.toml`'s
+   `[approvals]` block (seeded in step 5), separate from the
+   schedule.
+
+   In the output summary, note for each task: created vs.
+   already-existed, the resolved cron, and the local time it
+   maps to. This is the only signal the operator gets that the
+   approvals emails are actually wired to fire.
+
+9. Do not create files inside `/01_knowledge_base/processed/`,
    `/01_knowledge_base/raw/`, or their `third-party/` subdirectories.
    Those are managed by `kb-ingest`. Just create the empty directories.
 
-9. Mailer-reachability preflight (warning only, never blocks scaffold).
+10. Mailer-reachability preflight (warning only, never blocks scaffold).
    Run a short probe from the workspace's bash sandbox:
 
    ```bash

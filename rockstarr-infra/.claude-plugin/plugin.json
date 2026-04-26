@@ -1,7 +1,7 @@
 {
   "name": "rockstarr-infra",
-  "version": "0.7.0",
-  "description": "Rockstarr AI infrastructure plugin. Scaffolds the per-client folder, ingests the workbook, generates the style guide, runs the knowledge base, and exposes shared utilities every Rockstarr bot depends on.",
+  "version": "0.8.0",
+  "description": "Rockstarr AI infrastructure plugin. Scaffolds the per-client folder, ingests the workbook, generates the style guide, runs the knowledge base, captures the tool stack, and exposes shared utilities every Rockstarr bot depends on. Ships the cross-bot approvals + urgent-reply layer (approvals-digest daily client-bound email, approvals-backlog-alert weekly strategist-bound email when the queue exceeds a configurable threshold, notify-reply-ready urgent client-bound email when an outreach reply lands) with scheduled tasks wired at scaffold time.",
   "author": {
     "name": "Rockstarr & Moon"
   }

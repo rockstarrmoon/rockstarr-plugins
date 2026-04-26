@@ -12,16 +12,19 @@ depend on files produced by these skills.
 
 ## Skills
 
-| Skill                    | Purpose                                                                                  |
-|--------------------------|------------------------------------------------------------------------------------------|
-| `scaffold-client`        | Create `/rockstarr-ai/` folder layout and `client.toml`.                                 |
-| `ingest-workbook`        | Parse `client-workbook.docx` → `client-profile.md`.                                      |
-| `generate-style-guide`   | Produce `style-guide.md` from profile + voice samples using the ported Rockstarr prompt. |
-| `kb-ingest`              | Clean and tag raw knowledge-base files into `processed/` with a keyword index.           |
-| `capture-stack`          | Interview client on CRM / LI tool / website / scheduler / email / analytics.             |
-| `approve`                | Promote a draft from `03_drafts/` to `04_approved/` with approval metadata.              |
-| `publish-log`            | Record a shipped output in `05_published/<channel>/` for metrics review.                 |
-| `request-support`        | Draft + send a support email to `ai_support@rockstarrandmoon.com` on client approval.    |
+| Skill                       | Purpose                                                                                                                                                          |
+|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `scaffold-client`           | Create `/rockstarr-ai/` folder layout, `client.toml` (with `[approvals]` block), and the daily-digest + weekly-backlog scheduled tasks.                          |
+| `ingest-workbook`           | Parse `client-workbook.docx` → `client-profile.md`.                                                                                                              |
+| `generate-style-guide`      | Produce `style-guide.md` from profile + voice samples using the ported Rockstarr prompt.                                                                         |
+| `kb-ingest`                 | Clean and tag raw knowledge-base files into `processed/` with a keyword index.                                                                                   |
+| `capture-stack`             | Interview client on CRM / LI tool / website / scheduler / email / analytics.                                                                                     |
+| `approve`                   | Promote a draft from `03_drafts/` to `04_approved/` with approval metadata.                                                                                      |
+| `publish-log`               | Record a shipped output in `05_published/<channel>/` for metrics review.                                                                                         |
+| `request-support`           | Draft + send a support email to `ai_support@rockstarrandmoon.com` on client approval.                                                                            |
+| `approvals-digest`          | Daily 6 am cross-bot email to the client listing items pending approval, sorted most-recent first, with `claude://` deep-links per item. Silent on empty days.    |
+| `approvals-backlog-alert`   | Weekly Monday 8 am email to the client's Rockstarr strategist when pending count exceeds `[approvals].strategist_alert_threshold` (default 25). Silent under it. |
+| `notify-reply-ready`        | Urgent email to the client when an outreach reply lands and a draft is staged. Per-reply card with lead context, inbound excerpt, classification, drafted body, and `claude://` deep-link. Routed via `notify_type=urgent`. Called by outreach `detect-replies` (batched) or `rockstarr-reply:draft-reply` (single). |
 
 ## Folder contract
 
@@ -315,13 +318,14 @@ that's what we're here for.
   writing a draft to `03_drafts/`. Shared SKILL.md + `references/`
   (phrases, structures, examples); consumers wire it in, do not fork.
 - `skills/_shared/send-notification/` — cross-bot helper that sends a
-  single email from Rockstarr AI to the client via the Rockstarr
-  mailer at `mail.rockstarrandmoon.com`. Used by the planned
-  approvals-digest skill and by any bot that needs to emit an
-  out-of-band notification (draft ready, reply landed, digest rollup).
-  Reads the bearer token from `/rockstarr-ai/00_intake/.rockstarr-mailer.env`
-  (seeded by `scaffold-client`, filled in at onboarding). Do not bypass —
-  drift here creates real inbox-deliverability risk.
+  single email from Rockstarr AI to the client (or their strategist)
+  via the Rockstarr mailer at `mail.rockstarrandmoon.com`. Used by
+  `approvals-digest`, `approvals-backlog-alert`, `notify-reply-ready`,
+  `request-support`, and any bot that needs to emit an out-of-band
+  notification (draft ready, reply landed, digest rollup). Reads the
+  bearer token from `/rockstarr-ai/00_intake/.rockstarr-mailer.env`
+  (seeded by `scaffold-client`, filled in at onboarding). Do not
+  bypass — drift here creates real inbox-deliverability risk.
 
 ## Customization
 
@@ -334,15 +338,55 @@ that's what we're here for.
   land the canonical text under `skills/_shared/references/` and have
   the consuming skill reference it.
 
+## Versioning
+
+- `0.7.0` — `request-support` skill plus shared `send-notification`
+  helper and `.rockstarr-mailer.env` scaffolding. First version where
+  bots can email the client out-of-band.
+- `0.8.0` — Cross-bot approvals + urgent-reply layer.
+  - New skill: `approvals-digest`. Daily 6 am client-bound email with
+    a digest of every pending draft across every bot, sorted
+    most-recent first by file mtime. Each item carries a
+    `claude://cowork/new?q=...` deep-link that opens Claude Desktop
+    with `Show me the draft at <path> for review.` pre-typed. Silent
+    on empty days.
+  - New skill: `approvals-backlog-alert`. Weekly Monday 8 am email
+    to the client's Rockstarr strategist when pending count exceeds
+    the configured threshold. Routed to `ROCKSTARR_STRATEGIST_EMAIL`
+    with `reply_to` set to the client's mailbox so a reply lands with
+    them directly.
+  - New skill: `notify-reply-ready`. Urgent client-bound email when
+    an outreach reply lands and a draft is staged. Per-reply card
+    with lead context, inbound excerpt, classification, the drafted
+    body rendered inline, and a `claude://` deep-link straight into
+    the present-for-approval flow. Routes via `notify_type=urgent`
+    and is called by outreach variants' `detect-replies` (batched
+    across the daily run) or by `rockstarr-reply:draft-reply` for
+    synchronous single-thread use.
+  - New per-client config: `[approvals] strategist_alert_threshold`
+    in `client.toml` (default 25). Seeded by `scaffold-client`.
+  - `scaffold-client` now wires both recurring scheduled tasks
+    (digest + backlog alert) via
+    `mcp__scheduled-tasks__create_scheduled_task` at intake time.
+    `notify-reply-ready` is event-driven, not scheduled — no cron
+    wiring required.
+  - **Mailer prerequisite:** rockstarr-mailer's `safeUrl()` must
+    allow the `claude://` scheme for any of the three skills'
+    deep-links to render. Patched in the mailer's matching release;
+    the skills still function if the patch isn't deployed (file
+    paths work without the link), the convenience layer just stays
+    dark until it is.
+  - **Caller integration outstanding:** `notify-reply-ready` is a
+    shared infra skill but the wiring lives in the callers.
+    `rockstarr-reply:draft-reply` and the outreach variants'
+    `detect-replies` skills need an explicit invocation step
+    appended to call this skill with the just-staged paths. Wire
+    that in the matching plugin bumps before the urgent
+    notification fires for real.
+
 ## Backlog / future
 
-- `approvals-digest` — cross-bot infra skill that reads standardized
-  `awaiting-approval` front-matter from every `03_drafts/<channel>/`
-  and surfaces a single daily digest of items waiting on the client.
-  Not blocking v0.2 of the content bot, but the reason every draft a
-  Rockstarr bot writes must carry that front-matter. Every new drafting
-  skill across every bot should land with the front-matter in place so
-  the digest works the day it ships.
+(Empty — every entry that was here in 0.7 is now shipped in 0.8.)
 
 ## What this plugin does not do
 
