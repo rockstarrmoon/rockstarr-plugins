@@ -1,6 +1,6 @@
 ---
 name: process-my-tasks
-description: "This skill should be used in the daily outreach loop after process-inbox completes for the currently-active managed account, or when the user says \"process my tasks\", \"run the Interceptly My Tasks pass\", or \"handle overdue and due-today tasks\". Opens Interceptly → My Tasks, sorts by Due date oldest-first, and for each overdue or due-today task runs qualify-lead locally, then hands the thread off to rockstarr-reply via the same channel-agnostic handoff bundle process-inbox uses. Executes the returned bundle's channel-side work (send-message → apply-label → create-followup-task, or flag, or book-meeting-handoff). Walks every page — the bot does not stop after page 1."
+description: "This skill should be used in the daily outreach loop after process-inbox completes for the currently-active managed account, or when the user says \"process my tasks\", \"run the Interceptly My Tasks pass\", or \"handle overdue and due-today tasks\". Opens Interceptly → My Tasks, sorts by Due date oldest-first, and for each overdue or due-today task runs qualify-lead locally, then hands the thread off to rockstarr-reply via the same channel-agnostic handoff bundle process-inbox uses. Has the same two modes process-inbox has. In foreground mode (default) it executes the returned bundle's channel-side work (send-message → apply-label → create-followup-task, or flag, or book-meeting-handoff). In background mode it stops after draft-reply stages a draft, accumulates staged paths, and returns them. Always returns staged_paths plus a per-task outcome list. book-meeting tasks always route directly to book-meeting in both modes — the close was authorized on a prior turn. Walks every page — the bot does not stop after page 1."
 ---
 
 # process-my-tasks
@@ -17,6 +17,19 @@ due-date instead of an unread reply).
 - On demand when the user says "process my tasks", "run overdue
   + due-today for this account", or "the task queue is piling
   up."
+
+## Inputs
+
+- `mode` — `foreground` (default) or `background`. Same semantics
+  as `process-inbox`. In background mode, draft-producing branches
+  (`follow-up`, `review-reply`, `flagged_review`) stop after
+  `draft-reply` stages a draft and accumulate the path; deterministic
+  branches (label-only, flag) execute their channel-side work
+  immediately. `book-meeting` tasks fire `book-meeting` directly in
+  BOTH modes — the booking substance was authorized on a previous
+  reply turn, so `book-meeting` is just execution.
+- (Implicit) the currently-active managed account, established by
+  the most recent `switch-account` call in this run.
 
 ## Preconditions
 
@@ -42,19 +55,28 @@ For each task row, oldest-first:
 2. Open the lead's thread (click the row; Interceptly routes
    task rows to the underlying thread).
 3. Branch on `task_type`:
-   - `book-meeting` — route directly to `book-meeting`. Do NOT
-     call rockstarr-reply. The close is the booking, not a reply.
-   - `follow-up` / `review-reply` — run the same handoff as
-     `process-inbox`:
+   - `book-meeting` — route directly to `book-meeting` in BOTH
+     modes. Do NOT call rockstarr-reply. The close is the booking,
+     not a reply, and the substance was authorized on a prior turn.
+   - `follow-up` / `review-reply` / `flagged_review` — run the same
+     handoff as `process-inbox`:
      a. Read right-panel context + current thread body.
      b. `qualify-lead` locally.
-     c. Build the handoff bundle. For `follow-up` tasks set
+     c. Build the handoff bundle (including `source_channel_label`
+        per `process-inbox` Step 4). For `follow-up` tasks set
         `intent_hint` per the task metadata (typical: `bump` for
         cold_bump follow-ups; `referral-pivot` for referral
         follow-ups; `null` otherwise).
-     d. Call rockstarr-reply.
+     d. Call rockstarr-reply. In foreground mode, the chain is
+        classify-reply → draft-reply → present-for-approval. In
+        background mode, the chain stops at draft-reply; the
+        staged path is appended to this run's `staged_paths`
+        accumulator and Step 6 is skipped for this task.
      e. Execute the returned bundle per `process-inbox` Step 6
-        (a/b/c/d) — same code path.
+        (a/b/c/d) — same code path. Background mode runs only
+        sub-steps 6b and 6c (deterministic non-draft outcomes);
+        6a and 6d are skipped because there is no operator
+        approval available in this run.
 4. If the lead's thread has a new inbound reply since the task
    was created (an unread that `process-inbox` already processed
    OR a race-condition reply that landed between inbox and
@@ -74,8 +96,28 @@ bot does NOT stop after the first page. Stop only when the filter
 ### Step 4 — Handoff
 
 When no overdue or due-today tasks remain for this account,
-return control to the daily loop. The loop calls
-`switch-account` to move to the next managed account.
+return control to the caller. Return shape (matches
+`process-inbox`):
+
+```
+{
+  account_label: "<active managed account>",
+  processed_count: <int>,        # tasks worked this run
+  staged_paths: [
+    "03_drafts/replies/<file>",
+    ...
+  ],
+  outcomes: [
+    { task_type, lead_name, action, mode_branch, notes? },
+    ...
+  ]
+}
+```
+
+`action` values are the union of `process-inbox`'s set plus
+`booked` (from the `book-meeting` branch). The daily-loop caller
+accumulates `staged_paths` into the global accumulator before
+calling `switch-account` to move to the next managed account.
 
 ## Task types the bot handles here
 
@@ -101,6 +143,15 @@ return control to the daily loop. The loop calls
 - Afternoon re-runs of the daily loop do NOT re-run this skill.
   Only the morning run processes tasks. Afternoon is inbox-only
   (per the schedule spec).
+- Background mode never produces an `authorized-send` or
+  `book-meeting-handoff` outcome from a `follow-up` /
+  `review-reply` / `flagged_review` task. Approval-gated
+  outcomes wait for the operator to open the urgent notify email
+  and authorize via Cowork.
+- `book-meeting` task type ALWAYS executes `book-meeting`,
+  including in background mode. The booking substance was
+  authorized when the operator approved the prior reply that
+  produced the agreed time + lead_fields.
 
 ## Failure modes
 

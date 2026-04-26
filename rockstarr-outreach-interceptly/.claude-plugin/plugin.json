@@ -1,7 +1,7 @@
 {
   "name": "rockstarr-outreach-interceptly",
-  "version": "0.1.1",
-  "description": "Rockstarr AI LinkedIn outreach plugin for clients who run Interceptly. Owns the Interceptly integration end-to-end: account discovery, per-account persona capture, campaign lifecycle (draft, launch, pause, stop), multi-account session confirmation, the daily inbox + tasks loop, per-reply channel I/O (send, label, follow-up task, meeting proposal, booking), and outreach-side metrics + weekly reporting. Hands every inbound reply to rockstarr-reply for drafting and operator approval, then executes the returned bundle inside Interceptly.",
+  "version": "0.2.0",
+  "description": "Rockstarr AI LinkedIn outreach plugin for clients who run Interceptly. Owns the Interceptly integration end-to-end: account discovery, per-account persona capture, campaign lifecycle (draft, launch, pause, stop), multi-account session confirmation, the daily inbox + tasks loop, per-reply channel I/O (send, label, follow-up task, meeting proposal, booking), and outreach-side metrics + weekly reporting. Hands every inbound reply to rockstarr-reply for drafting and operator approval, then executes the returned bundle inside Interceptly. Exposes a daily-loop orchestration skill that scaffold-client wires to the schedule for background runs; in background mode, drafts are staged but never sent inline and the loop fires one urgent reply-ready email per run via rockstarr-infra:notify-reply-ready (>=0.8.0) when new reply drafts get staged.",
   "author": {
     "name": "Rockstarr & Moon"
   }

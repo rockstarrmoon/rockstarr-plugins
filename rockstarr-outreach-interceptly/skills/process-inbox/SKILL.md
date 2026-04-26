@@ -1,6 +1,6 @@
 ---
 name: process-inbox
-description: "This skill should be used in the daily outreach loop after preview-queue, or when the user says \"process the inbox\", \"walk unread replies\", or \"handle today's Interceptly inbox for the current account\". Filters Interceptly Inbox → Replied, walks unread conversations oldest-first, and for each thread runs qualify-lead locally, then hands the thread off to rockstarr-reply via a channel-agnostic handoff bundle. On the bundle returned by rockstarr-reply (authorized-send / three-option-choice / flag / book-meeting-handoff / no-action), this skill executes the Interceptly-side work: send-message → apply-label → create-followup-task. Unreads come before My Tasks on every account. Refuses to run if confirm-session-interceptly has not passed in this run."
+description: "This skill should be used in the daily outreach loop after preview-queue, or when the user says \"process the inbox\", \"walk unread replies\", or \"handle today's Interceptly inbox for the current account\". Filters Interceptly Inbox → Replied, walks unread conversations oldest-first, and for each thread runs qualify-lead locally, then hands the thread off to rockstarr-reply via a channel-agnostic handoff bundle. Has two modes. In foreground mode (default, the operator is in chat) it calls present-for-approval inline and executes the channel-side work returned by rockstarr-reply (send-message → apply-label → create-followup-task). In background mode (used by the scheduled daily-loop run) it stops after draft-reply stages a draft, accumulates staged paths, and returns them so the caller can hand them to rockstarr-infra:notify-reply-ready. Always returns staged_paths plus a per-thread outcome list. Unreads come before My Tasks on every account. Refuses to run if confirm-session-interceptly has not passed in this run."
 ---
 
 # process-inbox
@@ -24,6 +24,18 @@ owns drafting. This skill is the seam between the two. It:
   `preview-queue` (if enabled) has written its file.
 - On demand when the user says "just process the inbox" or "run
   the inbox pass for this account".
+
+## Inputs
+
+- `mode` — `foreground` (default) or `background`. Foreground is
+  the operator-in-chat path: `present-for-approval` is called
+  inline and the returned bundle's channel-side work executes
+  immediately. Background is the scheduled-run path: drafts are
+  staged but never presented inline; staged paths are accumulated
+  and returned to the caller (typically `daily-loop`), which fires
+  `rockstarr-infra:notify-reply-ready` once at the end.
+- (Implicit) the currently-active managed account, established by
+  the most recent `switch-account` call in this run.
 
 ## Preconditions
 
@@ -72,6 +84,7 @@ Compose the channel-agnostic bundle for rockstarr-reply:
 ```
 {
   channel: "linkedin",
+  source_channel_label: "Interceptly reply · <persona.account_label>",
   thread: {
     thread_id: "<Interceptly thread id>",
     messages: [
@@ -98,16 +111,42 @@ Compose the channel-agnostic bundle for rockstarr-reply:
 }
 ```
 
+`source_channel_label` is the human-readable per-account channel
+label `rockstarr-reply:draft-reply` writes verbatim into the
+staged draft's front-matter `source_channel` field. The notify
+skill reads it and renders it as the per-reply heading in the
+urgent email ("Interceptly reply · alex-account: Jane Doe").
+
 ### Step 5 — Call rockstarr-reply
 
-Hand the bundle to `rockstarr-reply`. The internal order is:
+Hand the bundle to `rockstarr-reply`. The internal order depends
+on `mode`.
+
+**Foreground mode (default):**
 `rockstarr-reply:classify-reply` →
 `rockstarr-reply:draft-reply` →
 `rockstarr-reply:present-for-approval`. rockstarr-reply owns that
 internal sequence; this skill only sees the final bundle it
-returns.
+returns. Continue to Step 6 to execute the channel-side work.
 
-Possible return bundles:
+**Background mode:**
+`rockstarr-reply:classify-reply` →
+`rockstarr-reply:draft-reply`. STOP. Do NOT call
+`present-for-approval` (no operator is in chat). Capture the
+draft path that `draft-reply` returns, append it to this run's
+`staged_paths` accumulator, then move to the next thread (skip
+Step 6 for this thread). The deferred channel-side work happens
+later when the operator opens the email's deep-link, which lands
+inside Cowork at `present-for-approval`; whatever bundle the
+operator authorizes there is executed by `process-inbox` running
+in foreground mode at that time, against this same draft path.
+
+Background mode never sends, labels, or creates tasks for a
+draft. The draft sits in `/03_drafts/replies/` with the full
+front-matter contract `notify-reply-ready` reads.
+
+Possible return bundles (foreground only — background returns
+after `draft-reply`):
 
 - **`authorized-send`** — operator said "send it". Contains
   `draft_path`, `proposed_label`, `proposed_followup_timer`
@@ -131,7 +170,19 @@ Possible return bundles:
 
 ### Step 6 — Execute the channel-side work
 
-#### 6a — authorized-send
+In **foreground mode**, run all four sub-steps as written.
+
+In **background mode**, only sub-steps 6b and 6c run — they are
+deterministic outcomes that don't require operator approval. Sub-
+steps 6a and 6d require an `authorized-send` or
+`book-meeting-handoff` bundle, which only `present-for-approval`
+produces, so they are skipped (the staged draft sits in
+`/03_drafts/replies/` for the operator to act on via the email
+deep-link). For three-option Warm-non-ICP (also approval-gated),
+the staged draft carries `draft_options` in front-matter and the
+notify email renders all three inline.
+
+#### 6a — authorized-send (foreground only)
 
 1. `send-message` with `draft_path`. On failure, abort this
    thread (do NOT label, do NOT create task). Move to next
@@ -143,9 +194,15 @@ Possible return bundles:
 
 #### 6b — label-only (let-it-hang, no-action)
 
+Runs in both modes — no draft staged, no operator approval needed.
+
 1. `apply-label` with `proposed_label`. No send. No task.
 
 #### 6c — flag
+
+Runs in both modes — rockstarr-reply has already concluded the
+thread cannot be safely drafted, no operator approval needed for
+the label/task that records that decision.
 
 1. rockstarr-reply already wrote `_flags.md`. This skill
    applies the `Follow Up` label (from
@@ -154,7 +211,7 @@ Possible return bundles:
 2. `create-followup-task` with a 2-business-day review timer
    (overridable via `stack.md.followup_timers.flagged_review`).
 
-#### 6d — book-meeting-handoff
+#### 6d — book-meeting-handoff (foreground only)
 
 1. Route directly to `book-meeting` with `agreed_start_iso` +
    `lead_fields`. `book-meeting` handles slot selection, form
@@ -172,8 +229,32 @@ that is NOT the one just processed.
 ### Step 8 — Handoff
 
 When the unread count reaches zero (read from Interceptly, not
-from the mirror), return control to the daily loop. The loop
-then runs `process-my-tasks` against this same account BEFORE
+from the mirror), return control to the caller. Return shape:
+
+```
+{
+  account_label: "<active managed account>",
+  processed_count: <int>,        # threads opened this run
+  staged_paths: [                 # populated in BOTH modes; only
+    "03_drafts/replies/<file>",   # background mode actually relies
+    ...                           # on these — foreground returns
+  ],                              # the same shape for symmetry
+  outcomes: [
+    { thread_id, lead_name, action, mode_branch, notes? },
+    ...
+  ]
+}
+```
+
+`action` is one of `staged-for-approval` (background, draft
+accumulated), `sent` (foreground 6a), `labeled` (6b), `flagged`
+(6c), `booked` (foreground 6d), `error`, `skipped`.
+
+The daily-loop caller accumulates `staged_paths` across every
+account's pass and fires `rockstarr-infra:notify-reply-ready` once
+at the end of the whole run if the global accumulator is
+non-empty AND `mode = background`. After this skill returns,
+`process-my-tasks` runs against this same account BEFORE
 switching to the next account.
 
 ## Constraints
@@ -186,6 +267,19 @@ switching to the next account.
   `rockstarr-reply:present-for-approval`. This skill never
   interprets a response as authorization — it only executes
   the `authorized-send` bundle if rockstarr-reply returns one.
+- Background mode never sends a message, never books a meeting,
+  and never produces an `authorized-send` or
+  `book-meeting-handoff` outcome. It only stages drafts and
+  executes the deterministic non-draft branches (label-only,
+  flag). Approval-gated outcomes wait for the operator to open
+  the notify email and authorize via Cowork.
+- Background mode MUST populate the front-matter contract that
+  `notify-reply-ready` reads on every staged draft. The contract
+  is owned by `rockstarr-reply:draft-reply`, but this skill is
+  the upstream context provider — if the handoff bundle is thin
+  (missing `source_channel_label`, `lead.name`, etc.), the
+  contract under-fills and the urgent email reads as "(not
+  captured)". Pass rich context.
 
 ## Failure modes
 

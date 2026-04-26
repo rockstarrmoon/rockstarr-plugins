@@ -50,7 +50,7 @@ four interviews and stored in the client folder.
 7. All state that is ours to own lives in `/rockstarr-ai/` per
    `rockstarr-infra`'s scaffold. Interceptly owns its own state.
 
-## Skills (23)
+## Skills (24)
 
 ### Install-time intake (4)
 
@@ -76,13 +76,14 @@ four interviews and stored in the client folder.
 | `confirm-session-interceptly` | Safety gate. Checks Interceptly sidebar AND LinkedIn profile URL against `interceptly-accounts.md`. Writes a heartbeat row to the `Session` sheet. Refuses the pass on mismatch. |
 | `switch-account` | Drives the Interceptly SWITCH ACCOUNT popup, then calls `confirm-session-interceptly` against the target. |
 
-### Daily loop (3)
+### Daily loop (4)
 
 | Skill | Purpose |
 |-------|---------|
+| `daily-loop` | Orchestration entry point. Iterates managed accounts, runs the per-account pass, accumulates `staged_paths` from every pass into a global accumulator, and at end of run fires `rockstarr-infra:notify-reply-ready` once with the accumulator if mode=background and non-empty. The skill scaffold-client wires to the schedule. Operator's "Run today's outreach loop" trigger lands here too (mode=foreground). |
 | `preview-queue` | Writes `02_inputs/outreach/queue-<date>.md` with per-account unread / overdue / due-today / flagged counts and a plan of today's work. Togglable. |
-| `process-inbox` | Walks Interceptly Inbox → Replied filter, oldest-first. For each unread thread: scrape context → `qualify-lead` → build handoff bundle → call `rockstarr-reply` → execute the returned bundle (send + label + task, or label-only, or flag, or book-meeting-handoff). |
-| `process-my-tasks` | Runs after `process-inbox` returns zero unreads for the account. Walks Interceptly → My Tasks (overdue + due-today). `book-meeting` task type routes direct; other types run the same handoff as `process-inbox` with an `intent_hint` drawn from task metadata. |
+| `process-inbox` | Walks Interceptly Inbox → Replied filter, oldest-first. For each unread thread: scrape context → `qualify-lead` → build handoff bundle → call `rockstarr-reply`. In foreground mode, executes the returned bundle (send + label + task, or label-only, or flag, or book-meeting-handoff). In background mode, stops after `draft-reply` stages a draft, accumulates the path, and returns it; deterministic non-draft branches (label-only, flag) still execute. |
+| `process-my-tasks` | Runs after `process-inbox` returns zero unreads for the account. Walks Interceptly → My Tasks (overdue + due-today). `book-meeting` task type routes direct in BOTH modes (the close was authorized on a prior turn); other types run the same handoff as `process-inbox` with an `intent_hint` drawn from task metadata. Same mode semantics as `process-inbox`. |
 
 ### Per-reply channel I/O (4)
 
@@ -159,6 +160,86 @@ The send gate is strict and lives inside
 If the bundle returned is not `authorized-send` (or a resolved
 `three-option-choice` with A or C), nothing goes out.
 
+## Foreground vs. background mode
+
+`daily-loop`, `process-inbox`, and `process-my-tasks` all accept a
+`mode` parameter: `foreground` (default) or `background`. The two
+modes share the same per-account work — same Chrome navigation,
+same qualification, same handoff bundle — but differ in how they
+treat approval-gated outcomes.
+
+**Foreground mode** is the operator-in-chat path. When an unread
+or due task produces a draft, `rockstarr-reply:present-for-approval`
+runs inline; the operator sees the draft, says "send it" (or
+edits, rejects, or flags), and the channel-side work executes
+immediately. Behavior is identical to v0.1.x.
+
+**Background mode** is the scheduled-run path. No operator is in
+chat. The pipeline runs through `classify-reply` → `draft-reply`,
+stages the draft to `/03_drafts/replies/`, and stops there.
+`present-for-approval` is NOT called — there is nobody to present
+to. The staged path is accumulated. Deterministic non-draft
+branches (label-only, flag) still execute their channel-side work
+because they don't require operator approval. `book-meeting`
+tasks (process-my-tasks branch) still execute because the booking
+substance was approved on a prior turn.
+
+At end of the run, in background mode, `daily-loop` calls
+`rockstarr-infra:notify-reply-ready` with the global accumulator.
+The notify skill sends one urgent email per run with the staged
+drafts inline (mtime-descending, soft cap of 8 cards, +N more if
+overflow). Each card carries a `claude://` deep-link the operator
+opens to land inside Cowork at `present-for-approval`, where the
+foreground pipeline picks up exactly where background left off
+(authorize, execute channel-side work).
+
+The two modes are complementary, not redundant:
+
+- **Foreground** = operator drives the loop in real time.
+- **Background** = schedule drives the loop; one urgent email at
+  the end summons the operator for the approvals.
+- **`approvals-digest`** (rockstarr-infra) catches anything the
+  operator didn't act on overnight in the next morning's roll-up.
+
+## Integration with rockstarr-infra >= 0.8.0
+
+This plugin requires `rockstarr-infra >= 0.8.0` for the cross-bot
+approvals + urgent-reply layer. Specifically:
+
+- `rockstarr-infra:notify-reply-ready` — the urgent email skill
+  `daily-loop` calls at the end of every background run when
+  reply drafts get staged.
+- `rockstarr-infra:_shared/send-notification` — the mailer
+  helper `notify-reply-ready` calls under the hood. Requires
+  `/00_intake/.rockstarr-mailer.env` to be populated by
+  `scaffold-client`.
+- `rockstarr-infra:approvals-digest` — the daily client-bound
+  digest that catches reply drafts still pending the morning
+  after they were staged. No code-level integration on this
+  plugin's side — the digest reads `/03_drafts/replies/` and
+  picks up whatever is there.
+- `rockstarr-infra:approvals-backlog-alert` — the weekly
+  strategist-bound alert. Same — no integration needed; reply
+  drafts count toward the threshold automatically.
+
+**The contract this plugin is responsible for:** every staged
+reply draft must carry the YAML front-matter `notify-reply-ready`
+reads (channel, source_channel, lead_name, lead_company, lead_title,
+bucket, sub_types, proposed_label, proposed_followup_timer,
+inbound_excerpt, draft_body, optional draft_options, path_relative).
+That contract is owned by `rockstarr-reply:draft-reply`, but this
+plugin is the upstream context provider. The handoff bundle's
+`source_channel_label`, `lead.*`, and `thread.messages[]` fields
+are what `draft-reply` writes into the front-matter. If the bundle
+is thin, the urgent email reads as "(not captured)" — pass rich
+context.
+
+**The schedule wiring lives in rockstarr-infra**, not here.
+`scaffold-client` (>= 0.8.0) wires a scheduled task that calls
+`daily-loop` with `mode = background` at the time the operator
+chose at intake (default 7am local). This plugin only exposes
+`daily-loop` as the entry point.
+
 ## Preconditions (every client)
 
 Before any skill in this plugin runs, `rockstarr-infra` must have
@@ -170,11 +251,17 @@ already produced:
 - `/rockstarr-ai/01_knowledge_base/index.md` with first-party
   processed files (campaign drafts cite first-party proof).
 
-`rockstarr-infra` must also expose:
+`rockstarr-infra` >= 0.8.0 must also expose:
 
 - `skills/_shared/stop-slop/` — mandatory final pass on every
   prose draft. `draft-icp-campaign` calls it. If `stop-slop` is
   not discoverable, `draft-icp-campaign` refuses.
+- `skills/_shared/send-notification/` — mailer helper.
+  Required by `notify-reply-ready`.
+- `skills/notify-reply-ready/` — urgent reply-ready email.
+  `daily-loop` calls it at end of every background run with
+  staged drafts. If missing, `daily-loop` refuses to run in
+  background mode (foreground mode still works without it).
 
 `rockstarr-reply` must be installed for the daily loop to do
 anything past `confirm-session-interceptly` and `preview-queue`.
@@ -295,21 +382,30 @@ review → `rockstarr-infra:approve` → `launch-campaign-interceptly`
 `mode=stop` (permanent). The Campaigns row flips; pending tasks
 for the campaign's leads are cancelled.
 
-**Daily loop (per scheduled run).**
+**Daily loop (per scheduled run).** `daily-loop` is the single
+entry point for both scheduled (background) and operator-driven
+(foreground) runs. It iterates accounts in
+`stack.md.outreach_accounts[]` order, runs `switch-account` →
+`confirm-session-interceptly` → `preview-queue` (optional) →
+`process-inbox` → `process-my-tasks` per account, accumulates
+`staged_paths` from every per-account pass, and at end of run:
 
-1. For each managed account (in `stack.md.outreach_accounts[]`
-   order):
-   1. `confirm-session-interceptly` — abort the whole loop on
-      fail.
-   2. On the first account only: `preview-queue`.
-   3. `process-inbox` — walk unreads, handoff to
-      `rockstarr-reply`, execute returned bundle.
-   4. `process-my-tasks` — walk overdue + due-today, same handoff.
-   5. `switch-account` → next account.
-2. `metrics-daily` rolls up the day.
+1. Calls `metrics-daily` to roll up the day.
+2. In background mode (or with `force_notify`), calls
+   `rockstarr-infra:notify-reply-ready` with the global
+   `staged_paths` accumulator if non-empty. One urgent email per
+   run, never per account.
+3. Returns a per-run summary at
+   `02_inputs/outreach/daily-loop-<yyyy-mm-dd>.md`.
 
-Afternoon re-runs skip `process-my-tasks` and run inbox-only per
-the schedule spec.
+A `confirm-session-interceptly` failure on one account skips that
+account but does NOT abort the whole loop — other accounts still
+run. The skipped account is listed in the summary with the
+failure reason for targeted rerun via `accounts_filter`.
+
+Afternoon re-runs use `daily-loop` with `inbox_only = true` per
+the schedule spec — `process-my-tasks` is skipped on the
+afternoon pass.
 
 **End of week.** `metrics-weekly` → `outreach-weekly-report` →
 `backup-workbook`.
@@ -360,6 +456,18 @@ The channel-I/O skills handle these explicitly:
   `/02_inputs/replies/_flags.md` file, and the
   `stack.md.followup_timers` keyword map consumed by
   `create-followup-task`.
+- `0.2.0` — **wires into rockstarr-infra ≥ 0.8.0's
+  notify-reply-ready.** New `daily-loop` orchestration skill is
+  the single entry point for scheduled and operator-driven
+  runs. `process-inbox` and `process-my-tasks` gain a
+  `mode = foreground|background` parameter and a return shape
+  with `staged_paths`. The handoff bundle gains
+  `source_channel_label` so `rockstarr-reply:draft-reply` can
+  populate the `source_channel` front-matter the urgent email
+  reads. Background mode never sends or labels approval-gated
+  outcomes — they wait for the operator to authorize via the
+  email's `claude://` deep-link. 24 skills. Requires
+  `rockstarr-infra >= 0.8.0`.
 
 Deferred past V0.1:
 
