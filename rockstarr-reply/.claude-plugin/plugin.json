@@ -1,7 +1,7 @@
 {
   "name": "rockstarr-reply",
-  "version": "0.1.0",
-  "description": "Rockstarr AI channel-agnostic reply drafting for the Growth OS. Called by every rockstarr-outreach-* plugin to draft replies to inbound LinkedIn messages. Owns voice, classification, three-option non-ICP flow, stop-slop pass, and the 'send it' authorization gate. The caller owns the channel I/O.",
+  "version": "0.2.0",
+  "description": "Rockstarr AI channel-agnostic reply drafting for the Growth OS. Called by every rockstarr-outreach-* plugin to draft replies to inbound LinkedIn messages. Owns voice, classification, three-option non-ICP flow, stop-slop pass, and the 'send it' authorization gate. The caller owns the channel I/O. v0.2 wires the front-matter contract for rockstarr-infra v0.8 cross-bot notifications (notify-reply-ready + approvals-digest).",
   "author": {
     "name": "Rockstarr & Moon"
   }

@@ -10,20 +10,43 @@ creating follow-up tasks).
 
 Email variants (`rockstarr-reply-gmail`, `rockstarr-reply-outlook`)
 ride this same core with read-inbox / write-draft adapters added on
-top. V0.1.0 ships the core only.
+top. V0.2.0 ships the core only.
 
-## V0.1.0 scope
+## What's new in v0.2.0
 
-This release ships the five core pipeline skills that unlock every
-outreach-* plugin's per-reply flow:
+This release wires `rockstarr-reply` into the cross-bot notification
+stack added in `rockstarr-infra` v0.8.0:
 
-| Skill | Purpose |
-|---|---|
-| `classify-reply` | Pure-prose analysis. Given thread text + `icp_verdict` from the caller, returns a temperature bucket (Hot / Warm-ICP / Warm-non-ICP / Skeptical / Cold) plus sub-type flags and a `proposed_label` computed from the default mapping overlaid with `stack.md.label_mapping`. No side effects. |
-| `draft-reply` | Core drafting step. Reads `style-guide.md` (including the warm-reply and optional referral-pattern subsections), picks the bucket's pattern, applies channel-adaptation for LinkedIn vs. email surfaces, calls `propose-meeting-times` on Hot, generates three option bodies on Warm-non-ICP, and runs stop-slop as the mandatory final pass. Writes to `/03_drafts/replies/<channel>/<thread-id>.md`. |
-| `present-for-approval` | The approval gate. Renders persona + ICP verdict + matching rule + bucket + proposed label + proposed follow-up timer. Blocks on an explicit `send it` (or clear equivalent). Editing instructions (`make it shorter`, `try a different angle`, `draft a breakup message`) trigger a redraft, never authorization. On authorization, appends the verbatim phrase to `/04_approved/replies/_approvals.log`. |
-| `follow-up-timer` | Maps bucket + `intent_hint` to a timer keyword (`meeting_proposed | general | referral | cold_bump | none`). Non-ICP `Ignore` / `Not Interested` / `Bad Fit` always return `none`. Caller's `create-followup-task` converts the keyword into a due date. |
-| `flag-for-review` | Refusal-to-draft handoff. Writes to `/02_inputs/replies/_flags.md` and returns `{ reason, note }` to the caller. The caller's own `apply-label` + `create-followup-task` turn that into a `Follow Up` label + 2-biz-day review task. |
+- `approvals-digest` — daily 6am client-bound roll-up of every
+  pending draft across every Rockstarr bot. Picks up reply drafts
+  automatically via the new `approval_status: pending` front-matter
+  field.
+- `approvals-backlog-alert` — weekly strategist-bound nudge when
+  the queue exceeds the configured threshold.
+- `notify-reply-ready` — **urgent**, immediate, per-batch email
+  that fires when a reply lands and a draft is staged. Renders the
+  proposed body inline (single or three-option) with a
+  `claude://cowork/new?q=...` deep-link straight back into the
+  workspace.
+
+The work is in `draft-reply` (front-matter contract rewrite +
+synchronous notify call) and `present-for-approval` (approval_status
+transitions). `classify-reply`, `follow-up-timer`, and
+`flag-for-review` are unchanged. See **Front-matter contract** below
+for the full field list.
+
+## V0.2.0 skills
+
+The same five core pipeline skills as v0.1.0, with v0.2 contract
+updates noted in the second column:
+
+| Skill | Purpose | v0.2 changes |
+|---|---|---|
+| `classify-reply` | Pure-prose analysis. Given thread text + `icp_verdict` from the caller, returns a temperature bucket (Hot / Warm-ICP / Warm-non-ICP / Skeptical / Cold) plus sub-type flags and a `proposed_label` computed from the default mapping overlaid with `stack.md.label_mapping`. No side effects. | unchanged |
+| `draft-reply` | Core drafting step. Reads `style-guide.md` (including the warm-reply and optional referral-pattern subsections), picks the bucket's pattern, applies channel-adaptation for LinkedIn vs. email surfaces, calls `propose-meeting-times` on Hot, generates three option bodies on Warm-non-ICP, and runs stop-slop as the mandatory final pass. Writes to `/03_drafts/replies/<source_channel_slug>/<thread-id>.md`. | **Front-matter contract rewrite** to match `rockstarr-infra` v0.8 readers. **New synchronous step**: when `batch_context` is absent on the handoff, fires `notify-reply-ready` with the just-staged path. Skipped on redraft, batched flows, `book-meeting-handoff`, and `no-action`. |
+| `present-for-approval` | The approval gate. Renders persona + ICP verdict + matching rule + bucket + proposed label + proposed follow-up timer. Blocks on an explicit `send it` (or clear equivalent). Editing instructions (`make it shorter`, `try a different angle`, `draft a breakup message`) trigger a redraft, never authorization. On authorization, appends the verbatim phrase to `/04_approved/replies/_approvals.log`. | **`approval_status` transitions** replace the v0.1 `awaiting_approval` boolean. `approved` on send; `rejected` with a `rejection_reason` on let-it-hang / skip / flag. Drives the digest's "is this still pending" check. |
+| `follow-up-timer` | Maps bucket + `intent_hint` to a timer keyword (`meeting_proposed | general | referral | cold_bump | none`). Non-ICP `Ignore` / `Not Interested` / `Bad Fit` always return `none`. Caller's `create-followup-task` converts the keyword into a due date. | unchanged |
+| `flag-for-review` | Refusal-to-draft handoff. Writes to `/02_inputs/replies/_flags.md` and returns `{ reason, note }` to the caller. The caller's own `apply-label` + `create-followup-task` turn that into a `Follow Up` label + 2-biz-day review task. | unchanged. Flagged threads stage no draft, fire no notification, and stay out of the daily digest by design. |
 
 Deferred past V0.1.0:
 
@@ -57,6 +80,7 @@ minor bumps; changes to the response shape are major bumps.
 | `icp_verdict` | enum + meta | `target` \| `not-target` \| `ambiguous` \| `unknown` with `{ matching_rule, evidence }`. Caller runs its own qualify-lead adapter first. |
 | `lead` | object | `{ url, name, company, title, campaign_slug? }` |
 | `intent_hint` | enum (optional) | `reply` \| `bump` \| `breakup` \| `graceful-exit` \| `referral-pivot` \| `throwaway-question` \| `book-meeting-followup`. Used when the caller is re-entering the pipeline with a specific intent. |
+| `batch_context` | string (optional, v0.2+) | Free-form. Set by callers that batch multiple drafts in one run (typically `detect-replies`). When present, draft-reply does NOT fire its own urgent notification — the caller fires `notify-reply-ready` once at the end of its batch. When absent, draft-reply fires urgently for the single just-staged path. |
 
 **rockstarr-reply → caller (one of):**
 
@@ -67,6 +91,71 @@ minor bumps; changes to the response shape are major bumps.
 | `flag` | `{ reason, note, flags_path }` | Caller labels `Follow Up`, writes the note to its own flags mirror, creates a 2-biz-day review task. |
 | `book-meeting-handoff` | `{ slot, lead_fields }` | Hot thread where the lead agreed AND supplied every `booking_link_required_field`. Caller's `book-meeting` skill drives the booking form. Only emitted when `stack.md.booking_mode=automated`. |
 | `no-action` | `{ reason }` | Thread needs no reply (out-of-office, already-booked, thread continuation with no signal). Caller logs and moves on. |
+
+## Front-matter contract (v0.2)
+
+`draft-reply` writes every staged draft with the front-matter shape
+below. The first block is the **cross-bot contract** that
+`rockstarr-infra` v0.8's `notify-reply-ready` and `approvals-digest`
+read. The second block is reply-specific and read only by
+rockstarr-reply's own skills.
+
+| Field | Required | Notes |
+|---|---|---|
+| `channel: "reply"` | yes | Lane discriminator. Always literal `"reply"` — NOT the source channel. |
+| `source_channel` | yes | Human-readable origin label (e.g., `Sales Nav reply`, `Email reply (Gmail)`). Rendered in email subject + digest heading. |
+| `source_channel_slug` | yes | Raw channel slug (`linkedin-salesnav`, `email-gmail`, etc.). Drives the channel-adaptation switch and the path segment. |
+| `title` | yes | Human-facing summary. Default `Reply to <lead_name> at <lead_company>` plus pattern qualifier (`(meeting ask)`, `(non-ICP — 3 options)`, etc.). |
+| `produced_by` | yes | `rockstarr-reply/draft-reply@0.2.0`. |
+| `approval_status` | yes | Enum: `pending` (set on first stage) \| `approved` (set by present-for-approval on send) \| `rejected` (set on let-it-hang / skip / flag). |
+| `awaiting_approval_since` | yes | ISO timestamp set on first stage; preserved across redrafts. |
+| `path_relative` | yes | Path of this file, relative to `/rockstarr-ai/`. Deep-link target for notify-reply-ready. |
+| `inbound_excerpt` | yes | Last inbound segment of the thread, ≤300 chars (`…` truncation). Verbatim, no reflow. |
+| `draft_body` | yes (single-draft) | Post-stop-slop body string. Same string as the markdown's `## Body` section. Omitted when `draft_options` is present. |
+| `draft_options` | yes (Warm-non-ICP) | Array of `{label, body}`. Three entries: graceful exit, let it hang, throwaway question. |
+| `stop_slop_score` | yes | Numeric 0–50. |
+| `stop_slop_flagged` | yes | `true` when score < 35. |
+| `bucket`, `sub_types`, `proposed_label`, `proposed_followup_timer` | yes | From `classify-reply` and `follow-up-timer`. |
+| `lead_name`, `lead_title`, `lead_company`, `lead_url` | yes | From the handoff `lead` object. |
+| `thread_id`, `campaign_slug`, `persona_name`, `persona_title`, `icp_verdict`, `matching_rule`, `pattern`, `warm_reply_pattern_missing`, `generated_at`, `last_revised_at`, `revision_count`, `schema_version` | reply-specific | Read only by rockstarr-reply's own skills. |
+
+The body content is duplicated — front-matter `draft_body` /
+`draft_options` for programmatic readers (notify-reply-ready, future
+digesters), markdown `## Body` / `### Option A/B/C` for
+present-for-approval and any human looking at the file. Same string,
+two surfaces.
+
+## Caller integration: notify-reply-ready
+
+`notify-reply-ready` (rockstarr-infra v0.8) is invoked from one of
+two places — never both for the same draft:
+
+1. **Synchronous, manual invocation.** When the operator says "draft
+   a reply to Jane" outside the daily loop, `draft-reply` fires
+   `notify-reply-ready` itself with `staged_paths = [<the single
+   path>]` immediately after staging. The handoff bundle has no
+   `batch_context` field.
+
+2. **Batched, daily-loop invocation.** When an outreach-* plugin's
+   `detect-replies` discovers N inbound replies and dispatches them
+   to `draft-reply` in sequence, the handoff bundle MUST set
+   `batch_context: detect-replies` (or any non-empty string).
+   `draft-reply` skips its own notify call. After every reply has
+   been drafted, `detect-replies` calls `notify-reply-ready` once
+   with the accumulated `staged_paths` array.
+
+   Outreach-* plugin authors: add this to your `detect-replies`:
+   - On every handoff to `rockstarr-reply`, set `batch_context:
+     detect-replies` in the bundle.
+   - Accumulate the returned `draft_path` (from `authorized-send` or
+     `three-option-choice` or the staged path on a non-terminal
+     return).
+   - At end of run, call `rockstarr-infra:notify-reply-ready` with
+     `staged_paths = [<all accumulated paths>]`.
+
+`notify-reply-ready` is a no-op when `staged_paths` is empty, so
+runs that happen to stage zero new drafts (everything was
+out-of-office or already-booked) silently emit no email.
 
 ## Hard constraints (preserved verbatim from the spec)
 
@@ -132,11 +221,30 @@ already produced:
   - For email variants: `from_address`, `mailbox_label` (Gmail) /
     `mailbox_folder` (Outlook) — not required for V0.1.0 core.
 
-`rockstarr-infra` must also expose these shared skills:
+**rockstarr-reply v0.2.0 requires rockstarr-infra v0.8.0 or later.**
+The cross-bot notification stack (`approvals-digest`,
+`approvals-backlog-alert`, `notify-reply-ready`) and its supporting
+`_shared/send-notification` helper land in v0.8.0; the v0.2 front-
+matter contract is what those skills read. Earlier rockstarr-infra
+builds will not error, but the urgent-reply and digest paths will
+silently no-op.
+
+`rockstarr-infra` must expose these shared skills:
 
 - `skills/_shared/stop-slop/` — **MANDATORY** final pass on every
   piece of outbound prose. `draft-reply` refuses to produce a draft
-  if stop-slop is unavailable.
+  if stop-slop is unavailable. Returns a 0–50 score consumed as
+  `stop_slop_score`.
+- `skills/_shared/send-notification/` — mailer helper used by
+  `notify-reply-ready` and `approvals-digest`. Best-effort — a
+  failed urgent send does not block draft staging.
+- `skills/notify-reply-ready/` — v0.8 cross-bot urgent notifier.
+  Called by `draft-reply` (synchronous flow) or by an outreach-*
+  `detect-replies` (batched flow). See **Caller integration:
+  notify-reply-ready** above.
+- `skills/approvals-digest/` — daily digest at 6am local. Reads
+  `approval_status: pending` across every `/03_drafts/` lane. Reply
+  drafts surface automatically.
 - `skills/_shared/propose-meeting-times/` — Chrome MCP / calendar
   helper that returns 2–3 free slots for Hot drafts. In V0.1.x this
   skill also ships inline in `rockstarr-outreach-salesnav` — migrate
@@ -152,6 +260,11 @@ already produced:
   client installs ships them inline, that satisfies the precondition.
   Otherwise, a future rockstarr-infra release will move them to
   `_shared/` and rockstarr-reply can chain into install directly.
+
+The mailer requires `/rockstarr-ai/00_intake/.rockstarr-mailer.env`
+with `ROCKSTARR_MAILER_TOKEN`, `ROCKSTARR_CLIENT_ID`,
+`ROCKSTARR_NOTIFY_TO`, and (optionally) `ROCKSTARR_NOTIFY_URGENT_TO`.
+Onboarding writes the template; Rachel or Jon fills in the values.
 
 ## Folder contract
 
@@ -252,6 +365,50 @@ client has one place to audit replies regardless of origin.
    sits before the operator resolves it.
 
 ## Changelog
+
+### v0.2.0 — 2026-04-26
+
+**Wires rockstarr-reply into rockstarr-infra v0.8.0's cross-bot
+notification stack.**
+
+- **New synchronous notify call.** `draft-reply` now calls
+  `rockstarr-infra:notify-reply-ready` immediately after staging a
+  draft, when the handoff bundle does not carry `batch_context`.
+  Skipped on redrafts, batched flows, `book-meeting-handoff`, and
+  `no-action` returns. Mailer errors are best-effort and never abort
+  draft staging.
+- **New handoff field: `batch_context` (optional).** Outreach-*
+  `detect-replies` skills set this to suppress the per-draft urgent
+  notification and fire one batched call at the end of their run.
+- **Front-matter contract rewrite.** Drafts now carry the cross-bot
+  fields the v0.8 readers expect: `channel: "reply"` (lane
+  discriminator), `source_channel`, `source_channel_slug`, `title`,
+  `produced_by`, `approval_status`, `awaiting_approval_since`,
+  `path_relative`, `inbound_excerpt` (≤300 chars from the most-
+  recent inbound), `draft_body` (or `draft_options` array on
+  Warm-non-ICP), `stop_slop_score` (0–50 numeric). The draft body
+  is now duplicated into front-matter so notify-reply-ready can
+  render it inline in the urgent email; markdown body is unchanged.
+- **`approval_status` replaces `awaiting_approval` (BREAKING).**
+  `present-for-approval` now sets `approval_status: approved` on
+  send and `approval_status: rejected` (with `rejection_reason`) on
+  let-it-hang / skip / flag. This is what removes the draft from
+  tomorrow's `approvals-digest`. Pre-v0.2 drafts (with
+  `awaiting_approval: true` and no `approval_status`) will be
+  skipped by the v0.8 digest — clean them up by hand or re-run
+  through the v0.2 pipeline.
+- **`stop_slop_score` numeric capture.** stop-slop's 0–50 score is
+  surfaced. `stop_slop_flagged: true` is set when score < 35. On
+  three-option Warm-non-ICP drafts, the front-matter score is the
+  MIN across the prose-bearing options (A and C).
+- **Path segment clarified.** The path is
+  `/03_drafts/replies/<source_channel_slug>/<thread-id>.md` (the
+  raw channel slug, not the lane discriminator). v0.1 used
+  `<channel>` for the same value; the directory layout is
+  unchanged.
+- **No data migration needed.** The first paying client lands with
+  rockstarr-reply v0.2.0 — there are no v0.1 drafts in production
+  to migrate.
 
 ### v0.1.0 — 2026-04-24
 

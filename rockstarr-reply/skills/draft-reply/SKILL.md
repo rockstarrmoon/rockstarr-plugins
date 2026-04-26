@@ -64,12 +64,24 @@ From classify-reply:
 
 From the caller's handoff bundle:
 
-- `channel` — controls the channel-adaptation switch
+- `channel` (a.k.a. `source_channel_slug` in the front-matter
+  contract) — controls the channel-adaptation switch and the path
+  segment for the staged draft. Values:
+  `linkedin-interceptly | linkedin-salesnav | linkedin-meetalfred |
+  linkedin-dripify | linkedin-waalaxy | email-gmail | email-outlook`.
 - `thread` — full text, oldest to newest
 - `persona` — `{ name, title, signature_block, persona_notes }`
 - `icp_verdict` with `{ matching_rule, evidence }`
 - `lead` — `{ url, name, company, title, campaign_slug }`
 - `intent_hint` (optional)
+- `batch_context` (optional, v0.2+) — free-form string set by
+  callers that batch multiple drafts in one run (typically
+  `detect-replies` from an outreach-* plugin). When present,
+  draft-reply does NOT fire its own urgent notification — the caller
+  fires `notify-reply-ready` once at the end of its batch with the
+  accumulated path list. When absent (manual / one-off invocation),
+  draft-reply fires the urgent notification itself with
+  `staged_paths = [the single path it just wrote]`. See Step 6.
 
 ## Behavior
 
@@ -178,9 +190,14 @@ With the pattern + persona + thread context + channel:
    Rules verbatim.
 2. Apply the channel-adaptation switch (Step 3 below).
 3. Run the full body through `rockstarr-infra:_shared/stop-slop`.
-   **This is mandatory.** Order is voice first, stop-slop last. If
-   stop-slop flags heavy rewrites, note that in the draft's
-   front-matter (`stop_slop_flagged: true`) so the approver sees it.
+   **This is mandatory.** Order is voice first, stop-slop last.
+   stop-slop returns a 0–50 score (5 dimensions × 10). Capture the
+   numeric value as `stop_slop_score` in front-matter and set
+   `stop_slop_flagged: true` when the score is below 35 (the
+   threshold stop-slop itself flags as "revise"). On the
+   three-option Warm-non-ICP path, run stop-slop on each prose
+   option independently and capture the MIN score across the
+   prose-bearing options (A and C) as the front-matter value.
 
 Structural outputs (the three-option labels themselves, front-matter
 fields, log entries) are exempt from stop-slop. It runs on prose
@@ -219,21 +236,53 @@ it only changes surface format.
 ### Step 4 — Stage the draft
 
 Write the draft file to
-`/03_drafts/replies/<channel>/<thread-id>.md`. The `<channel>` path
+`/03_drafts/replies/<source_channel_slug>/<thread-id>.md`. The path
 segment is the raw channel string from the handoff (e.g.
 `linkedin-interceptly`, `email-gmail`).
+
+The front-matter follows the **cross-bot contract** that
+`rockstarr-infra` v0.8's `notify-reply-ready` and `approvals-digest`
+read. Field names are non-negotiable — match them exactly, including
+the deliberately surprising `channel: "reply"` (the lane
+discriminator) sitting alongside `source_channel_slug` (the origin
+channel slug).
 
 File shape:
 
 ```markdown
 ---
+# --- cross-bot contract (read by rockstarr-infra v0.8 readers) ---
+channel: "reply"                      # lane discriminator — always literal "reply"
+source_channel: "Sales Nav reply"     # human-readable origin label (display map below)
+source_channel_slug: linkedin-salesnav  # the raw channel string from the handoff
+title: "Reply to <lead_name> at <lead_company>"  # human-facing summary; see Title rule below
+produced_by: "rockstarr-reply/draft-reply@0.2.0"
+approval_status: pending              # enum — pending | approved | rejected
+awaiting_approval_since: <ISO>        # set on first stage; preserved across redrafts
+path_relative: 03_drafts/replies/<slug>/<thread-id>.md
+inbound_excerpt: "<≤300 chars, see Inbound Excerpt rule below>"
+draft_body: |
+  <post-stop-slop reply body. Email variants end with a
+  [SIGNATURE_BLOCK] marker. LinkedIn variants omit the marker.>
+draft_options:                        # only when bucket=Warm-non-ICP; otherwise omit
+  - label: "Graceful exit"
+    body: |
+      <Option A body, post stop-slop>
+  - label: "Let it hang"
+    body: "(no body — label Ignore, no send)"
+  - label: "Throwaway question"
+    body: |
+      <Option C body, post stop-slop>
+stop_slop_score: <int 0-50>           # numeric score from stop-slop
+stop_slop_flagged: true | false       # true when score < 35
+
+# --- reply-specific fields (read by classify-reply, present-for-approval) ---
 thread_id: <channel-specific thread id, or lead_url slug>
 lead_url: <URL>
 lead_name: <name>
 lead_title: <title>
 lead_company: <company>
 campaign_slug: <slug or blank>
-channel: <channel>
 persona_name: <persona.name>
 persona_title: <persona.title>
 icp_verdict: target | not-target | ambiguous | unknown
@@ -243,28 +292,27 @@ sub_types: [<flag>, ...]
 pattern: hot | warm_icp | cold_bump | skeptical | referral | graceful_exit | letitthang | throwaway_q | pitch_back | book_meeting_handoff
 proposed_label: <label>
 proposed_followup_timer: <keyword — computed by follow-up-timer>
-stop_slop_ran: true
-stop_slop_flagged: true | false
 warm_reply_pattern_missing: true | false
 generated_at: <ISO>
+last_revised_at: <ISO>                # only after the first redraft
 revision_count: 0
-awaiting_approval: true
-schema_version: 1
+schema_version: 2                     # v0.2 contract
 ---
 
 # Reply draft
 
 ## Body
 
-<post-stop-slop reply body. Email variants end with a
-[SIGNATURE_BLOCK] marker where the signature will be injected on
-send. LinkedIn variants omit the marker.>
+<post-stop-slop reply body — same string as front-matter draft_body.
+Email variants end with a [SIGNATURE_BLOCK] marker where the
+signature will be injected on send. LinkedIn variants omit the
+marker.>
 
 ## (If non-ICP three-option flow) Alternate options
 
 ### Option A — Graceful exit
 
-<body>
+<body — same string as front-matter draft_options[0].body>
 
 ### Option B — Let-it-hang
 
@@ -272,7 +320,7 @@ No reply sent. Label Ignore.
 
 ### Option C — Throwaway question
 
-<body>
+<body — same string as front-matter draft_options[2].body>
 
 ## Evidence / reasoning
 
@@ -282,11 +330,116 @@ No reply sent. Label Ignore.
 - proof point source (if cited): `<file pointer into 01_knowledge_base/processed/>`
 ```
 
-On a redraft triggered by present-for-approval, OVERWRITE the same
-file and bump `revision_count`. Preserve `generated_at` from the
-first write; add `last_revised_at`.
+Notes on the contract:
 
-### Step 5 — Return
+- **`channel: "reply"` is the lane discriminator.** It always carries
+  the literal string `"reply"` so the cross-bot digest knows which
+  lane to render this draft as. This is NOT the source channel.
+- **`source_channel_slug` carries the origin channel.** The same
+  string driving the channel-adaptation switch and the path segment
+  (`linkedin-salesnav`, `email-gmail`, etc.).
+- **`source_channel` is the human-readable label** rendered in
+  email subjects and digest headings. Compute via this map:
+
+  | source_channel_slug | source_channel |
+  |---|---|
+  | `linkedin-interceptly` | `LinkedIn (Interceptly) reply` |
+  | `linkedin-salesnav` | `Sales Nav reply` |
+  | `linkedin-meetalfred` | `LinkedIn (MeetAlfred) reply` |
+  | `linkedin-dripify` | `LinkedIn (Dripify) reply` |
+  | `linkedin-waalaxy` | `LinkedIn (Waalaxy) reply` |
+  | `email-gmail` | `Email reply (Gmail)` |
+  | `email-outlook` | `Email reply (Outlook)` |
+
+- **`title` rule.** Default:
+  `Reply to <lead_name> at <lead_company>`. Append a qualifier from
+  pattern / sub_types when one is informative:
+  - `pattern=hot` → ` (meeting ask)`
+  - `pattern=cold_bump` → ` (cold bump)`
+  - `pattern=referral` → ` (referral pivot)`
+  - `pattern=skeptical` → ` (Skeptical — silent label)` (or
+    `(Skeptical — referral pivot)` when the optional pivot fires)
+  - `pattern=graceful_exit | throwaway_q | letitthang` → ` (non-ICP — 3 options)`
+  - `intent_hint=breakup` → ` (breakup)`
+
+  Example: `Reply to Jane Doe at Acme (meeting ask)`.
+
+- **`inbound_excerpt` rule.** Pull the LAST inbound segment from the
+  handoff `thread`. Strip channel-noise: signature blocks, quoted
+  prior-message bodies, "On <date> <name> wrote:" headers,
+  `--` Reply-Above-This-Line markers. Trim to 300 chars max; if
+  truncated, append `…` (single Unicode ellipsis, not three dots).
+  Do NOT reflow whitespace or paraphrase — keep the lead's voice
+  verbatim. notify-reply-ready renders it under a `### What
+  <first_name> said` heading.
+
+- **`draft_body` vs. markdown body.** The same post-stop-slop string
+  is written in two places — into front-matter as `draft_body` (so
+  notify-reply-ready can render it inline in the email) and into
+  the markdown after the `## Body` heading (so present-for-approval
+  has a clean human-readable surface). When the bucket is
+  `Warm-non-ICP`, OMIT `draft_body` and write `draft_options`
+  instead. notify-reply-ready picks the rendering branch based on
+  which is present.
+
+- **`stop_slop_score`.** stop-slop returns a score 0–50 (5
+  dimensions × 10). Capture the numeric value as `stop_slop_score`.
+  Set `stop_slop_flagged: true` when score < 35 (the threshold
+  stop-slop itself flags as "revise").
+
+- **`approval_status: pending`** is set on first stage and stays
+  `pending` across operator-driven redrafts. present-for-approval is
+  the only skill that flips it to `approved` or `rejected` (see
+  that skill's spec).
+
+- **`awaiting_approval_since`** is set on first stage and PRESERVED
+  across redrafts — the file mtime captures revision activity, this
+  field captures the original landing time the digest's "Updated"
+  formatter reads via mtime separately.
+
+On a redraft triggered by present-for-approval, OVERWRITE the same
+file. Bump `revision_count`. Preserve `generated_at`,
+`awaiting_approval_since`, and `approval_status: pending`. Set
+`last_revised_at`. Re-run stop-slop and recompute `stop_slop_score`
++ `stop_slop_flagged` on the new body.
+
+### Step 5 — Fire the urgent notification (v0.2+, conditional)
+
+When draft-reply has just staged a draft AND the handoff bundle does
+NOT carry `batch_context`, immediately call
+`rockstarr-infra:notify-reply-ready` with
+`staged_paths = [<the path just written>]`. This is the synchronous
+notification path for manual / one-off invocations — the operator
+gets an urgent email in their inbox with the proposed body rendered
+inline plus a `claude://cowork/new?q=...` deep-link back into
+present-for-approval.
+
+When `batch_context` IS present, SKIP this step. The caller (an
+outreach-* `detect-replies`, an email-variant `read-inbox-*`, or any
+other batched flow) is responsible for accumulating the `staged_paths`
+list across its run and calling `notify-reply-ready` once at the end
+of its batch. Cross-run batching is the digest's job, not this
+skill's.
+
+Skip this step entirely on the `book-meeting-handoff` and
+`no-action` returns — no draft was staged, so there is nothing to
+notify on. The caller may still emit its own non-urgent log entry;
+the urgent mailer is reserved for actually-staged reply drafts the
+client can act on.
+
+Skip this step on a redraft (revision_count > 0). The first
+notification fires when the draft first lands; subsequent operator-
+driven redrafts happen inside the present-for-approval gate, and a
+re-notification would just spam the operator's inbox while they're
+already in the loop.
+
+If `notify-reply-ready` errors (mailer unreachable, missing
+`.rockstarr-mailer.env`, etc.), log the error to chat but do NOT
+abort the draft — the draft file is still on disk and the next
+day's `approvals-digest` will surface it. Urgent notifications are
+best-effort; the digest is the durable safety net.
+
+### Step 6 — Return
 
 Return one of the following to the caller (via present-for-approval):
 
@@ -299,11 +452,11 @@ Return one of the following to the caller (via present-for-approval):
 - `book-meeting-handoff` — when the Hot path detects the lead has
   already agreed + supplied required fields. Returns `{ slot,
   lead_fields }`. The caller's `book-meeting` skill takes over; no
-  body is drafted.
+  body is drafted, no notification fires.
 - `no-action` — when sub_types include `out_of_office`,
   `already_booked`, or `not-target` × `Cold` / `Skeptical`. Returns
   `{ reason }` for the caller to log and move on. No body drafted,
-  no approval needed.
+  no approval needed, no notification fires.
 
 ## Constraints — preserved verbatim
 
@@ -358,4 +511,18 @@ Return one of the following to the caller (via present-for-approval):
   referral-pattern subsections) or the structural rules in this
   skill (Hot = propose times; Warm-non-ICP = three options; etc.).
 - Do not write anything outside `/03_drafts/replies/<channel>/`.
-  The draft file is the only output.
+  The draft file is the only output of this skill's file-staging
+  step. (Step 5's notify-reply-ready call writes to the mailer log
+  via `send-notification`; that's expected and lives in
+  rockstarr-infra, not here.)
+- Do not fire notify-reply-ready on a redraft. The first staging
+  fires the urgent notification once; redrafts inside the
+  present-for-approval loop don't re-notify.
+- Do not fire notify-reply-ready when `batch_context` is set. The
+  batching caller fires once at the end of its run.
+- Do not fire notify-reply-ready on `book-meeting-handoff` or
+  `no-action` returns. No draft was staged, so there's nothing to
+  notify on.
+- Do not block draft staging on a notify-reply-ready error. The
+  mailer is best-effort; the durable surface is the draft file
+  plus tomorrow's approvals-digest.

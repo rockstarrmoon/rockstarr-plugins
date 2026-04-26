@@ -24,11 +24,14 @@ loosely. Don't weaken it here.
 ## Preconditions
 
 - Draft file exists at
-  `/03_drafts/replies/<channel>/<thread-id>.md` with
-  `awaiting_approval: true` in front-matter.
-- `stop_slop_ran: true` is set in the draft front-matter
+  `/03_drafts/replies/<source_channel_slug>/<thread-id>.md` with
+  `approval_status: pending` in front-matter (v0.2 contract — the
+  pre-v0.2 `awaiting_approval: true` boolean is removed).
+- `stop_slop_score` is present in the draft front-matter
   (present-for-approval refuses to present a draft that hasn't been
-  scrubbed).
+  scrubbed). If only the legacy `stop_slop_flagged` is present
+  without a numeric score, the draft was produced by a pre-v0.2
+  draft-reply — surface a one-line note to the operator and proceed.
 
 ## Behavior
 
@@ -126,9 +129,11 @@ pipeline.
 
 **Skip (no send, no label, no task):**
 - `skip` / `no action` — close the draft, flip front-matter
-  `awaiting_approval: false`, `resolved_action: skip`. Leave the
-  draft file in `/03_drafts/replies/<channel>/` so the operator can
-  find it later.
+  `approval_status: rejected`, `rejection_reason: operator_skip`,
+  `resolved_action: skip`. Leave the draft file in
+  `/03_drafts/replies/<source_channel_slug>/` so the operator can
+  find it later. The next morning's approvals-digest will skip it
+  because `approval_status != pending`.
 
 **Flag (route to flag-for-review):**
 - `flag` / `flag this` / `I want to look at this one myself` — call
@@ -137,12 +142,13 @@ pipeline.
 
 ### Step 3 — On authorization
 
-- Flip draft front-matter: `awaiting_approval: false`,
+- Flip draft front-matter: `approval_status: approved`,
   `authorized_at: <ISO>`, `authorized_by: operator`,
   `resolved_action: send`, `authorization_phrase: <verbatim operator
-  phrase>`.
+  phrase>`. (The pre-v0.2 `awaiting_approval: false` is gone — the
+  cross-bot digest reads `approval_status` only.)
 - Move the draft file to
-  `/04_approved/replies/<channel>/<thread-id>.md`.
+  `/04_approved/replies/<source_channel_slug>/<thread-id>.md`.
 - Append a row to `/04_approved/replies/_approvals.log`:
 
   ```
@@ -178,9 +184,10 @@ suggestions; the caller respects `stack.md.label_mapping` /
   the new body comes back through present-for-approval for a fresh
   'send it' gate. The initial three-option presentation does NOT
   authorize sending — it selects the intent.
-- If option B: flip front-matter `resolved_action: letitthang`,
-  move the draft to `/04_approved/replies/<channel>/` with a note,
-  return:
+- If option B: flip front-matter `approval_status: rejected`,
+  `rejection_reason: let_it_hang`, `resolved_action: letitthang`,
+  move the draft to `/04_approved/replies/<source_channel_slug>/`
+  with a note, return:
 
   ```json
   {
@@ -198,11 +205,15 @@ suggestions; the caller respects `stack.md.label_mapping` /
 
 ### Step 5 — On skip / flag
 
-- Skip: update front-matter, leave draft in
-  `/03_drafts/replies/<channel>/` with `awaiting_approval: false`.
-  Return `{ kind: "no-action", payload: { reason: "operator_skip" } }`.
-- Flag: hand the lead to `flag-for-review` which writes
-  `/02_inputs/replies/_flags.md`. Return
+- Skip: update front-matter `approval_status: rejected`,
+  `rejection_reason: operator_skip`, `resolved_action: skip`. Leave
+  draft in `/03_drafts/replies/<source_channel_slug>/`. Return
+  `{ kind: "no-action", payload: { reason: "operator_skip" } }`.
+- Flag: update front-matter `approval_status: rejected`,
+  `rejection_reason: flagged`. Hand the lead to `flag-for-review`
+  which writes `/02_inputs/replies/_flags.md` (the operator's
+  separate review queue — flagged threads are intentionally absent
+  from the daily digest). Return
   `{ kind: "flag", payload: { reason: <reason>, note: <flag body> } }`.
 
 ### Step 6 — On book-meeting-handoff confirmation
@@ -251,11 +262,14 @@ When in doubt, present and ask. Never send on assumed approval.
   context for AFTER this send — don't apply to the current draft.
   If absent, treat the whole thing as editing instructions.
 - **Operator never replies**. The draft sits in
-  `/03_drafts/replies/<channel>/` with `awaiting_approval: true`.
-  The cross-bot `approvals-digest` (future rockstarr-infra skill)
-  picks it up via the `awaiting_approval` front-matter flag. Until
-  that skill ships, `reply-activity-report` surfaces stale drafts
-  weekly.
+  `/03_drafts/replies/<source_channel_slug>/` with
+  `approval_status: pending`. The cross-bot `approvals-digest`
+  (rockstarr-infra v0.8+) picks it up via the `approval_status`
+  front-matter field on its 6am daily run. The
+  `approvals-backlog-alert` (also v0.8+) escalates to a
+  Rockstarr strategist when total pending exceeds the threshold.
+  Together those two replace the V0.1 "stale drafts get noticed
+  weekly" gap.
 - **Operator authorizes, but the caller's write-draft or
   send-message skill fails downstream**. The approval is already
   logged and the draft already lives in `/04_approved/replies/`.
