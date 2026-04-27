@@ -240,23 +240,62 @@ digest if it hasn't been approved by then.
   the stale-task callout are exempt as structural artifacts. Both
   skills refuse if `stop-slop` is not discoverable. Produced-by
   stamps bumped.
-- `0.1.5` — `notify-reply-ready` integration. `detect-replies` now
-  drives `rockstarr-reply` synchronously to stage a reply draft per
-  inbound (instead of just signalling), accumulates the resulting
-  paths into `staged_paths[]`, and at end-of-run fires a single
-  urgent client email via `rockstarr-infra:notify-reply-ready` that
-  summarizes every newly-staged draft with a `claude://` deep-link
-  per card. Empty batch = silent skip (the feature). `detect-replies`
-  validates each staged path's front-matter against the v0.8.0
-  contract before the call and drops paths with incomplete
-  front-matter into `notify_skipped_reasons`. Output block gains
-  `drafts_staged`, `book_meeting_handoffs`, `notify_message_id`, and
-  `notify_skipped_reasons[]`. Requires `rockstarr-infra >= 0.8.0`,
-  `rockstarr-reply >= 0.2.0`, `rockstarr-mailer >= 0.2.1`. Existing
-  `rockstarr-reply not installed` and per-thread error fallbacks
-  preserved — those paths skip the urgent email and let the next
-  morning's `approvals-digest` cover the gap. No other skills
-  changed.
+- `0.1.6` — Three changes shipped together.
+  1. `notify-reply-ready` integration. `detect-replies` now drives
+     `rockstarr-reply` synchronously to stage a reply draft per
+     inbound (instead of just signalling), accumulates the resulting
+     paths into `staged_paths[]`, and at end-of-run fires a single
+     urgent client email via `rockstarr-infra:notify-reply-ready`
+     that summarizes every newly-staged draft with a `claude://`
+     deep-link per card. Empty batch = silent skip (the feature).
+     `detect-replies` validates each staged path's front-matter
+     against the v0.8.0 contract before the call and drops paths
+     with incomplete front-matter into `notify_skipped_reasons`.
+     Output block gains `drafts_staged`, `book_meeting_handoffs`,
+     `notify_message_id`, and `notify_skipped_reasons[]`. Requires
+     `rockstarr-infra >= 0.8.0`, `rockstarr-reply >= 0.2.0`,
+     `rockstarr-mailer >= 0.2.1`. Existing `rockstarr-reply not
+     installed` and per-thread error fallbacks preserved — those
+     paths skip the urgent email and let the next morning's
+     `approvals-digest` cover the gap.
+  2. `draft-icp-campaign` sequence personalization + Message 4 hook
+     rewrite. Messages 2 and 3 now open with a literal
+     `{first_name}` placeholder (bare-name comma-led OR
+     greeting-led, writer's pick per the client's voice);
+     `send-scheduled-messages` substitutes from `Leads.name` at
+     send time. Message 4 hook is rewritten from a generic empathy
+     opener ("weeks get full," "I know you're busy") to a
+     benefit-to-ICP hook framed as a future-condition ("when X
+     becomes useful," "if Y starts costing you Z") drawn from the
+     per-campaign ICP's pain focus + a `kb_sources_used` proof
+     point. New Sequence rules 8 (`{first_name}` placeholder
+     convention) and 9 (Message 4 benefit-hook spec) added. Self-
+     check pass extended with eight new checks covering placeholder
+     presence on Messages 2/3, placeholder absence on Message 4,
+     literal-token validation, benefit-hook shape, first-party
+     trace, and pitch/measured-outcome bans. Sequence Rule 6
+     updated to reference the benefit hook instead of the empathy
+     line. `produced_by` stamps bumped @0.1.4 → @0.1.6.
+  3. `send-scheduled-messages` placeholder substitution spec'd. Step
+     2a-i now defines the parse rules for `{first_name}` (whitespace
+     split on `Leads.name`, take token zero, strip non-alphabetic
+     edges) and `{company}` (verbatim from `Leads.company`). On
+     `{first_name}` parse failure the fallback is shape-aware:
+     bare-name comma-led (`{first_name}, ...`) drops the prefix and
+     capitalizes the next word's first letter, so the body opens
+     cleanly without an awkward leading comma; greeting-led
+     (`Hi {first_name}, ...`, `Hey {first_name}, ...`) substitutes
+     `there`, keeping the greeting intact. Mid-sentence fallback
+     defaults to `there`. New post-substitution residue check
+     aborts a single send if any literal `{...}` token survives —
+     unresolved placeholders never reach the lead. Output block
+     gains `skipped_unresolved_placeholder`,
+     `first_name_fallback_bare`, and `first_name_fallback_greeting`
+     so operators can spot dirty workbook data without grepping
+     `_errors.md`. What-NOT-to-do block hardened with five new
+     rules covering pre-resolution in approved files, the
+     difference between the two fallback paths, and the residue
+     check.
 - Deferred to later versions: `force-send-today`, `refresh-lead-list`,
   `gcal-auto-booking`, weighted multi-campaign pacing, cross-bot touch
   caps.

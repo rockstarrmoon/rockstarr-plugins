@@ -1,6 +1,6 @@
 {
   "name": "rockstarr-outreach-salesnav",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Rockstarr AI LinkedIn outreach plugin for clients who will not install Interceptly / MeetAlfred / Dripify / Waalaxy. Plans multi-touch campaigns against a client-supplied ICP and saved Sales Navigator search, executes the daily outreach loop directly in Sales Nav via Chrome MCP, and keeps all state in a single workbook inside /rockstarr-ai/. Enforces a 20/day + 100/week connection cap across campaigns, routes every reply through rockstarr-reply for approval, fires a single urgent client email per detect-replies run summarizing every newly-staged reply draft (via rockstarr-infra:notify-reply-ready), and confirms the browser is signed in to the correct LinkedIn before every run.",
   "author": {
     "name": "Rockstarr & Moon"

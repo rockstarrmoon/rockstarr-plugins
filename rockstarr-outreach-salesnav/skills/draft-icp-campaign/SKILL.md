@@ -165,7 +165,7 @@ Front-matter:
 campaign_slug: "kebab-case-slug"
 derived_from: "00_intake/client-profile.md"
 derived_at: "ISO timestamp"
-produced_by: "rockstarr-outreach-salesnav/draft-icp-campaign@0.1.4"
+produced_by: "rockstarr-outreach-salesnav/draft-icp-campaign@0.1.6"
 scope: "campaign-only"
 authority_note: "This file governs only this campaign. It does NOT override 00_intake/client-profile.md. Update the profile via rockstarr-infra:ingest-workbook + approve."
 overrides:
@@ -228,7 +228,7 @@ saved_search_url: "https://www.linkedin.com/sales/search/..."
 target_lead_count: 250
 cadence: "day-of-accept, accept+3, accept+7"
 daily_send_cap_contribution: "round-robin share of 20/day + 100/week"
-produced_by: "rockstarr-outreach-salesnav/draft-icp-campaign@0.1.4"
+produced_by: "rockstarr-outreach-salesnav/draft-icp-campaign@0.1.6"
 produced_at: "ISO timestamp"
 style_guide_version: "matched from style-guide.md"
 anchor_phrase: "<verbatim anchor phrase from per-campaign ICP>"
@@ -288,6 +288,13 @@ pitch. Do not "introduce yourself briefly." Blank is the spec.
 not a placeholder or a "warm up" for Message 3.
 
 The body must:
+- Open with a personalized first-name intro using the literal
+  `{first_name}` placeholder (see Sequence Rule 8). Either bare-name
+  comma-led (`{first_name}, ...`) or greeting-led
+  (`Hi {first_name}, ...` / `Hey {first_name}, ...`) — pick the
+  shape that fits the client's style guide. The placeholder is
+  resolved at send time by `send-scheduled-messages` from the
+  `Leads.name` column.
 - Acknowledge the connection briefly.
 - Drop the anchor phrase verbatim in the curiosity line (see
   Sequence Rule 4).
@@ -314,6 +321,10 @@ Keep it short. Two or three sentences. Under ~400 characters.
 non-leading question. Stop.
 
 The body must:
+- Open with a personalized first-name intro using the literal
+  `{first_name}` placeholder (see Sequence Rule 8). Same shape rules
+  as Message 2 — bare-name comma-led or greeting-led, writer's call
+  per voice.
 - Reference what the client is exploring or launching (no product
   name, no offer name).
 - Share a short observation or pattern from first-party KB.
@@ -344,29 +355,51 @@ signoff, no "anyway, have a good week."
 
 ### Message 4 — Respectful close (accept + 7 days)
 
-**Purpose.** Short, polite breakup. One specific "the weeks get
-full" acknowledgment, one short open-door line, stop. Two sentences
-is ideal. Three is the ceiling. Breakups drag when they chase
-closure — this one doesn't.
+**Purpose.** Short, polite breakup, but the hook is a benefit to the
+ICP — not generic empathy. One sentence names the specific outcome
+this audience would care about, framed as a future-condition ("when
+X becomes useful, I'm around"). Optional second sentence puts the
+timing in the lead's hands. Stop. Two sentences is ideal. Three is
+the ceiling. Breakups drag when they chase closure — this one
+doesn't.
+
+No `{first_name}` intro on Message 4. Message 4 is the close; the
+greeting-shaped opening reads warmer than a respectful-exit message
+should. Open with the benefit hook directly.
 
 The body must:
-- Acknowledge the reader is busy in a specific, first-party-voice
-  way (e.g., "Running a small shop means weeks get full" — NOT
-  generic "I know you're busy").
-- Leave the door open in one short line ("If this becomes useful
-  down the road, I'm around" or similar in the client's voice).
+- Open with a benefit-to-ICP hook framed as a future-condition. Name
+  one specific, first-party-grounded outcome the ICP would care
+  about (drawn from the per-campaign ICP's pain focus + a proof
+  point in `kb_sources_used`), in the shape "when X becomes useful"
+  / "if Y starts costing you Z" / "the moment this kind of thing
+  lands on your desk." The hook is the value-prop stated as
+  *future-conditional*, not as a pitch.
+- Leave the door open in one short line ("I'm around when that
+  happens" / "happy to compare notes when it lands" — in the
+  client's voice).
 - Stop there.
 
 The body must NOT:
+- Open with generic empathy ("I know you're busy," "weeks get full,"
+  "totally understand if now isn't the time"). The hook is the
+  *benefit*, not the *empathy*. Empathy without a benefit reads as
+  filler.
+- Pitch directly. The hook is "when this benefit matters, I'm here,"
+  not "we do X for companies like yours." Future-conditional, not
+  present-tense sales.
+- Promise a measured outcome ("we'll cut your X by Y%," "expect a
+  3x return"). The benefit is named, not measured.
 - Restate the anchor phrase. Message 2 already set it; repeating it
   here reads as overkill and kills the polite-exit tone.
-- Restate the ceiling or the pain. Same reason.
+- Restate the ceiling or the pain in pure form. The benefit hook
+  *names the outcome* — that's not the same as restating the pain.
+  Don't write "running a small shop means weeks get full" again.
 - Close with well-wishes ("good luck with the quarter," "wishing
   you a great Q2," "best of luck out there"). No quarter-signoff.
 - Guilt them for not responding.
 - Chase ("just bumping this," "circling back," "one more try").
   Any variant of "following up" is banned per Sequence Rule 1.
-- Restate your value proposition.
 - Push for a reply.
 - Add a third observation or "one last thought." The close is the
   close.
@@ -407,17 +440,43 @@ the Filter Summary are fine; em dashes in a message body are not.
    the only reason Message 2 exists is to tee up Message 3, rewrite
    it. The anchor phrase is how it earns the reply.
 6. **Message 4 is short and sweet.** Two or three sentences total.
-   One specific "the weeks get full"–style acknowledgment, one
-   open-door line, stop. No anchor restatement, no ceiling
-   restatement, no pain restatement, no well-wishes, no chase, no
-   value-prop recap, no "one last thought." If Message 4 is longer
-   than three sentences, cut until it fits.
+   One benefit-to-ICP hook framed as a future-condition (see
+   Rule 9), one open-door line, stop. No `{first_name}` intro on
+   Message 4 — the close opens with the hook directly. No anchor
+   restatement, no ceiling restatement, no pain restatement, no
+   well-wishes, no chase, no value-prop recap, no "one last
+   thought." If Message 4 is longer than three sentences, cut until
+   it fits.
 7. **No trailing permission softeners in Message 3.** Lines like
    "fine if I send another note down the road?" / "OK to stay in
    touch?" / "let me know if you'd rather I not keep writing" are
    banned. They read as "hope your week is going well" — filler
    masquerading as politeness. Trust the reader to reply or not.
    The soft question is the end of the message.
+8. **Personalized intro on Messages 2 and 3 only, via the literal
+   `{first_name}` placeholder.** Both Message 2 and Message 3 must
+   open with `{first_name}` — either bare-name comma-led
+   (`{first_name}, ...`) or greeting-led (`Hi {first_name}, ...` /
+   `Hey {first_name}, ...`), writer's pick per the client's style
+   guide. Use the literal token `{first_name}` in the draft — do
+   NOT pre-resolve it to a real name; `send-scheduled-messages`
+   substitutes from `Leads.name` at send time. Message 1 is blank
+   per Rule 1-equivalent (it has no body). Message 4 does NOT carry
+   the intro per Rule 6. The placeholder counts toward the ~400-char
+   Message 2 cap as ~10–15 chars expanded, which is fine.
+9. **Message 4 hook is a benefit to the ICP, framed as a
+   future-condition.** The opening sentence of Message 4 names a
+   specific, first-party-grounded outcome the ICP would care about
+   (sourced from the per-campaign ICP's pain focus + a proof point
+   in `kb_sources_used`), shaped as "when X becomes useful" / "if
+   Y starts costing you Z" / "the moment this kind of thing lands
+   on your desk." Generic empathy openers ("I know you're busy,"
+   "weeks get full," "totally understand if now isn't the time")
+   are banned — they're filler dressed up as politeness. The hook
+   is value-prop weight, stated as future-conditional. Direct
+   pitches ("we do X for companies like yours") and measured
+   outcome promises ("3x return," "cut your X by Y%") are also
+   banned — the benefit is named, not measured, and not sold.
 
 ## Booking flow
 - `booking_mode: automated` → `propose-meeting-times` is called when
@@ -478,6 +537,29 @@ first-party KB.)
    - Anchor phrase appears in Message 3 or Message 4 (verbatim OR
      obviously rehashed)? If yes, rewrite — Message 3 references the
      pattern in fresh language, Message 4 does not touch it at all.
+   - Message 2 opens with the literal `{first_name}` placeholder
+     (bare-name comma-led OR greeting-led)? If no, rewrite.
+   - Message 3 opens with the literal `{first_name}` placeholder
+     (same shape rules as Message 2)? If no, rewrite.
+   - Message 4 does NOT contain `{first_name}` anywhere? If
+     `{first_name}` is present in Message 4, cut it — Message 4
+     opens with the benefit hook, not a greeting.
+   - `{first_name}` is the literal token, not pre-resolved to a real
+     name in any message body? If a real name is hard-coded
+     anywhere, replace it with `{first_name}` —
+     `send-scheduled-messages` does the substitution at send time.
+   - Message 4 opens with a benefit-to-ICP hook framed as a
+     future-condition (per Rule 9), not a generic empathy line
+     ("I know you're busy," "weeks get full," "totally understand")?
+     If the opener is empathy without a benefit, rewrite.
+   - Message 4 hook names a specific outcome traceable to the
+     per-campaign ICP's pain focus + a `kb_sources_used` proof
+     point? If the benefit is generic ("save you time," "make
+     things easier") with no first-party trace, rewrite.
+   - Message 4 contains a direct pitch ("we do X for companies like
+     yours") or measured-outcome promise ("3x return," "cut your X
+     by Y%")? If yes, rewrite — the benefit is future-conditional,
+     not present-tense sales.
    - "Following up" / "follow up" / "circling back" / "bumping" —
      zero hits across Messages 2–4? If any hit, rewrite.
    - Em dash in any message body? If yes, rewrite.
