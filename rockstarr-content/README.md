@@ -14,30 +14,69 @@ connectors (`publish-wp`, `publish-ga`,
 `publish-linkedin-newsletter`) are deferred until a signed
 client's stack lights up the matching field.
 
-## v0.2 at a glance
+## At a glance
 
-v0.2 is a significant restructuring of v0.1. The lane and skill
-identities changed:
-
-- **v0.1's `draft-blog` → v0.2's `draft-thought-leadership`.**
-  The shorter, opinion-driven, single-shot piece is now named
-  for what it is.
-- **v0.1's `draft-article` → v0.2's `draft-blog`.** The longer,
-  researched, outline-first piece is now the default "blog" — the
-  outline-blog gate feeds it.
-- **`draft-article` remains in v0.2 as a deprecated alias.** It
-  prompts the user to pick a lane and routes them. Scheduled for
-  removal in v0.3.
-- **New monthly cadence.** `ideate-topics` runs once per month,
+- **Four publishing lanes** gated by `stack.md` cadence:
+  researched blog, thought leadership, email newsletter, LinkedIn
+  newsletter. Plus interview-driven case studies (quarterly) and
+  on-demand repurposed derivatives.
+- **Both long-form lanes are outline-first.** Researched blog
+  flows through `outline-blog` → `draft-blog`. Thought leadership
+  flows through `outline-thought-leadership` → `draft-thought-leadership`
+  (added in v0.3 — see below).
+- **Monthly cadence:** `ideate-topics` runs once per month,
   `content-calendar` lays the picks on the calendar, per-piece
   drafting runs on its scheduled date.
-- **Mandatory stop-slop pass (added in 0.2.1).** Every drafting
-  skill in this plugin runs the shared stop-slop skill at
+- **Mandatory stop-slop pass on every prose output.** Style guide
+  shapes voice; stop-slop strips AI tells. Structural artifacts
+  (topic lists, calendars, outlines, interview transcripts) are
+  exempt.
+- **Mandatory TL rubric pass (v0.3).** Thought-leadership drafts
+  run the canonical rubric BEFORE stop-slop — argument quality
+  first, prose hygiene second. Slogans don't get polished.
+
+## v0.3 — thought-leadership rubric integration
+
+Thought-leadership pieces in v0.2 were single-shot. They came out
+flat. The fix isn't editing — it's catching fuzziness before
+drafting begins. v0.3 introduces a rubric-driven outline gate
+parallel to the researched-blog flow:
+
+- **`outline-thought-leadership`** forces five required fields
+  before any prose runs: thesis, smart-competitor counter-argument,
+  opening scene, quotable line, buried proprietary term. Two
+  attempts per field; if a field is fuzzy after two tries, the
+  skill stops and surfaces the failure to the human. The point is
+  to catch fuzziness before drafting wastes compute.
+- **`draft-thought-leadership`** now requires the approved
+  outline. After drafting, runs Pass 1 (TL rubric — seven-test
+  critique frame from the canonical rubric) before Pass 2
+  (stop-slop). Order is fixed.
+- **`ideate-topics`** captures an `enemy` field on every TL
+  angle and runs an enemy-diversity check across the month's TL
+  slate. Two TL pieces with rhyming enemies surface to the user
+  before the calendar gets approved.
+
+The rubric itself lives once, as a shared reference at
+`rockstarr-infra/skills/_shared/references/tl-rubric.md`. Single
+source of truth.
+
+## v0.2 historical note
+
+v0.2 was the lane-and-skill-identity restructure that landed the
+four-lane model:
+
+- **v0.1's `draft-blog` → v0.2's `draft-thought-leadership`.**
+  The shorter, opinion-driven piece named for what it is.
+- **v0.1's `draft-article` → v0.2's `draft-blog`.** The longer,
+  researched, outline-first piece is now the default "blog".
+- **`draft-article` retained as a deprecated alias.** Scheduled
+  for removal in v0.4 (deferred from v0.3 to keep that release
+  focused on the rubric work).
+- **Mandatory stop-slop pass added in 0.2.1.** Every drafting
+  skill runs the shared stop-slop skill at
   `rockstarr-infra/skills/_shared/stop-slop/` as the final step
-  before writing to `03_drafts/`. Style guide shapes voice;
-  stop-slop strips the AI tells that survive even on-voice
-  writing. Structural artifacts (topic lists, calendars,
-  outlines, interview transcripts) are exempt.
+  before writing.
 
 ## Lanes and cadence
 
@@ -48,7 +87,7 @@ drafts generated.
 | Lane | Primary skill | Cadence field | Repurpose path |
 |------|---------------|---------------|----------------|
 | Researched blog | `outline-blog` → `draft-blog` | `blogs_per_month` | Referenced from newsletters; optional `repurpose` to LinkedIn post. |
-| Thought leadership | `draft-thought-leadership` | `thought_leadership_per_month` | Source for LinkedIn newsletters (via `publish-linkedin-newsletter`, DEFER); referenced from newsletters; optional `repurpose`. |
+| Thought leadership | `outline-thought-leadership` → `draft-thought-leadership` | `thought_leadership_per_month` | Source for LinkedIn newsletters (via `publish-linkedin-newsletter`, DEFER); referenced from newsletters; optional `repurpose`. |
 | Email newsletter | `draft-newsletter` | `email_newsletters_per_month` | Links to the month's blog + TL pieces. Not repurposed back. |
 | LinkedIn newsletter | `publish-linkedin-newsletter` (DEFER) | `linkedin_newsletters_per_month` | Reuse of an approved TL piece. Not a new draft. |
 | Case study | `draft-case-study` | `case_studies_per_quarter` | On-demand (quarterly reminder), outside the monthly calendar. |
@@ -58,15 +97,16 @@ drafts generated.
 
 | Skill | Status | Purpose |
 |-------|--------|---------|
-| `ideate-topics` | UPDATED | Monthly. Reads profile, style guide, first-party KB, publish log, AND stack-cadence. Proposes 8–12 ranked angles ONLY for enabled lanes. Output: `02_inputs/content-topics_YYYY-MM.md`. |
-| `content-calendar` | NEW | Monthly. Slots the user's picks across the month. Blog outline-to-publish paths first; TL next; newsletters anchored to preferred weekday; LinkedIn newsletters aligned to an approved TL. Output: `02_inputs/content-calendar_YYYY-MM.md`. |
-| `outline-blog` | UPDATED | Outline-first gate for the researched blog lane. Approval required before `draft-blog` runs. |
-| `draft-blog` | IDENTITY SWAP | Researched, informational blog. Consumes an approved outline, produces a full post citing first-party KB (and optionally third-party references). Mandatory stop-slop final pass. Replaces v0.1's `draft-article`. |
-| `draft-thought-leadership` | NEW (renamed) | Shorter, opinion-driven, single-shot piece. Weight from POV, not research. Mandatory stop-slop final pass. Replaces v0.1's `draft-blog`. |
-| `draft-article` | DEPRECATED | Back-compat shim. Asks the user which lane they meant and routes to `draft-blog` or `draft-thought-leadership`. Does not draft. Removed in v0.3. |
-| `draft-newsletter` | UPDATED | Single-shot email newsletter. CTA links the month's approved blog + TL pieces. Mandatory stop-slop pass on subject lines, preheader, and body. |
-| `draft-case-study` | NEW | Quarterly. Interview-driven via `AskUserQuestion` using the Rockstarr custom-GPT case-study prompt (sourced from rockstarr-infra). Transcript in `02_inputs/content/`; polished draft only after every required question is answered. Mandatory stop-slop on the polished prose; transcript exempt. |
-| `repurpose` | NEW | Takes one approved long-form piece and fans it into LinkedIn post, newsletter highlight, X/Threads thread, and (only when `records_videos=true`) a short video script. Mandatory stop-slop pass per derivative. |
+| `ideate-topics` | UPDATED (0.3) | Monthly. Reads profile, style guide, first-party KB, publish log, stack-cadence. Proposes 8–12 ranked angles ONLY for enabled lanes. Each TL angle carries an `enemy` field; runs an enemy-diversity check across the month's TL slate to prevent four-pieces-restating-one-argument. Output: `02_inputs/content-topics_YYYY-MM.md`. |
+| `content-calendar` | UPDATED (0.3) | Monthly. Slots the user's picks across the month. Blog and TL outline-to-publish paths first (both lanes are now outline-first); newsletters anchored to preferred weekday; LinkedIn newsletters aligned to an approved TL. Output: `02_inputs/content-calendar_YYYY-MM.md`. |
+| `outline-blog` | EXISTING | Outline-first gate for the researched blog lane. Approval required before `draft-blog` runs. |
+| `outline-thought-leadership` | NEW (0.3) | Outline-first gate for the thought-leadership lane. Forces five required fields — thesis, smart-competitor counter-argument, opening scene, quotable line, buried proprietary term — applied from the canonical TL rubric. Approval required before `draft-thought-leadership` runs. |
+| `draft-blog` | EXISTING | Researched, informational blog. Consumes an approved outline, produces a full post citing first-party KB. Mandatory stop-slop final pass. |
+| `draft-thought-leadership` | UPDATED (0.3) | Opinion-driven piece. **Outline-gated** — refuses to run without an approved `outline-thought-leadership` output. Drafts the named thesis, opens on the named scene, places the named quotable line in the first third, buries the proprietary term until the second half. Runs the canonical TL rubric as Pass 1, then stop-slop as Pass 2 — argument quality before prose hygiene. |
+| `draft-article` | DEPRECATED | Back-compat shim. Asks the user which lane they meant and routes to `draft-blog` or `outline-thought-leadership`. Does not draft. Removed in v0.4. |
+| `draft-newsletter` | EXISTING | Single-shot email newsletter. CTA links the month's approved blog + TL pieces. Mandatory stop-slop pass on subject lines, preheader, and body. |
+| `draft-case-study` | EXISTING | Quarterly. Interview-driven via `AskUserQuestion` using the Rockstarr custom-GPT case-study prompt (sourced from rockstarr-infra). Transcript in `02_inputs/content/`; polished draft only after every required question is answered. Mandatory stop-slop on the polished prose; transcript exempt. |
+| `repurpose` | EXISTING | Takes one approved long-form piece and fans it into LinkedIn post, newsletter highlight, X/Threads thread, and (only when `records_videos=true`) a short video script. Mandatory stop-slop pass per derivative. |
 | `publish-wp` | DEFER | WordPress publish connector. Builds when first client's stack lights up. |
 | `publish-ga` | DEFER | GrowthAmp blog publish connector. Builds when first client's stack lights up. |
 | `publish-linkedin-newsletter` | DEFER | Republish an approved TL piece as a LinkedIn newsletter via Chrome MCP. Builds when first client's `linkedin_newsletters_per_month >= 1`. |
@@ -91,40 +131,71 @@ already have produced:
   shared stop-slop skill every drafting skill runs as its final
   pass. MIT-licensed, based on
   [hardikpandya/stop-slop](https://github.com/hardikpandya/stop-slop).
+- `rockstarr-infra/skills/_shared/references/tl-rubric.md` — the
+  canonical thought-leadership rubric. Read by
+  `outline-thought-leadership` (forces the five required fields),
+  `draft-thought-leadership` (post-draft rubric pass before
+  stop-slop), and `ideate-topics` (enemy-diversity check). Single
+  source of truth — do not fork.
 
 If any of these are missing or out of date, skills refuse and
 point the user back at the relevant infra skill.
 
 ## rockstarr-infra dependencies
 
-The infra dependencies required by this plugin are shipped as of
-rockstarr-infra v0.4:
+This plugin requires **rockstarr-infra v0.8.1+** at minimum
+(carrying the shared TL rubric the v0.3 thought-leadership flow
+reads). Individual dependencies and the infra version that
+introduced each:
 
 1. **`capture-stack`** — content-cadence block with six fields:
    `blogs_per_month`, `thought_leadership_per_month`,
    `email_newsletters_per_month`,
    `linkedin_newsletters_per_month`, `records_videos`,
-   `case_studies_per_quarter`.
+   `case_studies_per_quarter`. (rockstarr-infra v0.4+)
 2. **`scaffold-client`** — content subdirectories:
    `02_inputs/content/` (case-study interview transcripts),
    `04_approved/content/`, `05_published/content/`,
-   `06_reports/monthly/`.
+   `06_reports/monthly/`. (rockstarr-infra v0.4+)
 3. **Shared reference:
    `skills/_shared/references/case-study-prompt.md`** — the
    Rockstarr custom-GPT case-study interview prompt.
-   `draft-case-study` reads from this path.
+   `draft-case-study` reads from this path. (rockstarr-infra v0.4+)
 4. **Shared skill: `skills/_shared/stop-slop/`** — MIT-licensed
    stop-slop skill (derived from
    [hardikpandya/stop-slop](https://github.com/hardikpandya/stop-slop)).
    Every drafting skill in this plugin calls it as the mandatory
    final pass. Every other Growth-OS bot that produces prose
    (social, outreach, reply, nurture) calls the same canonical
-   copy — one upstream skill, zero drift.
+   copy — one upstream skill, zero drift. (rockstarr-infra v0.4+)
+5. **Shared reference:
+   `skills/_shared/references/tl-rubric.md`** — canonical
+   thought-leadership rubric. Read by `outline-thought-leadership`,
+   `draft-thought-leadership`, and `ideate-topics`. Defines the
+   three tests, patterns to cut, structural rewrite checklist,
+   enemy-diversity standard, and quick critique frame. Single
+   source of truth — do not fork. (rockstarr-infra **v0.8.1+** —
+   this is the floor for v0.3 of this plugin)
 
-**(Future backlog) `approvals-digest`.** Every draft this plugin
-emits carries `awaiting_approval_since` front-matter so a future
-infra digest can surface pending reviews across bots without
-bot-specific code.
+**Approvals layer** (rockstarr-infra v0.8.0+). Every draft this
+plugin emits carries `approval_status: pending` and
+`awaiting_approval_since` front-matter — these are read by
+`approvals-digest` (daily client-bound email summarizing pending
+items) and `approvals-backlog-alert` (weekly strategist alert
+when the queue exceeds threshold). No work required in this
+plugin to participate; the front-matter contract is already
+in place across every skill.
+
+### Resolving the floor
+
+Because dependency #5 (the TL rubric) ships in rockstarr-infra
+v0.8.1, this plugin's hard floor is **v0.8.1+**. A client running
+rockstarr-infra v0.8.0 has the approvals layer but not the rubric
+— the v0.3 thought-leadership skills will refuse to run with a
+clear pointer back at the infra version they need. Updating
+rockstarr-infra to v0.8.1 is a no-op for everything else (pure
+additive — one new file under `skills/_shared/references/`), so
+the upgrade is cheap.
 
 ## Drafting rules (non-negotiable)
 
@@ -264,8 +335,39 @@ On-demand
     in the chat summary. Scores below 35/50 flag for review.
   - Depends on `rockstarr-infra` v0.4 which ships the shared
     stop-slop skill.
-- `0.3.0` (planned) — remove `draft-article` shim; wire publish
-  connectors as signed clients request them.
+- `0.3.0` — Thought-leadership rubric integration.
+  - **Lane structural change.** Thought leadership is no longer
+    single-shot. The lane now flows through
+    `outline-thought-leadership` (gate) → `draft-thought-leadership`,
+    parallel to how the researched-blog lane works.
+  - **New skill: `outline-thought-leadership`.** Forces five
+    required fields before any prose — thesis, smart-competitor
+    counter-argument, opening scene, quotable line, buried
+    proprietary term. Two attempts per field; if a field is fuzzy
+    after two tries, surface to the human. The point of the gate
+    is to catch fuzziness before drafting wastes compute.
+  - **`draft-thought-leadership` updated.** Refuses to run without
+    an approved outline. Adds a post-draft rubric pass (Pass 1)
+    that runs the canonical TL rubric's seven-test critique frame
+    before stop-slop (Pass 2). Order is fixed: argument quality
+    first, prose hygiene second.
+  - **`ideate-topics` updated.** Each thought-leadership angle
+    carries an `enemy` field (one-sentence headline of what the
+    piece argues against). Post-proposal, runs an enemy-diversity
+    check across the month's TL slate; flags rhyming enemies for
+    user resolution.
+  - **New shared reference:
+    `rockstarr-infra/skills/_shared/references/tl-rubric.md`** —
+    canonical TL rubric. Read by all three skills above. Single
+    source of truth.
+  - Depends on `rockstarr-infra` **v0.8.1+** for the shared
+    rubric reference (`tl-rubric.md`). v0.8.0 is not enough — the
+    rubric was carved out into its own patch release. The v0.3
+    TL skills refuse to run if the rubric file is missing and
+    point the user back at the infra upgrade.
+  - **Still planned for a later cut:** remove the deprecated
+    `draft-article` shim (now scheduled for v0.4); wire publish
+    connectors as signed clients request them.
 
 ## What this plugin does not do
 
