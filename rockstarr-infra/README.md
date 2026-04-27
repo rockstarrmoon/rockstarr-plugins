@@ -313,6 +313,17 @@ that's what we're here for.
   Rockstarr case-study interview prompt. Referenced by
   `rockstarr-content:draft-case-study` and any future bot that
   produces case-study output. Do not fork — update in place.
+- `skills/_shared/references/tl-rubric.md` — canonical
+  thought-leadership rubric. Defines the three tests every TL
+  piece must pass (single argument a smart competitor could
+  disagree with, one specific story told end-to-end, one quotable
+  line a reader would repeat), patterns to cut on sight, the
+  structural rewrite checklist, the multi-article enemy-diversity
+  standard, and the seven-test quick critique frame. Read by
+  `rockstarr-content:outline-thought-leadership`,
+  `rockstarr-content:draft-thought-leadership`, and
+  `rockstarr-content:ideate-topics`. Do not fork — update in
+  place.
 - `skills/_shared/stop-slop/` — MIT-licensed stop-slop skill. Every
   prose-producing Rockstarr bot must run this as the final pass before
   writing a draft to `03_drafts/`. Shared SKILL.md + `references/`
@@ -383,6 +394,14 @@ that's what we're here for.
     appended to call this skill with the just-staged paths. Wire
     that in the matching plugin bumps before the urgent
     notification fires for real.
+  - **New shared reference:
+    `skills/_shared/references/tl-rubric.md`** — canonical
+    thought-leadership rubric. Read by rockstarr-content's
+    `outline-thought-leadership`, `draft-thought-leadership`, and
+    `ideate-topics` skills (rockstarr-content v0.3+). Defines
+    the three tests, patterns to cut, structural rewrite
+    checklist, enemy-diversity standard, and quick critique
+    frame. Single source of truth — update in place, don't fork.
 
 ## Backlog / future
 
