@@ -1,8 +1,0 @@
-{
-  "name": "rockstarr-content-bot",
-  "version": "0.1.0",
-  "description": "Rockstarr AI long-form drafting plugin. Ideates blog/newsletter/article topics from the client's profile, style guide, and knowledge base, then drafts in the client's approved voice. Blog posts use an outline-first two-step flow. Every output is first-party grounded and lands in 03_drafts/content/ for human review.",
-  "author": {
-    "name": "Rockstarr & Moon"
-  }
-}
