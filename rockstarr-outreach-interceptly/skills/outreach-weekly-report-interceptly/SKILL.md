@@ -1,9 +1,9 @@
 ---
-name: outreach-weekly-report
-description: "This skill should be used after metrics-weekly finishes, or when the user asks to \"generate the weekly outreach report\", \"write this week's report\", or \"render the Interceptly weekly\". Consumes Metrics (Weekly) rows for the target ISO week and produces a human-readable markdown report at /06_reports/weekly/outreach-YYYY-WW.md with per-account tables, week-over-week deltas, stale review-reply callout, non-ICP log highlights, flagged-leads list, session-failure summary, and a 'what Rachel / Jon should notice' block."
+name: outreach-weekly-report-interceptly
+description: "This skill should be used after metrics-weekly-interceptly finishes, or when the user asks to \"generate the weekly outreach report\", \"write this week's report\", or \"render the Interceptly weekly\". Consumes Metrics (Weekly) rows for the target ISO week and produces a human-readable markdown report at /06_reports/weekly/outreach-YYYY-WW.md with per-account tables, week-over-week deltas, stale review-reply callout, non-ICP log highlights, flagged-leads list, session-failure summary, and a 'what Rachel / Jon should notice' block."
 ---
 
-# outreach-weekly-report
+# outreach-weekly-report-interceptly
 
 Human-readable wrap-up. The Friday artifact the client reads
 before Monday. Every metric on the page has a pointer back to the
@@ -19,13 +19,13 @@ render the report without a flagged-leads section.
 
 ## When to run
 
-- Automatically after `metrics-weekly` finishes.
+- Automatically after `metrics-weekly-interceptly` finishes.
 - On demand when the user asks for a specific week's report.
 
 ## Preconditions
 
 - `Metrics (Weekly)` sheet has rows for the target ISO week
-  (produced by `metrics-weekly`).
+  (produced by `metrics-weekly-interceptly`).
 - `outreach-mirror.xlsx` is readable.
 
 ## Inputs
@@ -137,7 +137,7 @@ For each: lead name, matching_rule cited, date.>
 
 > If you keep seeing patterns here that feel wrong, re-run
 > `capture-icp-qualifications` to tighten the baseline rules.
-> `draft-icp-campaign` only narrows; the baseline lives in
+> `draft-icp-campaign-interceptly` only narrows; the baseline lives in
 > `/00_intake/icp-qualifications.md`.
 
 ## Session + UI health
@@ -167,7 +167,7 @@ shifting patterns. Examples the author might write:>
 If `any_day_partial` was true for any account, add at the bottom:
 
 > Note: one or more daily rollups this week were marked partial.
-> Numbers may be floors rather than truth. Re-run `metrics-daily`
+> Numbers may be floors rather than truth. Re-run `metrics-daily-interceptly`
 > with the final flag after the affected day's loop completes.
 
 ### Step 4 — Return

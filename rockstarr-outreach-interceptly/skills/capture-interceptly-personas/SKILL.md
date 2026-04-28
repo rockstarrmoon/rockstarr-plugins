@@ -13,7 +13,7 @@ confirmation), and free-text persona notes.
 
 `interceptly-accounts.md` is a shared artifact:
 
-- `draft-icp-campaign` (this plugin) reads it to match outbound
+- `draft-icp-campaign-interceptly` (this plugin) reads it to match outbound
   sequence copy to the right signer.
 - `rockstarr-reply` reads it so draft-reply signs under the right
   persona.

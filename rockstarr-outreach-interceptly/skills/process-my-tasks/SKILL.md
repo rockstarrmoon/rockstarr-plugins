@@ -25,9 +25,9 @@ due-date instead of an unread reply).
   (`follow-up`, `review-reply`, `flagged_review`) stop after
   `draft-reply` stages a draft and accumulate the path; deterministic
   branches (label-only, flag) execute their channel-side work
-  immediately. `book-meeting` tasks fire `book-meeting` directly in
+  immediately. `book-meeting-interceptly` tasks fire `book-meeting-interceptly` directly in
   BOTH modes — the booking substance was authorized on a previous
-  reply turn, so `book-meeting` is just execution.
+  reply turn, so `book-meeting-interceptly` is just execution.
 - (Implicit) the currently-active managed account, established by
   the most recent `switch-account` call in this run.
 
@@ -55,7 +55,7 @@ For each task row, oldest-first:
 2. Open the lead's thread (click the row; Interceptly routes
    task rows to the underlying thread).
 3. Branch on `task_type`:
-   - `book-meeting` — route directly to `book-meeting` in BOTH
+   - `book-meeting-interceptly` — route directly to `book-meeting-interceptly` in BOTH
      modes. Do NOT call rockstarr-reply. The close is the booking,
      not a reply, and the substance was authorized on a prior turn.
    - `follow-up` / `review-reply` / `flagged_review` — run the same
@@ -115,7 +115,7 @@ return control to the caller. Return shape (matches
 ```
 
 `action` values are the union of `process-inbox`'s set plus
-`booked` (from the `book-meeting` branch). The daily-loop caller
+`booked` (from the `book-meeting-interceptly` branch). The daily-loop caller
 accumulates `staged_paths` into the global accumulator before
 calling `switch-account` to move to the next managed account.
 
@@ -127,8 +127,8 @@ calling `switch-account` to move to the next managed account.
   classify-reply may bump, pivot to referral, or flag.
 - `review-reply` — a thread was flagged earlier and the flag
   was cleared; the pipeline now runs normally.
-- `book-meeting` — lead agreed to a slot and supplied required
-  fields; routes to `book-meeting`, NOT through
+- `book-meeting-interceptly` — lead agreed to a slot and supplied required
+  fields; routes to `book-meeting-interceptly`, NOT through
   rockstarr-reply. The booking is the close.
 - `flagged_review` — created 2 business days after a prior
   `flag` bundle. Re-runs the handoff so rockstarr-reply can
@@ -148,7 +148,7 @@ calling `switch-account` to move to the next managed account.
   `review-reply` / `flagged_review` task. Approval-gated
   outcomes wait for the operator to open the urgent notify email
   and authorize via Cowork.
-- `book-meeting` task type ALWAYS executes `book-meeting`,
+- `book-meeting-interceptly` task type ALWAYS executes `book-meeting-interceptly`,
   including in background mode. The booking substance was
   authorized when the operator approved the prior reply that
   produced the agreed time + lead_fields.

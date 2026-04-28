@@ -1,6 +1,6 @@
 ---
 name: process-inbox
-description: "This skill should be used in the daily outreach loop after preview-queue, or when the user says \"process the inbox\", \"walk unread replies\", or \"handle today's Interceptly inbox for the current account\". Filters Interceptly Inbox → Replied, walks unread conversations oldest-first, and for each thread runs qualify-lead locally, then hands the thread off to rockstarr-reply via a channel-agnostic handoff bundle. Has two modes. In foreground mode (default, the operator is in chat) it calls present-for-approval inline and executes the channel-side work returned by rockstarr-reply (send-message → apply-label → create-followup-task). In background mode (used by the scheduled daily-loop run) it stops after draft-reply stages a draft, accumulates staged paths, and returns them so the caller can hand them to rockstarr-infra:notify-reply-ready. Always returns staged_paths plus a per-thread outcome list. Unreads come before My Tasks on every account. Refuses to run if confirm-session-interceptly has not passed in this run."
+description: "This skill should be used in the daily outreach loop after preview-queue-interceptly, or when the user says \"process the inbox\", \"walk unread replies\", or \"handle today's Interceptly inbox for the current account\". Filters Interceptly Inbox → Replied, walks unread conversations oldest-first, and for each thread runs qualify-lead locally, then hands the thread off to rockstarr-reply via a channel-agnostic handoff bundle. Has two modes. In foreground mode (default, the operator is in chat) it calls present-for-approval inline and executes the channel-side work returned by rockstarr-reply (send-message → apply-label → create-followup-task). In background mode (used by the scheduled daily-loop run) it stops after draft-reply stages a draft, accumulates staged paths, and returns them so the caller can hand them to rockstarr-infra:notify-reply-ready. Always returns staged_paths plus a per-thread outcome list. Unreads come before My Tasks on every account. Refuses to run if confirm-session-interceptly has not passed in this run."
 ---
 
 # process-inbox
@@ -21,7 +21,7 @@ owns drafting. This skill is the seam between the two. It:
 
 - Step 3a of the daily loop, for the currently-active managed
   account, after `confirm-session-interceptly` passes and
-  `preview-queue` (if enabled) has written its file.
+  `preview-queue-interceptly` (if enabled) has written its file.
 - On demand when the user says "just process the inbox" or "run
   the inbox pass for this account".
 
@@ -213,9 +213,9 @@ the label/task that records that decision.
 
 #### 6d — book-meeting-handoff (foreground only)
 
-1. Route directly to `book-meeting` with `agreed_start_iso` +
-   `lead_fields`. `book-meeting` handles slot selection, form
-   fill, submit, and on success calls `mark-booked`. This branch
+1. Route directly to `book-meeting-interceptly` with `agreed_start_iso` +
+   `lead_fields`. `book-meeting-interceptly` handles slot selection, form
+   fill, submit, and on success calls `mark-booked-interceptly`. This branch
    does NOT send a reply message — the booking itself is the
    close.
 

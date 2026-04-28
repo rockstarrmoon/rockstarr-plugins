@@ -1,13 +1,13 @@
 ---
-name: metrics-weekly
-description: "This skill should be used every Friday end-of-day, or when the user says \"roll up the week\", \"close out the outreach week\", or \"write this week's Metrics (Weekly) rows\". Aggregates Metrics (Daily) rows per managed account per ISO week into Metrics (Weekly): sends, bookings, reply-to-send ratio, label distribution, non-ICP declines, flags, campaigns configured/stopped, session failures, plus week-over-week deltas. Triggers outreach-weekly-report to render the human-readable weekly markdown."
+name: metrics-weekly-interceptly
+description: "This skill should be used every Friday end-of-day, or when the user says \"roll up the week\", \"close out the outreach week\", or \"write this week's Metrics (Weekly) rows\". Aggregates Metrics (Daily) rows per managed account per ISO week into Metrics (Weekly): sends, bookings, reply-to-send ratio, label distribution, non-ICP declines, flags, campaigns configured/stopped, session failures, plus week-over-week deltas. Triggers outreach-weekly-report-interceptly to render the human-readable weekly markdown."
 ---
 
-# metrics-weekly
+# metrics-weekly-interceptly
 
 Weekly rollup. One row per managed account per ISO week.
 
-Reads `Metrics (Daily)` which `metrics-daily` has already
+Reads `Metrics (Daily)` which `metrics-daily-interceptly` has already
 populated. This skill is a pure aggregation of the daily
 scoreboard — it does not re-read the raw activity sheets.
 
@@ -121,7 +121,7 @@ sheet. Schema:
 
 ### Step 6 — Trigger the weekly report
 
-Call `outreach-weekly-report` with `iso_week` = this week.
+Call `outreach-weekly-report-interceptly` with `iso_week` = this week.
 That skill produces the human-readable markdown at
 `/06_reports/weekly/outreach-<YYYY-WW>.md`.
 
@@ -140,15 +140,15 @@ than truth.
 - **Previous-week Metrics (Weekly) doesn't exist** (first
   week running). Leave deltas blank; note in the weekly report.
 - **Mirror workbook locked by another process.** Retry after
-  `backup-workbook` releases the lock. If still locked, abort
+  `backup-workbook-interceptly` releases the lock. If still locked, abort
   with a clear error.
 
 ## What NOT to do
 
 - Do not write to `Metrics (Daily)` from here. That's
-  `metrics-daily`'s ownership.
+  `metrics-daily-interceptly`'s ownership.
 - Do not re-aggregate from the raw activity sheets (Messages,
-  Labels, Tasks, Qualifications, etc.) — `metrics-daily`
+  Labels, Tasks, Qualifications, etc.) — `metrics-daily-interceptly`
   already rolled those up into the daily scoreboard. Read the
   daily sheet, not the raw.
 - Do not skip accounts with zero activity. Every managed

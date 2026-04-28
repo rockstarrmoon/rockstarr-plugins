@@ -1,12 +1,12 @@
 ---
-name: draft-icp-campaign
+name: draft-icp-campaign-interceptly
 description: "This skill should be used when the user asks to \"draft a campaign\", \"write an outreach campaign\", \"draft the Interceptly campaign\", \"turn this ICP into a campaign\", or names a campaign slug with an ICP spec at 02_inputs/outreach/icps/. Reads the baseline ICP from 00_intake/client-profile.md and the qualification rules from 00_intake/icp-qualifications.md (produced by rockstarr-reply), walks the user through a per-campaign clarification pass (tightens rules for this campaign only — never writes back to icp-qualifications.md), then produces a campaign spec in 03_drafts/outreach/ with filter summary, 3-step Interceptly sequence (connect note + 2 post-accept messages), cadence, exit conditions, and optional per-campaign ICP overrides. Every piece of message copy runs through stop-slop before the draft saves. Shared skill; canonical source will migrate to rockstarr-infra/skills/_shared/ when that tree exists."
 ---
 
-# draft-icp-campaign
+# draft-icp-campaign-interceptly
 
 Shared skill. Canonical source will live at
-`rockstarr-infra/skills/_shared/draft-icp-campaign/` once the
+`rockstarr-infra/skills/_shared/draft-icp-campaign-interceptly/` once the
 shared tree is populated. For V0.1 it ships inline in
 `rockstarr-outreach-salesnav` and `rockstarr-outreach-interceptly`;
 if you edit this file, edit the matching copy in the other plugin

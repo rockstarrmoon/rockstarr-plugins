@@ -1,6 +1,6 @@
 ---
 name: daily-loop
-description: "This skill should be used when the user says \"run today's outreach loop\", \"run the Interceptly daily loop\", \"do today's outreach run\", or when a scheduled task in rockstarr-infra fires the daily Interceptly run. Orchestrates the full per-account pass for every managed Interceptly account: confirm-session-interceptly → preview-queue (optional) → process-inbox → process-my-tasks → switch-account → repeat. Has two modes. In foreground mode (default, operator in chat) it threads operator approvals through inline as today. In background mode (used by the scheduled run) it accumulates staged_paths from every account and at the end fires rockstarr-infra:notify-reply-ready once with the global accumulator if non-empty. Refuses to run if confirm-session-interceptly fails on any account — that account is skipped, and the loop continues with the next account."
+description: "This skill should be used when the user says \"run today's outreach loop\", \"run the Interceptly daily loop\", \"do today's outreach run\", or when a scheduled task in rockstarr-infra fires the daily Interceptly run. Orchestrates the full per-account pass for every managed Interceptly account: confirm-session-interceptly → preview-queue-interceptly (optional) → process-inbox → process-my-tasks → switch-account → repeat. Has two modes. In foreground mode (default, operator in chat) it threads operator approvals through inline as today. In background mode (used by the scheduled run) it accumulates staged_paths from every account and at the end fires rockstarr-infra:notify-reply-ready once with the global accumulator if non-empty. Refuses to run if confirm-session-interceptly fails on any account — that account is skipped, and the loop continues with the next account."
 ---
 
 # daily-loop
@@ -93,7 +93,7 @@ For each account in the resolved list:
    account, and continue to the next account in the list. Do NOT
    abort the whole run — the other accounts may be fine, and a
    partial run is more useful than nothing.
-3. **`preview-queue`** if `stack.md.outreach_daily_preview =
+3. **`preview-queue-interceptly`** if `stack.md.outreach_daily_preview =
    true` (default). Writes `02_inputs/outreach/queue-YYYY-MM-DD-
    <account>.md`. Background runs still write the preview — it
    is a useful audit record even when no operator reads it
@@ -147,7 +147,7 @@ recipient.
 
 ### Step 6 — Daily metrics
 
-Run `metrics-daily` once at the end (not per-account). It rolls
+Run `metrics-daily-interceptly` once at the end (not per-account). It rolls
 up sends, accepts, replies, bookings, opt-outs by ISO date and
 campaign. Background-mode runs typically show low send counts
 (approvals deferred); that is expected and correct.
@@ -246,4 +246,4 @@ accumulation, notification, and the per-run summary.
 - `process-my-tasks` — per-account task pass; same accumulation.
 - `confirm-session-interceptly` — per-account session check that
   gates whether the rest of the per-account pass runs.
-- `metrics-daily` — end-of-loop daily roll-up.
+- `metrics-daily-interceptly` — end-of-loop daily roll-up.

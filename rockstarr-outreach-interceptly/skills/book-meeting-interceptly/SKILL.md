@@ -1,9 +1,9 @@
 ---
-name: book-meeting
-description: "This skill should be used when a book-meeting task fires in the daily loop (after the lead agreed to a specific time AND supplied the booking-link-required fields), or when the user says \"book the meeting for this lead\", \"run the booking-link form\", or \"book this lead on the agreed time\". Runs only when stack.md.booking_mode=automated and availability_source=booking_link. Drives the booking-link page via Chrome MCP: selects the agreed slot, fills required fields, submits. On success calls mark-booked. On failure writes to _errors.md and creates a review-failure note so the operator can recover."
+name: book-meeting-interceptly
+description: "This skill should be used when a book-meeting task fires in the daily loop (after the lead agreed to a specific time AND supplied the booking-link-required fields), or when the user says \"book the meeting for this lead\", \"run the booking-link form\", or \"book this lead on the agreed time\". Runs only when stack.md.booking_mode=automated and availability_source=booking_link. Drives the booking-link page via Chrome MCP: selects the agreed slot, fills required fields, submits. On success calls mark-booked-interceptly. On failure writes to _errors.md and creates a review-failure note so the operator can recover."
 ---
 
-# book-meeting
+# book-meeting-interceptly
 
 Bot-led booking path. Runs AFTER `rockstarr-reply:draft-reply`
 confirms the lead has agreed to a specific slot AND the booking-
@@ -11,7 +11,7 @@ link form's required fields are all supplied. Never guesses.
 
 ## When to run
 
-- `book-meeting` task fires in the daily loop (created by
+- `book-meeting-interceptly` task fires in the daily loop (created by
   `create-followup-task` when `rockstarr-reply:draft-reply`
   returns the `book-meeting-handoff` action).
 - On demand when the user says "book `<lead>` at `<time>`" — in
@@ -25,14 +25,14 @@ link form's required fields are all supplied. Never guesses.
 - `stack.md.booking_link_required_fields` enumerates the form's
   required fields (default: `[email, phone]`; varies per booking
   link).
-- The lead's thread has a `book-meeting` task with:
+- The lead's thread has a `book-meeting-interceptly` task with:
   - `agreed_start_iso` — the slot the lead agreed to
   - `lead_fields` — a map of every required field → value
     provided by the lead
 - `confirm-session-interceptly` passed in this run.
 
 If `booking_mode=manual` or `availability_source=gcal`, refuse
-and route the caller to `mark-booked` instead (the client books
+and route the caller to `mark-booked-interceptly` instead (the client books
 manually in that case).
 
 ## Inputs
@@ -84,21 +84,21 @@ success state. Typical success signals: confirmation page,
 If no success signal within 10 seconds, inspect the DOM for an
 error message. Write _errors.md with the message; abort.
 
-### Step 5 — On success, call mark-booked
+### Step 5 — On success, call mark-booked-interceptly
 
-Call `mark-booked` with:
+Call `mark-booked-interceptly` with:
 
 - `lead_url`
 - `meeting_datetime = agreed_start_iso`
 - `source = automated`
-- `notes = "Booked via book-meeting against <booking_link_url>"`
+- `notes = "Booked via book-meeting-interceptly against <booking_link_url>"`
 
-`mark-booked` handles the state transition (Leads row, pending
+`mark-booked-interceptly` handles the state transition (Leads row, pending
 task cancellation, Replies row, Booked label via apply-label).
 
 ### Step 6 — Complete the Interceptly task
 
-Mark the `book-meeting` task done in Interceptly. Mirror
+Mark the `book-meeting-interceptly` task done in Interceptly. Mirror
 completion in the `Tasks` sheet.
 
 ### Step 7 — Return
@@ -111,17 +111,17 @@ completion in the `Tasks` sheet.
 - **Form requires a field not in `booking_link_required_fields`.**
   Write _errors.md, abort. Operator updates stack.md and retries.
 - **Form has a captcha.** Abort. The bot doesn't solve captchas;
-  route to `mark-booked` for the operator to handle manually.
+  route to `mark-booked-interceptly` for the operator to handle manually.
 - **Submit succeeds but no confirmation signal.** Wait another
   5s. If still ambiguous, write _errors.md and ABORT without
-  calling `mark-booked`. A false-positive booking is worse than
+  calling `mark-booked-interceptly`. A false-positive booking is worse than
   a missed one — the operator can rerun.
 
 ## Idempotency
 
-- A `book-meeting` task whose mirror row already has
+- A `book-meeting-interceptly` task whose mirror row already has
   `status = completed` is a no-op (refuse with "already booked").
-- If `mark-booked` returns `already_booked`, still mark the
+- If `mark-booked-interceptly` returns `already_booked`, still mark the
   Interceptly task done.
 
 ## What NOT to do
@@ -131,7 +131,7 @@ completion in the `Tasks` sheet.
   conversation.
 - Do not fabricate field values. Every required field comes from
   the lead's explicit supply.
-- Do not call `mark-booked` on a submit that didn't visibly
+- Do not call `mark-booked-interceptly` on a submit that didn't visibly
   succeed.
 - Do not run when `booking_mode=manual`. The client books; the
   bot doesn't.

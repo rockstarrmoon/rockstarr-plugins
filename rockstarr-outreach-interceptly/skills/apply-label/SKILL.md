@@ -122,7 +122,7 @@ Default mapping (overridable via `stack.md.label_mapping`):
 | Non-ICP polite-yes — Throwaway question sent | Follow Up |
 | Explicit decline received | Not Interested |
 | Polite ack with no signal | Ignore |
-| Meeting booked (from `mark-booked`) | Booked |
+| Meeting booked (from `mark-booked-interceptly`) | Booked |
 | Flagged for review | Follow Up |
 
 If `stack.md.label_mapping` specifies a different mapping for
@@ -148,6 +148,6 @@ table above.
   a pipeline bug.
 - Do not create new labels.
 - Do not remove non-conflicting labels.
-- Do not apply Booked from here — `mark-booked` applies
+- Do not apply Booked from here — `mark-booked-interceptly` applies
   Booked as part of the booking-state transition. This skill
   is for all other labels.

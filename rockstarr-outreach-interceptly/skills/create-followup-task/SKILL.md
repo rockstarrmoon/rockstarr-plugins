@@ -23,7 +23,7 @@ the business-days math, and creates the Interceptly task.
 - After `process-inbox` / `process-my-tasks` receives an
   `authorized-send` bundle from rockstarr-reply with a
   non-`none` `proposed_followup_timer` keyword.
-- Called by `mark-booked` to create a meeting-reminder task if
+- Called by `mark-booked-interceptly` to create a meeting-reminder task if
   the client wants one (optional; off by default).
 - On demand when the user says "create a bump task for this
   lead" — validates keyword and reason are known.
@@ -43,8 +43,8 @@ the business-days math, and creates the Interceptly task.
   `rockstarr-reply:follow-up-timer`: one of `meeting_proposed`,
   `general`, `referral`, `cold_bump`, `none`. Plus the two
   channel-side values this plugin generates itself:
-  `book-meeting` (from the `book-meeting-handoff` bundle) and
-  `custom` (for `mark-booked`-initiated meeting reminders).
+  `book-meeting-interceptly` (from the `book-meeting-handoff` bundle) and
+  `custom` (for `mark-booked-interceptly`-initiated meeting reminders).
 - `days` — optional override; if absent, this skill reads
   `stack.md.followup_timers[reason]` and falls back to the
   default day count below.
@@ -139,18 +139,18 @@ Append to the `Tasks` sheet of `outreach-mirror.xlsx`:
 
 When rockstarr-reply returns a `book-meeting-handoff` bundle,
 `process-inbox` / `process-my-tasks` routes directly to
-`book-meeting` — NOT through this skill. This skill is only
+`book-meeting-interceptly` — NOT through this skill. This skill is only
 involved if the pipeline wants a scheduled book-meeting task
 (rare; used when the lead agreed to a slot but supplied fields
 that need operator confirmation before the form runs).
 
 Inputs in that case:
 
-- reason = `book-meeting`
+- reason = `book-meeting-interceptly`
 - days = 0 (same-day)
 - title = `Book meeting: <lead name>` + proposed time
 
-The `book-meeting` skill polls for these tasks (or is called
+The `book-meeting-interceptly` skill polls for these tasks (or is called
 directly by the pipeline on the same run).
 
 ## Which situations get no task
@@ -159,7 +159,7 @@ directly by the pipeline on the same run).
 - `Not Interested` label applied → no task.
 - `Bad Fit` label applied → no task (graceful exits, pitch-back
   declines — all terminal).
-- `Booked` label applied → no BUMP task. `mark-booked` may
+- `Booked` label applied → no BUMP task. `mark-booked-interceptly` may
   optionally create a meeting-reminder task if the client
   configures it in `stack.md`.
 

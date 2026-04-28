@@ -44,7 +44,7 @@ four interviews and stored in the client folder.
    The send gate is `rockstarr-reply:present-for-approval` — this
    plugin's `send-message` only runs when the handoff bundle
    returns `authorized-send`.
-6. Third-party content is reference-only. `draft-icp-campaign`
+6. Third-party content is reference-only. `draft-icp-campaign-interceptly`
    never paraphrases third-party material as if the client said
    it.
 7. All state that is ours to own lives in `/rockstarr-ai/` per
@@ -58,14 +58,14 @@ four interviews and stored in the client folder.
 |-------|---------|
 | `discover-interceptly-accounts` | Walks the Interceptly SWITCH ACCOUNT popup via Chrome MCP, enumerates every managed LinkedIn account, asks the client which accounts this deployment should manage, writes `stack.md.outreach_accounts[]`. |
 | `capture-interceptly-personas` | Per-account persona interview (5 questions). Writes `00_intake/interceptly-accounts.md`. |
-| `capture-icp-qualifications` | Interview-driven capture of the baseline ICP rules used by `qualify-lead`. Writes `00_intake/icp-qualifications.md`. `draft-icp-campaign` reads this as the campaign baseline and only narrows it per-campaign. |
+| `capture-icp-qualifications` | Interview-driven capture of the baseline ICP rules used by `qualify-lead`. Writes `00_intake/icp-qualifications.md`. `draft-icp-campaign-interceptly` reads this as the campaign baseline and only narrows it per-campaign. |
 | `capture-warm-reply-pattern` | Captures the client's preferred warm-reply style and appends it as a subsection of `style-guide.md`. `rockstarr-reply:draft-reply` reads it when drafting warm-ICP replies. |
 
 ### Campaign lifecycle (3)
 
 | Skill | Purpose |
 |-------|---------|
-| `draft-icp-campaign` | Per-campaign ICP clarification (additive tightening of the baseline) plus drafting the Interceptly campaign spec with the 3-step sequence (connect note + 2 follow-ups). Runs `stop-slop` on every message body. |
+| `draft-icp-campaign-interceptly` | Per-campaign ICP clarification (additive tightening of the baseline) plus drafting the Interceptly campaign spec with the 3-step sequence (connect note + 2 follow-ups). Runs `stop-slop` on every message body. |
 | `launch-campaign-interceptly` | Configures the campaign inside Interceptly's UI via Chrome MCP. **Stops at CONFIGURED-NOT-STARTED.** |
 | `stop-campaign-interceptly` | Pause (resumable) or Stop (permanent). Updates Interceptly + the Campaigns row, and cancels dependent follow-up tasks. |
 
@@ -81,9 +81,9 @@ four interviews and stored in the client folder.
 | Skill | Purpose |
 |-------|---------|
 | `daily-loop` | Orchestration entry point. Iterates managed accounts, runs the per-account pass, accumulates `staged_paths` from every pass into a global accumulator, and at end of run fires `rockstarr-infra:notify-reply-ready` once with the accumulator if mode=background and non-empty. The skill scaffold-client wires to the schedule. Operator's "Run today's outreach loop" trigger lands here too (mode=foreground). |
-| `preview-queue` | Writes `02_inputs/outreach/queue-<date>.md` with per-account unread / overdue / due-today / flagged counts and a plan of today's work. Togglable. |
+| `preview-queue-interceptly` | Writes `02_inputs/outreach/queue-<date>.md` with per-account unread / overdue / due-today / flagged counts and a plan of today's work. Togglable. |
 | `process-inbox` | Walks Interceptly Inbox → Replied filter, oldest-first. For each unread thread: scrape context → `qualify-lead` → build handoff bundle → call `rockstarr-reply`. In foreground mode, executes the returned bundle (send + label + task, or label-only, or flag, or book-meeting-handoff). In background mode, stops after `draft-reply` stages a draft, accumulates the path, and returns it; deterministic non-draft branches (label-only, flag) still execute. |
-| `process-my-tasks` | Runs after `process-inbox` returns zero unreads for the account. Walks Interceptly → My Tasks (overdue + due-today). `book-meeting` task type routes direct in BOTH modes (the close was authorized on a prior turn); other types run the same handoff as `process-inbox` with an `intent_hint` drawn from task metadata. Same mode semantics as `process-inbox`. |
+| `process-my-tasks` | Runs after `process-inbox` returns zero unreads for the account. Walks Interceptly → My Tasks (overdue + due-today). `book-meeting-interceptly` task type routes direct in BOTH modes (the close was authorized on a prior turn); other types run the same handoff as `process-inbox` with an `intent_hint` drawn from task metadata. Same mode semantics as `process-inbox`. |
 
 ### Per-reply channel I/O (4)
 
@@ -98,21 +98,21 @@ four interviews and stored in the client folder.
 
 | Skill | Purpose |
 |-------|---------|
-| `propose-meeting-times` | Reads the client's availability source (booking-link page or Google Calendar) and returns 2-3 slots. Called by `rockstarr-reply:draft-reply` when it decides the thread is ready for a meeting ask. Logs to MeetingProposals sheet. |
-| `book-meeting` | Runs only when `booking_mode = automated` + `availability_source = booking_link`. Drives the booking-link page, fills required fields, submits. On success calls `mark-booked`. On failure writes `_errors.md` and creates a `review-reply` task for the operator. |
-| `mark-booked` | Single source of truth for booked state. Called by `book-meeting` (automated path) OR by the operator (manual path — "I booked Jane by phone"). Flips Leads state to booked, cancels every pending task for the lead, writes a Replies row with `classification = booked`. |
+| `propose-meeting-times-interceptly` | Reads the client's availability source (booking-link page or Google Calendar) and returns 2-3 slots. Called by `rockstarr-reply:draft-reply` when it decides the thread is ready for a meeting ask. Logs to MeetingProposals sheet. |
+| `book-meeting-interceptly` | Runs only when `booking_mode = automated` + `availability_source = booking_link`. Drives the booking-link page, fills required fields, submits. On success calls `mark-booked-interceptly`. On failure writes `_errors.md` and creates a `review-reply` task for the operator. |
+| `mark-booked-interceptly` | Single source of truth for booked state. Called by `book-meeting-interceptly` (automated path) OR by the operator (manual path — "I booked Jane by phone"). Flips Leads state to booked, cancels every pending task for the lead, writes a Replies row with `classification = booked`. |
 
 ### Metrics + reporting (4)
 
 | Skill | Purpose |
 |-------|---------|
-| `metrics-daily` | End-of-day rollup. One row per managed account per day into `Metrics (Daily)` — unreads processed, sends, labels by type, bookings, non-ICP declines, flags (sourced from `/02_inputs/replies/_flags.md`), session failures, campaigns configured/stopped. |
-| `metrics-weekly` | Friday EOD: aggregate Metrics (Daily) into Metrics (Weekly) per account per ISO week with WoW deltas, then trigger `outreach-weekly-report`. |
-| `outreach-weekly-report` | Markdown report at `06_reports/weekly/outreach-<yyyy-ww>.md`. Per-account tables, WoW deltas, bookings, flagged-open, stale review-reply tasks, non-ICP highlights, campaign changes, session/UI health, "What Rachel / Jon should notice." |
-| `backup-workbook` | Friday EOD: snapshot `outreach-mirror.xlsx` to `06_reports/data/outreach-mirror-backup-<yyyy-ww>.xlsx`. |
+| `metrics-daily-interceptly` | End-of-day rollup. One row per managed account per day into `Metrics (Daily)` — unreads processed, sends, labels by type, bookings, non-ICP declines, flags (sourced from `/02_inputs/replies/_flags.md`), session failures, campaigns configured/stopped. |
+| `metrics-weekly-interceptly` | Friday EOD: aggregate Metrics (Daily) into Metrics (Weekly) per account per ISO week with WoW deltas, then trigger `outreach-weekly-report-interceptly`. |
+| `outreach-weekly-report-interceptly` | Markdown report at `06_reports/weekly/outreach-<yyyy-ww>.md`. Per-account tables, WoW deltas, bookings, flagged-open, stale review-reply tasks, non-ICP highlights, campaign changes, session/UI health, "What Rachel / Jon should notice." |
+| `backup-workbook-interceptly` | Friday EOD: snapshot `outreach-mirror.xlsx` to `06_reports/data/outreach-mirror-backup-<yyyy-ww>.xlsx`. |
 
-Shared skills (`draft-icp-campaign`, `confirm-session-interceptly`,
-`switch-account`, `propose-meeting-times`, `mark-booked`) ship
+Shared skills (`draft-icp-campaign-interceptly`, `confirm-session-interceptly`,
+`switch-account`, `propose-meeting-times-interceptly`, `mark-booked-interceptly`) ship
 inline in this plugin for V0.1. Canonical source will migrate to
 `rockstarr-infra/skills/_shared/` when the Interceptly variant
 lands alongside other channel variants; at that point the
@@ -151,7 +151,7 @@ This plugin owns **channel I/O**; `rockstarr-reply` owns
   `_flags.md` is already written. Caller applies the Follow Up
   label and creates a 2-business-day flagged_review task.
 - `book-meeting-handoff` — lead agreed to a slot + supplied
-  required fields. Caller routes direct to `book-meeting`.
+  required fields. Caller routes direct to `book-meeting-interceptly`.
 - `no-action` — OOO, already booked, polite-ack with no signal.
   Caller applies the proposed label; no send, no task.
 
@@ -180,7 +180,7 @@ stages the draft to `/03_drafts/replies/`, and stops there.
 `present-for-approval` is NOT called — there is nobody to present
 to. The staged path is accumulated. Deterministic non-draft
 branches (label-only, flag) still execute their channel-side work
-because they don't require operator approval. `book-meeting`
+because they don't require operator approval. `book-meeting-interceptly`
 tasks (process-my-tasks branch) still execute because the booking
 substance was approved on a prior turn.
 
@@ -254,8 +254,8 @@ already produced:
 `rockstarr-infra` >= 0.8.0 must also expose:
 
 - `skills/_shared/stop-slop/` — mandatory final pass on every
-  prose draft. `draft-icp-campaign` calls it. If `stop-slop` is
-  not discoverable, `draft-icp-campaign` refuses.
+  prose draft. `draft-icp-campaign-interceptly` calls it. If `stop-slop` is
+  not discoverable, `draft-icp-campaign-interceptly` refuses.
 - `skills/_shared/send-notification/` — mailer helper.
   Required by `notify-reply-ready`.
 - `skills/notify-reply-ready/` — urgent reply-ready email.
@@ -264,7 +264,7 @@ already produced:
   background mode (foreground mode still works without it).
 
 `rockstarr-reply` must be installed for the daily loop to do
-anything past `confirm-session-interceptly` and `preview-queue`.
+anything past `confirm-session-interceptly` and `preview-queue-interceptly`.
 Without it, `process-inbox` refuses (drafting is not this
 plugin's responsibility).
 
@@ -359,21 +359,21 @@ the workbook.
 | Messages | Every reply the bot sent, with draft_path pointer. |
 | Labels | Every label applied (or tried), with Labels-nav-bug notes. |
 | Tasks | Interceptly tasks created, cancelled, or completed. |
-| Replies | Inbound replies + booking events (written by `mark-booked`). |
-| MeetingProposals | Slots proposed by `propose-meeting-times`. |
+| Replies | Inbound replies + booking events (written by `mark-booked-interceptly`). |
+| MeetingProposals | Slots proposed by `propose-meeting-times-interceptly`. |
 | Metrics (Daily) | One row per managed account per day. |
 | Metrics (Weekly) | One row per managed account per ISO week with WoW deltas. |
 
 The only reply-side surface this plugin reads is
 `/02_inputs/replies/_flags.md`, written by
 `rockstarr-reply:flag-for-review`. It is a markdown file of
-appended blocks, not a sheet. `preview-queue`,
-`metrics-daily`, and `outreach-weekly-report` read it for flag
+appended blocks, not a sheet. `preview-queue-interceptly`,
+`metrics-daily-interceptly`, and `outreach-weekly-report-interceptly` read it for flag
 counts; none of them edit it.
 
 ## Operational overview
 
-**Campaign launch.** Operator triggers `draft-icp-campaign` →
+**Campaign launch.** Operator triggers `draft-icp-campaign-interceptly` →
 review → `rockstarr-infra:approve` → `launch-campaign-interceptly`
 → (human presses Start inside Interceptly).
 
@@ -386,11 +386,11 @@ for the campaign's leads are cancelled.
 entry point for both scheduled (background) and operator-driven
 (foreground) runs. It iterates accounts in
 `stack.md.outreach_accounts[]` order, runs `switch-account` →
-`confirm-session-interceptly` → `preview-queue` (optional) →
+`confirm-session-interceptly` → `preview-queue-interceptly` (optional) →
 `process-inbox` → `process-my-tasks` per account, accumulates
 `staged_paths` from every per-account pass, and at end of run:
 
-1. Calls `metrics-daily` to roll up the day.
+1. Calls `metrics-daily-interceptly` to roll up the day.
 2. In background mode (or with `force_notify`), calls
    `rockstarr-infra:notify-reply-ready` with the global
    `staged_paths` accumulator if non-empty. One urgent email per
@@ -407,8 +407,8 @@ Afternoon re-runs use `daily-loop` with `inbox_only = true` per
 the schedule spec — `process-my-tasks` is skipped on the
 afternoon pass.
 
-**End of week.** `metrics-weekly` → `outreach-weekly-report` →
-`backup-workbook`.
+**End of week.** `metrics-weekly-interceptly` → `outreach-weekly-report-interceptly` →
+`backup-workbook-interceptly`.
 
 ## Approvals
 
@@ -417,7 +417,7 @@ afternoon pass.
 | Campaign spec | `rockstarr-infra:approve` on `03_drafts/outreach/campaign-<slug>.md`. |
 | Campaign launch/stop | Operator triggers `launch-campaign-interceptly` / `stop-campaign-interceptly`. |
 | Every outbound reply | `rockstarr-reply:present-for-approval`. `send-message` only runs on an `authorized-send` bundle. |
-| Meeting booking | Either the operator books manually (calls `mark-booked`) or the bot runs `book-meeting` on an `agreed_start_iso` + required fields supplied through the reply thread and confirmed by the operator via `rockstarr-reply:present-for-approval`. |
+| Meeting booking | Either the operator books manually (calls `mark-booked-interceptly`) or the bot runs `book-meeting-interceptly` on an `agreed_start_iso` + required fields supplied through the reply thread and confirmed by the operator via `rockstarr-reply:present-for-approval`. |
 
 ## Known Interceptly UI quirks
 
@@ -477,7 +477,7 @@ Deferred past V0.1:
 - Cross-variant shared-skills tree (V0.1 ships shared skills
   inline).
 - Calendar-invite-accepted auto-booking (V0.1 requires explicit
-  `mark-booked`).
+  `mark-booked-interceptly`).
 
 ## What this plugin does not do
 
@@ -525,12 +525,12 @@ human did, and the mirror is behind.
 `/02_inputs/replies/_flags.md`. If the file is missing or empty,
 `rockstarr-reply` hasn't flagged anything this week — that's
 fine. If flags are in the file but not the report, confirm the
-dates: `outreach-weekly-report` counts entries timestamped
+dates: `outreach-weekly-report-interceptly` counts entries timestamped
 within the ISO week.
 
 **"A booking happened but the mirror doesn't show it."** The
-operator may have booked manually and not called `mark-booked`.
-Run `mark-booked` with the lead's thread reference and the
+operator may have booked manually and not called `mark-booked-interceptly`.
+Run `mark-booked-interceptly` with the lead's thread reference and the
 meeting datetime. The Replies sheet will then carry
 `classification = booked` and the Tasks sheet will show the
 cancellations.

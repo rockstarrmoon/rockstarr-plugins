@@ -1,12 +1,12 @@
 ---
-name: propose-meeting-times
+name: propose-meeting-times-interceptly
 description: "This skill should be used when rockstarr-reply:draft-reply decides a thread is Hot and needs meeting times, or when the user says \"propose meeting times\", \"find two or three slots for a lead\", or \"pull availability\". Reads the client's availability source — either the booking-link page (Calendly / GrowthAmp / similar) via Chrome MCP, or Google Calendar via the shared calendar helper — and returns 2-3 proposed time slots in the next few business days. Optionally biases slots by lead-provided context ('Tuesdays after 3pm'). Shared skill; canonical source will migrate to rockstarr-infra/skills/_shared/ when both outreach variants and reply ship."
 ---
 
-# propose-meeting-times
+# propose-meeting-times-interceptly
 
 Shared skill. Canonical source will live at
-`rockstarr-infra/skills/_shared/propose-meeting-times/` once the
+`rockstarr-infra/skills/_shared/propose-meeting-times-interceptly/` once the
 shared tree is populated. For V0.1 it ships inline in
 `rockstarr-outreach-interceptly`. If you edit this file, edit the
 matching copy in `rockstarr-outreach-salesnav` (and eventually
@@ -14,8 +14,8 @@ matching copy in `rockstarr-outreach-salesnav` (and eventually
 
 Returns a small slate of specific times the approved reply can
 propose to the lead. The booking link is never pasted — the bot
-names times, the lead picks one, and either `book-meeting` (bot-
-led) or `mark-booked` (client-led) records it.
+names times, the lead picks one, and either `book-meeting-interceptly` (bot-
+led) or `mark-booked-interceptly` (client-led) records it.
 
 ## When to run
 
@@ -126,12 +126,12 @@ slot_count, source, preference_applied.
 
 - The slots are PROPOSALS, not holds. Neither branch writes
   to the source. If a slot is booked between proposal and the
-  lead's reply, `book-meeting` fails loudly and `draft-reply`
+  lead's reply, `book-meeting-interceptly` fails loudly and `draft-reply`
   regenerates the draft with fresh slots.
-- For `booking_mode=automated`, the next step is `book-meeting`
+- For `booking_mode=automated`, the next step is `book-meeting-interceptly`
   when the lead picks one and supplies required fields.
 - For `booking_mode=manual`, the next step is the client
-  running `mark-booked` when they see the lead accept a slot.
+  running `mark-booked-interceptly` when they see the lead accept a slot.
 
 ## Failure modes
 

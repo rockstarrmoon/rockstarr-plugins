@@ -1,12 +1,12 @@
 ---
-name: metrics-daily
+name: metrics-daily-interceptly
 description: "This skill should be used as the final step of the daily outreach loop, or when the user says \"roll up today's metrics\", \"close out the day\", or \"update the daily outreach scoreboard\". Writes one row per managed account into the Metrics (Daily) sheet — unreads processed, sends, labels applied (broken down by label), non-ICP declines, bookings, flags, session failures — and appends today's per-account summary into /05_published/outreach/YYYY-MM-DD.md. Runs AFTER every managed account's process-inbox + process-my-tasks have finished."
 ---
 
-# metrics-daily
+# metrics-daily-interceptly
 
 End-of-day rollup. One row per managed account per day. Feeds
-`metrics-weekly` and `outreach-weekly-report`.
+`metrics-weekly-interceptly` and `outreach-weekly-report-interceptly`.
 
 ## When to run
 
@@ -50,7 +50,7 @@ today's activity:
   verdict = `not_target` today.
 - **bookings** — count of Replies rows with
   `classification = booked` today, for this account (written by
-  `mark-booked`).
+  `mark-booked-interceptly`).
 - **flags** — count of blocks in `/02_inputs/replies/_flags.md`
   timestamped today for this account. If the file is missing,
   treat as 0.
@@ -123,7 +123,7 @@ Append to `/05_published/outreach/<YYYY-MM-DD>.md`:
 ```
 
 If the file already has content from earlier in the day
-(e.g., per-account pass logs from `mark-booked`), APPEND the
+(e.g., per-account pass logs from `mark-booked-interceptly`), APPEND the
 summary at the end rather than overwriting.
 
 ### Step 4 — Surface session failures
@@ -159,7 +159,7 @@ A brief summary the caller can show the user:
 ## What NOT to do
 
 - Do not send anything. This skill is pure aggregation.
-- Do not compute weekly rollups here. `metrics-weekly` owns that.
+- Do not compute weekly rollups here. `metrics-weekly-interceptly` owns that.
 - Do not overwrite yesterday's row. Each date × account row is
   immutable; re-runs for the same date should update in place
   (via `partial` → final transition), not create a second row.

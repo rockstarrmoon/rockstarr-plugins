@@ -1,25 +1,25 @@
 ---
-name: mark-booked
-description: "This skill should be used whenever a lead has booked a meeting — whether the bot booked via book-meeting, or the client booked manually by phone, email, calendar, or any other path. Trigger phrases: \"mark this lead as booked\", \"Jane booked a meeting\", \"I booked this lead manually\", \"log the booking\". This is the single source of truth for booking state in the Interceptly variant: it flips the Leads row last-label=Booked, mirrors the Booked label into Interceptly via apply-label, cancels pending Interceptly follow-up tasks for that lead, and writes a Replies row with label=Booked. Both the automated and manual booking paths converge here."
+name: mark-booked-interceptly
+description: "This skill should be used whenever a lead has booked a meeting — whether the bot booked via book-meeting-interceptly, or the client booked manually by phone, email, calendar, or any other path. Trigger phrases: \"mark this lead as booked\", \"Jane booked a meeting\", \"I booked this lead manually\", \"log the booking\". This is the single source of truth for booking state in the Interceptly variant: it flips the Leads row last-label=Booked, mirrors the Booked label into Interceptly via apply-label, cancels pending Interceptly follow-up tasks for that lead, and writes a Replies row with label=Booked. Both the automated and manual booking paths converge here."
 ---
 
-# mark-booked
+# mark-booked-interceptly
 
 Shared skill. Canonical source will live at
-`rockstarr-infra/skills/_shared/mark-booked/` once the shared
+`rockstarr-infra/skills/_shared/mark-booked-interceptly/` once the shared
 tree is populated. For V0.1 it ships inline in
 `rockstarr-outreach-interceptly`. If you edit this file, edit
 the matching copy in `rockstarr-outreach-salesnav` in the same
 PR.
 
 The single source of truth for "a meeting got booked." Every path
-— `book-meeting` success, client-booked manually by phone,
+— `book-meeting-interceptly` success, client-booked manually by phone,
 client-booked via their own calendar link — funnels through here
 so state transitions stay consistent.
 
 ## When to run
 
-- `book-meeting` calls it on successful form submission.
+- `book-meeting-interceptly` calls it on successful form submission.
 - Client calls it directly from Cowork: "I booked <lead>
   manually for Friday at 2."
 - Client calls it when Google Calendar or the booking link shows
@@ -33,7 +33,7 @@ so state transitions stay consistent.
   Interceptly thread URL — both map to the same Leads row.
 - `meeting_datetime` — optional ISO-8601. If omitted, store
   `"unspecified"`.
-- `source` — `automated` (from `book-meeting`) or `manual`
+- `source` — `automated` (from `book-meeting-interceptly`) or `manual`
   (from the client). Defaults to `manual`.
 - `notes` — optional free text.
 
@@ -78,9 +78,9 @@ pending`. Flip:
 - `completed_at = now`
 - `cancel_reason = booked`
 
-This covers `follow-up`, `review-reply`, `book-meeting`
+This covers `follow-up`, `review-reply`, `book-meeting-interceptly`
 (important: if the client booked manually while an automated
-`book-meeting` task was pending, cancel it so the bot doesn't
+`book-meeting-interceptly` task was pending, cancel it so the bot doesn't
 double-book).
 
 Also mark those tasks done inside Interceptly via Chrome MCP
@@ -101,7 +101,7 @@ if the thread is still navigable. If not, leave them for
 
 Append to `/05_published/outreach/<today>.md`:
 
-> `mark-booked — <lead_url> (<campaign_slug>) booked
+> `mark-booked-interceptly — <lead_url> (<campaign_slug>) booked
 > <meeting_datetime> via <source>`
 
 ### Step 7 — Return
@@ -111,9 +111,9 @@ number of tasks cancelled, label applied result.
 
 ## Idempotency
 
-- A second `mark-booked` call for the same lead must be a no-op
+- A second `mark-booked-interceptly` call for the same lead must be a no-op
   (refuse with "already booked"), not a silent re-flip. This
-  prevents the `book-meeting` → `mark-booked` path from
+  prevents the `book-meeting-interceptly` → `mark-booked-interceptly` path from
   colliding with a client's parallel manual call.
 
 ## Client-led path quirks

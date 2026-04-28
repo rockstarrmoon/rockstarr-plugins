@@ -1,9 +1,9 @@
 ---
-name: backup-workbook
+name: backup-workbook-interceptly
 description: "This skill should be used every Friday end-of-day, or when the user says \"back up the outreach mirror\", \"snapshot outreach-mirror.xlsx\", or \"save a weekly outreach backup\". Copies the current outreach-mirror.xlsx to /06_reports/data/outreach-mirror-backup-YYYY-WW.xlsx, preserving the shared audit mirror (written by this plugin + rockstarr-reply) as it stood at week's end for rollback and comparison."
 ---
 
-# backup-workbook
+# backup-workbook-interceptly
 
 A weekly snapshot of the shared audit mirror. Both this plugin and
 `rockstarr-reply` write to `outreach-mirror.xlsx`. This skill's
@@ -21,8 +21,8 @@ Interceptly's to protect.
 
 ## When to run
 
-- Friday end-of-day, after `metrics-weekly` and
-  `outreach-weekly-report`.
+- Friday end-of-day, after `metrics-weekly-interceptly` and
+  `outreach-weekly-report-interceptly`.
 - On-demand before doing something risky (stopping several campaigns
   at once, rebuilding qualification rules, changing persona mappings).
 
@@ -50,7 +50,7 @@ Interceptly's to protect.
    a copy preserves the workbook exactly, including any manual
    client edits to sheets we did not touch.
 5. **Log.** Append to `/05_published/outreach/<today>.md`:
-   `backup-workbook — snapshot written to <target path>`.
+   `backup-workbook-interceptly — snapshot written to <target path>`.
 
 ## Output
 

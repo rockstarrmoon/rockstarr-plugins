@@ -1,9 +1,9 @@
 ---
-name: preview-queue
+name: preview-queue-interceptly
 description: "This skill should be used as the second step of the daily outreach loop (after confirm-session-interceptly passes), or when the user asks to \"preview today's queue\", \"show what the bot plans to do today\", or \"write the daily outreach preview\". Writes a markdown file at 02_inputs/outreach/queue-YYYY-MM-DD.md summarizing planned work per managed account: unread inbox count, overdue task count, due-today task count, active campaigns, flagged-leads count. Default enabled; togglable via stack.md.outreach_daily_preview=false."
 ---
 
-# preview-queue
+# preview-queue-interceptly
 
 Non-sending step. Purely observational — tells the operator what
 the bot plans to do today, per managed account, before it starts
@@ -96,7 +96,7 @@ accounts.
 2. Switch to <account 2>, confirm session, process inbox
    (N unreads), then My Tasks.
 3. (...)
-4. End-of-day: metrics-daily rollup.
+4. End-of-day: metrics-daily-interceptly rollup.
 ```
 
 ### Step 3 — Return summary

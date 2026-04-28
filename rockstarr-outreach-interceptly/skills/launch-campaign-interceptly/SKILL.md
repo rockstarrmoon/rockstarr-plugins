@@ -159,6 +159,6 @@ campaign was configured.
 - Do not configure a campaign that isn't in `/04_approved/`.
   Drafts in `/03_drafts/` have not been approved.
 - Do not edit the spec mid-configuration. If the spec looks wrong,
-  abort and ask the user to re-run `draft-icp-campaign`.
+  abort and ask the user to re-run `draft-icp-campaign-interceptly`.
 - Do not fabricate an Interceptly campaign id if you cannot read
   one from the UI. Abort and say so.
