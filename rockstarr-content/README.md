@@ -1,6 +1,6 @@
 # rockstarr-content
 
-Rockstarr AI long-form drafting plugin. Four publishing lanes
+Rockstarr AI content drafting plugin. Five publishing lanes
 gated by the client's stack cadence, plus interview-driven case
 studies and repurposed derivatives. Sits on top of
 `rockstarr-infra` and hands finished drafts to the standard
@@ -9,10 +9,14 @@ studies and repurposed derivatives. Sits on top of
 This is the second plugin in the Rockstarr AI Growth Operating
 System. It does not post, send, or schedule — those are jobs for
 `rockstarr-social-bot`, `rockstarr-outreach-bot-<variant>`, and the
-email side of the stack. This plugin only drafts. Publish
-connectors (`publish-wp`, `publish-ga`,
-`publish-linkedin-newsletter`) are deferred until a signed
-client's stack lights up the matching field.
+email side of the stack. This plugin drafts long-form content
+across all four long-form lanes plus the LinkedIn polls lane (a
+structured short-form format added in v0.6). Open-ended social
+posts and other short-form formats stay in scope for
+`rockstarr-social-bot` when it ships. Publish connectors
+(`publish-wp`, `publish-ga`, `publish-linkedin-newsletter`) are
+deferred until a signed client's stack lights up the matching
+field.
 
 ## At a glance
 
@@ -50,6 +54,64 @@ client's stack lights up the matching field.
   `content-calendar`, and `outline-blog` are all backlog-aware
   — strategy decides which topics matter; the monthly skills
   sequence them.
+- **LinkedIn polls (v0.6).** A new structured short-form lane.
+  `draft-polls` writes batched 10-poll sets per persona. Hard
+  char-limit enforcement (question ≤140, options ≤30) at write
+  time. Audience-altitude pre-check before any prose — the
+  lane's #1 failure mode. Brand hashtag + persona list + voice
+  rhythm live in `style-guide.md` § Channel Adaptation →
+  LinkedIn polls. Cadence is an enum (`monthly` / `quarterly` /
+  `on-demand` / `off`) since per-month numerics don't fit the
+  batched-set unit.
+
+## v0.6 — LinkedIn polls
+
+Polls are the first explicitly-short-form lane in
+rockstarr-content. Earlier lanes (blog, thought leadership,
+newsletter, case study) are all long-form. Repurpose creates
+short-form derivatives FROM approved long-form. Polls are
+original short-form with strict structural constraints:
+
+- **`draft-polls`** writes a full set of 10 polls in a single
+  file. The batch is the approval unit; individual polls
+  within the set are the publish unit. Each poll carries the
+  canonical structure (post copy + question + 4 options +
+  hashtags) within LinkedIn's hard character limits. The
+  skill counts characters programmatically and offers
+  auto-fix suggestions for common 31-char mistakes.
+- **Audience altitude pre-check.** Before any prose runs, the
+  skill generates 12-15 candidate topics and cross-checks
+  them against the audience definition in
+  `client-profile.md`. Off-altitude candidates are dropped or
+  the whole batch gets re-picked at the corrected altitude
+  (per the SOP this lane was ported from: don't patch
+  individual polls when altitude fails, re-pick the batch).
+- **Style continuity.** Reads the most recent approved set
+  in `04_approved/social/polls_set-*.md` and pattern-matches
+  its voice rhythm. Newest approved style wins.
+- **Topic diversity.** Filters candidates against the last
+  2-3 approved sets so the multi-month cadence doesn't read
+  as a fill-in-the-blank template.
+- **Cadence enum.** `polls_cadence` in `stack.md` is an enum
+  (`monthly` / `quarterly` / `on-demand` / `off`) rather than
+  a per-month numeric. Polls don't fit the
+  one-piece-per-month rhythm of the long-form lanes.
+- **All polls config in style-guide.md.** Brand hashtag,
+  persona list, voice rhythm, hashtag mix pattern — all in
+  the `Channel Adaptation → LinkedIn polls` subsection of
+  `style-guide.md`. Single source of truth for polls voice.
+  Skills refuse to run if the subsection is missing, with a
+  pointer at where to add it.
+
+**Lightweight infra coupling.** v0.6 of this plugin doesn't
+require an infra bump on its own — it works against any
+infra version that has stop-slop and the rest of the
+existing shared assets. But it does need the LinkedIn polls
+subsection added to `style-guide.md` (currently manual) and
+the `polls_cadence` field in `stack.md` (currently manual).
+Both can be wired into the next infra cohort
+(`generate-style-guide` and `capture-stack` updates) for a
+fully-automated onboarding flow. Shippable today as-is.
 
 ## v0.5 — strategic content planning
 
@@ -182,6 +244,7 @@ drafts generated.
 | Thought leadership | `outline-thought-leadership` → `draft-thought-leadership` | `thought_leadership_per_month` | Source for LinkedIn newsletters (via `publish-linkedin-newsletter`, DEFER); referenced from newsletters; optional `repurpose`. |
 | Email newsletter | `draft-newsletter` | `email_newsletters_per_month` | Links to the month's blog + TL pieces. Not repurposed back. |
 | LinkedIn newsletter | `publish-linkedin-newsletter` (DEFER) | `linkedin_newsletters_per_month` | Reuse of an approved TL piece. Not a new draft. |
+| LinkedIn polls | `draft-polls` (batched 10-poll set + altitude check + char-limit enforcement) | `polls_cadence` enum (`monthly` \| `quarterly` \| `on-demand` \| `off`) | Single-file-per-set, approved as one batch. No repurpose path. |
 | Case study | `draft-case-study` | `case_studies_per_quarter` | On-demand (quarterly reminder), outside the monthly calendar. |
 | Derivatives | `repurpose` | n/a — source-gated on approved blog/TL | Video-script output gated on `records_videos`. |
 
@@ -199,6 +262,7 @@ drafts generated.
 | `draft-newsletter` | EXISTING | Single-shot email newsletter. CTA links the month's approved blog + TL pieces. Mandatory stop-slop pass on subject lines, preheader, and body. |
 | `draft-case-study` | EXISTING | Quarterly. Interview-driven via `AskUserQuestion` using the Rockstarr custom-GPT case-study prompt (sourced from rockstarr-infra). Transcript in `02_inputs/content/`; polished draft only after every required question is answered. Mandatory stop-slop on the polished prose; transcript exempt. |
 | `repurpose` | EXISTING | Takes one approved long-form piece and fans it into LinkedIn post, newsletter highlight, X/Threads thread, and (only when `records_videos=true`) a short video script. Mandatory stop-slop pass per derivative. |
+| `draft-polls` | NEW (0.6) | Batched LinkedIn polls (default 10 per set) for a given persona. Reads brand hashtag + persona list + voice rhythm from `style-guide.md` § Channel Adaptation → LinkedIn polls. Runs an audience-altitude pre-check (the lane's #1 failure mode) before drafting any prose. Pattern-matches the most recent approved set's style. Enforces hard character limits (question ≤140, options ≤30, 2-4 options) at write time with auto-fix suggestions for common 31-char mistakes. Single-file-per-set output approved as one batch. Cadence enum: `monthly`/`quarterly`/`on-demand`/`off`. |
 | `draft-article` | REMOVED (0.5) | Deprecated v0.2 shim deleted on schedule. Any saved workflow still referencing `draft-article` returns a "not found" error and routes the user to `outline-blog` or `outline-thought-leadership` directly. |
 | `publish-wp` | DEFER | WordPress publish connector. Builds when first client's stack lights up. |
 | `publish-ga` | DEFER | GrowthAmp blog publish connector. Builds when first client's stack lights up. |
@@ -362,6 +426,7 @@ rockstarr-content reads:
   02_inputs/seo/backlog.md                 (ideate-topics, when present)
   03_drafts/**                             (filter out in-flight slugs)
   04_approved/content/                     (draft-newsletter, repurpose, slug filter)
+  04_approved/social/polls_set-*.md        (draft-polls — style continuity, set numbering, topic dedup)
   05_published/_publish.log                (avoid repeats, resolve pillar URLs)
   rockstarr-infra/skills/_shared/references/case-study-prompt.md
   rockstarr-infra/skills/_shared/references/tl-rubric.md
@@ -381,6 +446,7 @@ rockstarr-content writes:
   03_drafts/content/case-study-<slug>.md   (draft-case-study)
   03_drafts/social/linkedin_<slug>.md      (repurpose)
   03_drafts/social/thread_<slug>.md        (repurpose)
+  03_drafts/social/polls_set-<N>_<persona-slug>.md (draft-polls)
   03_drafts/content/newsletter-highlight_<slug>.md (repurpose)
   03_drafts/video/script_<slug>.md         (repurpose, only when records_videos=true)
 ```
@@ -468,6 +534,54 @@ On-demand
     in the chat summary. Scores below 35/50 flag for review.
   - Depends on `rockstarr-infra` v0.4 which ships the shared
     stop-slop skill.
+- `0.6.0` — LinkedIn polls lane.
+  - **New skill: `draft-polls`.** Writes a batched set of
+    10 LinkedIn polls per persona in a single file. The
+    batch is the approval unit. Each poll carries post
+    copy + question (≤140 chars) + 2-4 options (≤30 chars
+    each) + hashtags ending in the brand hashtag.
+  - **Audience-altitude pre-check.** Before any prose,
+    the skill generates 12-15 candidate topics and
+    cross-checks them against `client-profile.md`'s
+    audience definition. ≥3 altitude failures triggers a
+    full batch re-pick — don't patch individual polls
+    when altitude drifts. This is the lane's #1 failure
+    mode per the source SOP.
+  - **Hard character-limit enforcement.** Counted
+    programmatically at write time, with auto-fix
+    suggestions for common 31-char option mistakes
+    (`/` spacing, "ops" for "operational", "comp" for
+    "compensation", "&" for "and").
+  - **Style continuity.** Reads the most recent approved
+    set in `04_approved/social/polls_set-*.md` and
+    pattern-matches its voice rhythm. Newest approved
+    style wins.
+  - **Topic diversity.** Filters candidates against the
+    last 2-3 approved sets so multi-month cadence
+    doesn't read as a template.
+  - **Cadence enum.** `polls_cadence` in `stack.md` is
+    `monthly` / `quarterly` / `on-demand` / `off`. Polls
+    don't fit the per-month numeric model of long-form
+    lanes — set is the unit, not piece.
+  - **Polls config in style-guide.md.** Brand hashtag,
+    persona list, voice rhythm, hashtag mix all live in
+    `Channel Adaptation → LinkedIn polls`. Skills refuse
+    if missing.
+  - **Single-file output per set.**
+    `03_drafts/social/polls_set-<N>_<persona-slug>.md`
+    holds all 10 polls for the set. Approved as one
+    batch via `rockstarr-infra:approve`.
+  - **Plugin scope softens.** The "does not ideate
+    social posts" rule narrows to "does not ideate
+    open-ended social posts" — LinkedIn polls are a
+    structured short-form format that fits this plugin
+    rather than waiting for `rockstarr-social-bot`.
+  - No infra bump strictly required. Lightweight ship —
+    the polls subsection in style-guide.md and the
+    `polls_cadence` field in stack.md are currently
+    manual additions, with infra-side automation
+    (`generate-style-guide` and `capture-stack` updates)
+    landing in a future infra cohort.
 - `0.5.0` — Strategic content planning layer.
   - **New skill: `seo-strategy`.** Runs the six-phase keyword
     research + topic clustering workflow on demand
@@ -616,7 +730,11 @@ On-demand
 ## What this plugin does not do
 
 - Does not post, schedule, or send. Publish connectors deferred.
-- Does not ideate social posts (that is `rockstarr-social-bot`).
+- Does not ideate open-ended social posts (that is
+  `rockstarr-social-bot`). LinkedIn polls are an exception —
+  they're a structured short-form lane with hard constraints
+  that warrant their own treatment, so polls live here as of
+  v0.6.
 - Does not generate outreach or reply copy (those are separate
   bot variants).
 - Does not re-open the style guide. If the draft reveals a voice
@@ -625,3 +743,6 @@ On-demand
   `rockstarr-infra:approve` is the only path to `04_approved/`.
 - Does not accept a pre-written case-study document. The
   case-study lane is interview-first by design.
+- Does not approve polls individually. The poll-set is the
+  approval unit; individual polls within the set are the
+  publish unit.
