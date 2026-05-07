@@ -34,6 +34,43 @@ client's stack lights up the matching field.
 - **Mandatory TL rubric pass (v0.3).** Thought-leadership drafts
   run the canonical rubric BEFORE stop-slop — argument quality
   first, prose hygiene second. Slogans don't get polished.
+- **Mandatory blog SEO/GEO checklist (v0.4).** Researched-blog
+  drafts run the 13-item canonical SEO + GEO checklist BEFORE
+  stop-slop. FAQ section is required, every external fact
+  carries an inline `[Source: URL]`, keyword placement and
+  density are tracked, meta title and meta description live in
+  front-matter. The checklist closes the gap between
+  professionally-written content and content that AI search
+  systems actually cite.
+
+## v0.4 — researched-blog SEO + GEO integration
+
+The researched-blog lane in v0.3 produced clean prose but
+under-performed on AI citation rates. The fix is a canonical
+SEO + GEO reference enforced at two layers (outline + draft),
+parallel to the v0.3 thought-leadership work:
+
+- **`outline-blog`** now runs an external WebSearch research
+  phase on top of the first-party KB read. The outline now
+  carries SEO/GEO targets, a required FAQ section (3-5 H3
+  questions), a keyword placement plan, an internal linking
+  plan, an external sources table, and meta title +
+  description drafts.
+- **`draft-blog`** refuses to run if the outline lacks the
+  SEO/GEO scaffolding. Body REQUIRES the FAQ section. Every
+  external fact carries an inline `[Source: URL]` next to
+  the claim. The 13-item quality checklist runs as Pass 1
+  before stop-slop runs as Pass 2.
+- **The reference** lives at
+  `rockstarr-infra/skills/_shared/references/blog-seo-geo.md`
+  (rockstarr-infra v0.8.2+). It's the single source of truth
+  for the GEO patterns, FAQ structure, keyword placement
+  rules, internal linking rules, inline source URL
+  convention, meta specs, and the quality checklist.
+- **Research stays first-party-voice only.** External sources
+  are CITED inline and listed in References. Their phrasing
+  is never paraphrased into the client's voice. The
+  rockstarr-content posture from v0.2 stands.
 
 ## v0.3 — thought-leadership rubric integration
 
@@ -86,7 +123,7 @@ drafts generated.
 
 | Lane | Primary skill | Cadence field | Repurpose path |
 |------|---------------|---------------|----------------|
-| Researched blog | `outline-blog` → `draft-blog` | `blogs_per_month` | Referenced from newsletters; optional `repurpose` to LinkedIn post. |
+| Researched blog | `outline-blog` (research + FAQ + keyword + linking plan) → `draft-blog` (FAQ body + inline sources + 13-item checklist) | `blogs_per_month` | Referenced from newsletters; optional `repurpose` to LinkedIn post. |
 | Thought leadership | `outline-thought-leadership` → `draft-thought-leadership` | `thought_leadership_per_month` | Source for LinkedIn newsletters (via `publish-linkedin-newsletter`, DEFER); referenced from newsletters; optional `repurpose`. |
 | Email newsletter | `draft-newsletter` | `email_newsletters_per_month` | Links to the month's blog + TL pieces. Not repurposed back. |
 | LinkedIn newsletter | `publish-linkedin-newsletter` (DEFER) | `linkedin_newsletters_per_month` | Reuse of an approved TL piece. Not a new draft. |
@@ -99,9 +136,9 @@ drafts generated.
 |-------|--------|---------|
 | `ideate-topics` | UPDATED (0.3) | Monthly. Reads profile, style guide, first-party KB, publish log, stack-cadence. Proposes 8–12 ranked angles ONLY for enabled lanes. Each TL angle carries an `enemy` field; runs an enemy-diversity check across the month's TL slate to prevent four-pieces-restating-one-argument. Output: `02_inputs/content-topics_YYYY-MM.md`. |
 | `content-calendar` | UPDATED (0.3) | Monthly. Slots the user's picks across the month. Blog and TL outline-to-publish paths first (both lanes are now outline-first); newsletters anchored to preferred weekday; LinkedIn newsletters aligned to an approved TL. Output: `02_inputs/content-calendar_YYYY-MM.md`. |
-| `outline-blog` | EXISTING | Outline-first gate for the researched blog lane. Approval required before `draft-blog` runs. |
-| `outline-thought-leadership` | NEW (0.3) | Outline-first gate for the thought-leadership lane. Forces five required fields — thesis, smart-competitor counter-argument, opening scene, quotable line, buried proprietary term — applied from the canonical TL rubric. Approval required before `draft-thought-leadership` runs. |
-| `draft-blog` | EXISTING | Researched, informational blog. Consumes an approved outline, produces a full post citing first-party KB. Mandatory stop-slop final pass. |
+| `outline-blog` | UPDATED (0.4) | Outline-first gate for the researched blog lane. Now runs a WebSearch research phase on top of the first-party KB read, requires an FAQ section (3-5 questions) in the outline, and produces a keyword placement plan, internal linking plan, external sources table, and meta title + meta description drafts. Reads the shared blog-seo-geo reference. Approval required before `draft-blog` runs. |
+| `outline-thought-leadership` | EXISTING (0.3) | Outline-first gate for the thought-leadership lane. Forces five required fields — thesis, smart-competitor counter-argument, opening scene, quotable line, buried proprietary term — applied from the canonical TL rubric. Approval required before `draft-thought-leadership` runs. |
+| `draft-blog` | UPDATED (0.4) | Researched, informational blog. Consumes the approved outline, produces a full post citing first-party KB and external sources. Body REQUIRES an FAQ section. Every external fact carries an inline `[Source: URL]` next to the claim plus a References section at the bottom. Runs the 13-item SEO/GEO quality checklist as Pass 1 before stop-slop (Pass 2). Front-matter carries `meta_title`, `meta_description`, `keyword_density`, and counts that the human reviewer can audit at a glance. |
 | `draft-thought-leadership` | UPDATED (0.3) | Opinion-driven piece. **Outline-gated** — refuses to run without an approved `outline-thought-leadership` output. Drafts the named thesis, opens on the named scene, places the named quotable line in the first third, buries the proprietary term until the second half. Runs the canonical TL rubric as Pass 1, then stop-slop as Pass 2 — argument quality before prose hygiene. |
 | `draft-article` | DEPRECATED | Back-compat shim. Asks the user which lane they meant and routes to `draft-blog` or `outline-thought-leadership`. Does not draft. Removed in v0.4. |
 | `draft-newsletter` | EXISTING | Single-shot email newsletter. CTA links the month's approved blog + TL pieces. Mandatory stop-slop pass on subject lines, preheader, and body. |
@@ -143,10 +180,10 @@ point the user back at the relevant infra skill.
 
 ## rockstarr-infra dependencies
 
-This plugin requires **rockstarr-infra v0.8.1+** at minimum
-(carrying the shared TL rubric the v0.3 thought-leadership flow
-reads). Individual dependencies and the infra version that
-introduced each:
+This plugin requires **rockstarr-infra v0.8.2+** at minimum
+(carrying the shared blog SEO + GEO reference the v0.4
+researched-blog flow reads). Individual dependencies and the
+infra version that introduced each:
 
 1. **`capture-stack`** — content-cadence block with six fields:
    `blogs_per_month`, `thought_leadership_per_month`,
@@ -174,8 +211,17 @@ introduced each:
    `draft-thought-leadership`, and `ideate-topics`. Defines the
    three tests, patterns to cut, structural rewrite checklist,
    enemy-diversity standard, and quick critique frame. Single
-   source of truth — do not fork. (rockstarr-infra **v0.8.1+** —
-   this is the floor for v0.3 of this plugin)
+   source of truth — do not fork. (rockstarr-infra **v0.8.1+**)
+6. **Shared reference:
+   `skills/_shared/references/blog-seo-geo.md`** — canonical
+   blog SEO + GEO reference. Read by `outline-blog` (research
+   phase, FAQ outline, keyword + internal-linking plans, meta
+   drafts) and `draft-blog` (FAQ body, inline source URLs,
+   keyword density, direct-answer pattern, structured
+   definitions, the 13-item quality checklist that runs as
+   Pass 1 before stop-slop). Single source of truth — do not
+   fork. (rockstarr-infra **v0.8.2+** — this is the floor for
+   v0.4 of this plugin)
 
 **Approvals layer** (rockstarr-infra v0.8.0+). Every draft this
 plugin emits carries `approval_status: pending` and
@@ -188,14 +234,23 @@ in place across every skill.
 
 ### Resolving the floor
 
-Because dependency #5 (the TL rubric) ships in rockstarr-infra
-v0.8.1, this plugin's hard floor is **v0.8.1+**. A client running
-rockstarr-infra v0.8.0 has the approvals layer but not the rubric
-— the v0.3 thought-leadership skills will refuse to run with a
-clear pointer back at the infra version they need. Updating
-rockstarr-infra to v0.8.1 is a no-op for everything else (pure
-additive — one new file under `skills/_shared/references/`), so
-the upgrade is cheap.
+This plugin's hard floor is rockstarr-infra **v0.8.2+** — the
+floor advances with each plugin minor that adds a shared
+reference dependency:
+
+- v0.3 of this plugin requires infra v0.8.1+ (TL rubric).
+- v0.4 of this plugin requires infra v0.8.2+ (blog SEO/GEO
+  reference) — and v0.4 still carries the v0.3 work, so the
+  TL flow needs v0.8.1 as well.
+
+Both infra bumps (0.8.0 → 0.8.1 → 0.8.2) are pure additive —
+each adds one new file under `skills/_shared/references/` and
+changes no skill behavior. The upgrade chain is cheap to run.
+
+A client running rockstarr-infra v0.8.0 or v0.8.1 will see this
+plugin's affected skills refuse to run with a clear pointer
+back at the infra version they need. Other lanes (newsletter,
+case study, repurpose) stay functional regardless.
 
 ## Drafting rules (non-negotiable)
 
@@ -335,6 +390,55 @@ On-demand
     in the chat summary. Scores below 35/50 flag for review.
   - Depends on `rockstarr-infra` v0.4 which ships the shared
     stop-slop skill.
+- `0.4.0` — Researched-blog SEO + GEO integration.
+  - **Lane structural change.** The researched-blog lane now
+    runs an external WebSearch research phase at outline time
+    on top of the first-party KB read. The body now requires
+    an FAQ section (3-5 H3 questions, direct-answer-first)
+    because that's where AI extraction is densest. Every
+    external fact carries an inline `[Source: URL]` placement
+    next to the claim, alongside the existing References
+    section at the bottom.
+  - **`outline-blog` updated.** New research phase. New
+    front-matter fields: `meta_title_draft`,
+    `meta_description_draft`, `faq_questions`,
+    `keyword_placement_plan`, `internal_links_planned`,
+    `external_sources_planned`. Body adds an SEO/GEO targets
+    section, a keyword placement plan, an internal linking
+    plan with anchor + target URL per entry, an external
+    sources table, meta title and meta description drafts.
+    Stack precondition tightened: `website_base_url` must be
+    set in `stack.md` for the internal linking plan to build.
+  - **`draft-blog` updated.** Refuses to run if the outline
+    doesn't carry the v0.4 SEO/GEO fields (re-run
+    `outline-blog`). Body REQUIRES the FAQ section. Every
+    external fact gets an inline `[Source: URL]`. Front-matter
+    carries `meta_title`, `meta_description`,
+    `keyword_density`, and counts the reviewer can audit at a
+    glance. Runs the 13-item SEO/GEO quality checklist as
+    Pass 1 before stop-slop (Pass 2). Order is fixed:
+    structural quality first, prose hygiene second.
+  - **New shared reference:
+    `rockstarr-infra/skills/_shared/references/blog-seo-geo.md`** —
+    canonical SEO + GEO standard. Defines GEO patterns, FAQ
+    structure, keyword placement and density rules, internal
+    linking rules, the inline `[Source: URL]` convention, meta
+    title and description specs, and the 13-item quality
+    checklist. Single source of truth.
+  - **Research posture preserved.** External research provides
+    cited facts and references; voice stays first-party-only.
+    External sources are never paraphrased into the client's
+    voice — they appear as `[Source: URL]` placements and in
+    the References section.
+  - Keyword density is tracked and reported but NOT
+    hard-enforced. If the actual density falls outside the
+    0.5-1% band, the chat summary surfaces it for the
+    reviewer; the file still writes.
+  - Depends on `rockstarr-infra` **v0.8.2+** for the shared
+    reference. v0.8.1 had the TL rubric but not blog-seo-geo;
+    upgrading is pure additive (one new file).
+  - **Still planned for a later cut:** remove the deprecated
+    `draft-article` shim (now scheduled for v0.5).
 - `0.3.0` — Thought-leadership rubric integration.
   - **Lane structural change.** Thought leadership is no longer
     single-shot. The lane now flows through
