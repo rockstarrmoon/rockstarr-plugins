@@ -1,6 +1,6 @@
 ---
 name: draft-icp-campaign
-description: "This skill should be used when the user asks to \"draft a campaign\", \"write an outreach campaign\", \"draft the Sales Nav campaign\", \"turn this ICP into a campaign\", or names a campaign slug that has a lead-list pointer file at 02_inputs/outreach/lead-lists/. It reads the baseline ICP from 00_intake/client-profile.md, walks the user through a per-campaign clarification pass (adjustments apply ONLY to this campaign, never back to client-profile.md), writes the resolved per-campaign ICP to 02_inputs/outreach/icps/, then produces a campaign spec in 03_drafts/outreach/ with filter summary, four-message Sales Nav sequence (blank connect + three post-accept messages), cadence, exit conditions, and booking-flow notes. Cites first-party KB for proof points; third-party material is reference only. SOURCE OF TRUTH: this skill ships inline in rockstarr-outreach-salesnav for V0.1 and will migrate to rockstarr-infra/skills/_shared/ when the Interceptly variant lands so both plugins share one implementation."
+description: "This skill should be used when the user asks to \"draft a campaign\", \"write an outreach campaign\", \"draft the Sales Nav campaign\", \"turn this ICP into a campaign\", or names a campaign slug that has a lead-list pointer file at 02_inputs/outreach/lead-lists/. It reads the baseline ICP from 00_intake/client-profile.md, asks whether this is a full-sequence campaign (connect + three-message post-accept conversation) or a connect-only campaign (connect requests only, no post-accept sequence), walks the user through a per-campaign clarification pass (adjustments apply ONLY to this campaign, never back to client-profile.md), writes the resolved per-campaign ICP to 02_inputs/outreach/icps/, then produces a campaign spec in 03_drafts/outreach/ — full-sequence campaigns get a four-message Sales Nav sequence (blank connect + three post-accept messages), cadence, exit conditions, and booking-flow notes; connect-only campaigns get filter summary, target ICP, target_lead_count, and exit conditions only. Cites first-party KB for proof points; third-party material is reference only. SOURCE OF TRUTH: this skill ships inline in rockstarr-outreach-salesnav for V0.1 and will migrate to rockstarr-infra/skills/_shared/ when the Interceptly variant lands so both plugins share one implementation."
 ---
 
 # draft-icp-campaign
@@ -76,16 +76,52 @@ Read, in this order:
 
 This skill runs in two distinct phases. Do not collapse them — the
 ICP clarification has to happen before drafting so the sequence copy
-can reference the resolved audience.
+(when there is one) can reference the resolved audience.
 
-1. **Phase 1 — Clarify the campaign ICP** (interactive, below).
+1. **Phase 1 — Pick the campaign type, then clarify the campaign ICP**
+   (interactive, below).
 2. **Phase 2 — Draft the campaign spec** (produces the draft file).
+   The Phase 2 path branches by campaign type.
 
-## Phase 1 — Clarify the campaign ICP
+## Phase 1 — Pick the campaign type, then clarify the campaign ICP
 
-The goal is to give the user one chance to narrow or adjust the
-baseline ICP for THIS campaign only. Never edit `client-profile.md`
-from this skill.
+The goal is to give the user one chance to choose the campaign
+shape, then narrow or adjust the baseline ICP for THIS campaign
+only. Never edit `client-profile.md` from this skill.
+
+### Step 1.0 — Pick the campaign type
+
+Use `AskUserQuestion` as the very first interaction:
+
+> What kind of campaign is this?
+>
+> - **Full-sequence** — connect request + three-message post-accept
+>   sequence aimed at opening conversations and booking meetings.
+>   This is the default Rockstarr campaign shape.
+> - **Connect-only** — connection requests only, no post-accept
+>   sequence. The campaign ends at the accept. Use this when the
+>   goal is network-building or first-degree audience growth, not
+>   conversations.
+
+Record the answer as `campaign_type: "full-sequence"` or
+`campaign_type: "connect-only"`. This value is the single switch
+that drives the rest of this skill, `register-campaign`,
+`detect-accepts`, and the weekly report.
+
+If `connect-only`:
+
+- Step 1.3's pain-focus and anchor-phrase questions are SKIPPED.
+- Step 1.4 writes the per-campaign ICP file with `anchor_phrase: ""`.
+- Phase 2 follows the connect-only spec template (no Sequence
+  section, no Sequence rules, no Drafting Rule 7 self-check items
+  for message bodies, no Drafting Rule 8 stop-slop pass on message
+  bodies). Stop-slop still runs on the spec prose (filter summary,
+  why-now).
+- Front-matter `campaign_type: "connect-only"` and the cadence
+  field flips to `"connect requests only — no post-accept sequence"`.
+
+If `full-sequence` (the default), every existing behavior in this
+SKILL applies as written.
 
 ### Step 1.1 — Handle prior per-campaign ICP (if any)
 
@@ -144,9 +180,12 @@ possible):
   event)
 - Disqualifiers (do-not-contact lists, blocked companies, titles)
 - Pain focus for this campaign (which of the profile's pains is the
-  anchor for the sequence — pick exactly one; see Sequence rules)
+  anchor for the sequence — pick exactly one; see Sequence rules).
+  **SKIP this dimension when `campaign_type=connect-only`** — there
+  is no sequence to anchor.
 - Anchor language — confirm or rewrite the exact phrase for the
-  central pain + ceiling (see Rule 4 in Sequence rules)
+  central pain + ceiling (see Rule 4 in Sequence rules). **SKIP this
+  dimension when `campaign_type=connect-only`.**
 
 After each answer, summarize back to the user and ask confirm /
 amend before moving on.
@@ -163,9 +202,10 @@ Front-matter:
 ```yaml
 # ---
 campaign_slug: "kebab-case-slug"
+campaign_type: "full-sequence | connect-only"
 derived_from: "00_intake/client-profile.md"
 derived_at: "ISO timestamp"
-produced_by: "rockstarr-outreach-salesnav/draft-icp-campaign@0.1.6"
+produced_by: "rockstarr-outreach-salesnav/draft-icp-campaign@0.1.7"
 scope: "campaign-only"
 authority_note: "This file governs only this campaign. It does NOT override 00_intake/client-profile.md. Update the profile via rockstarr-infra:ingest-workbook + approve."
 overrides:
@@ -174,6 +214,10 @@ overrides:
   - "anchor phrase: 'pipeline gets attention only when there's time, which is never'"
 # ---
 ```
+
+When `campaign_type=connect-only`, the `overrides` list will not
+include an anchor-phrase entry (there is no anchor phrase in this
+mode).
 
 Body sections:
 
@@ -189,11 +233,13 @@ only to this campaign._
 ## Pain focus (one)
 <The single pain this campaign's sequence speaks to. The anchor
 phrase below is the verbatim shorthand.>
+<!-- OMIT this section entirely when campaign_type=connect-only. -->
 
 ## Anchor phrase
 <The exact verbatim phrase that will appear in Message 2 of the
 sequence, and ONLY in Message 2. Messages 3 and 4 do not repeat this
 phrase. See Sequence Rule 4.>
+<!-- OMIT this section entirely when campaign_type=connect-only. -->
 
 ## Disqualifiers
 <Companies, titles, geographies this campaign will not contact.>
@@ -222,13 +268,14 @@ Front-matter:
 channel: "outreach-salesnav"
 stage: "draft"
 campaign_slug: "kebab-case-slug"
+campaign_type: "full-sequence | connect-only"
 icp_source: "02_inputs/outreach/icps/<slug>.md"
 lead_list_source: "02_inputs/outreach/lead-lists/<slug>.md"
 saved_search_url: "https://www.linkedin.com/sales/search/..."
 target_lead_count: 250
 cadence: "day-of-accept, accept+3, accept+7"
 daily_send_cap_contribution: "round-robin share of 20/day + 100/week"
-produced_by: "rockstarr-outreach-salesnav/draft-icp-campaign@0.1.6"
+produced_by: "rockstarr-outreach-salesnav/draft-icp-campaign@0.1.7"
 produced_at: "ISO timestamp"
 style_guide_version: "matched from style-guide.md"
 anchor_phrase: "<verbatim anchor phrase from per-campaign ICP>"
@@ -240,7 +287,22 @@ availability_source: "booking_link | gcal (from stack.md)"
 # ---
 ```
 
-Body sections (in order):
+When `campaign_type=connect-only`, the front-matter changes:
+
+- `cadence: "connect requests only — no post-accept sequence"`
+- `anchor_phrase: ""` (empty string, kept for schema parity)
+- `booking_mode: "n/a"` and `availability_source: "n/a"`
+  (connect-only campaigns don't have a path to a booking; the
+  fields exist for schema parity)
+- `kb_sources_used` is still populated for the why-now block
+
+The body section template also branches by campaign type — see the
+two body templates below.
+
+### Body sections — full-sequence (in order)
+
+Use this template when `campaign_type=full-sequence`. The
+connect-only template follows further down.
 
 ```markdown
 # Campaign: [Working title — ICP phrase, not an ad line]
@@ -505,7 +567,85 @@ for any specific claim that cannot be traced to the profile or
 first-party KB.)
 ```
 
+### Body sections — connect-only (in order)
+
+Use this template when `campaign_type=connect-only`. There is no
+Sequence section, no Pain focus + anchor phrase section, no Booking
+flow section — these don't apply when the campaign ends at the
+accept.
+
+```markdown
+# Campaign: [Working title — ICP phrase, not an ad line]
+
+> **Connect-only campaign.** This campaign sends connection requests
+> only. There is no post-accept message sequence, no anchor phrase,
+> no booking flow. The campaign succeeds when the target_lead_count
+> is reached or the saved search is exhausted.
+
+## Filter summary
+Plain-English restatement of the Sales Nav saved search. Who is in.
+Who is out. Why this cut, in one paragraph.
+
+## Target ICP
+Summary pulled from `02_inputs/outreach/icps/<slug>.md`. Do not
+invent. One-line audience + 3–5 signals that matter.
+
+## Why now
+The reason this audience is worth growing in the client's network
+right now, grounded in first-party KB. Plainer than the
+full-sequence why-now — there is no opener message that has to
+echo this; it's purely operator-facing. One short paragraph. No
+third-party paraphrase.
+
+## Lead source
+Saved-search URL, target_lead_count, and a one-line note on what
+"a successful day" looks like for this campaign (e.g., "20 connects
+sent, no skip-rate alarms").
+
+## Exit conditions
+- target_lead_count reached → campaign auto-completes; flip
+  `status=stopped` via `stop-campaign`.
+- Saved search exhausts (no new connectable leads on the next
+  crawl) → emit a "saved search exhausted" line in the weekly
+  report. Operator stops the campaign manually. (Auto-stop on
+  exhaustion is a deferred behavior; manual is the V0.1 contract.)
+- Lead replies → routed through `rockstarr-reply` same as any
+  other reply. The connect-only label does NOT suppress reply
+  handling. Operator decides whether to engage in Cowork. This
+  matches the existing flow exactly — connect-only campaigns
+  simply don't *generate* outbound conversations; they don't
+  reject inbound ones.
+- Lead books → `mark-booked` fires (rare on connect-only, but
+  possible if the operator engaged organically). Standard flow.
+- Manual stop / pause → `stop-campaign` honored normally.
+
+## Daily-send-cap contribution
+Round-robin share of the global 20/day + 100/week cap. Connect-only
+campaigns participate in the same round-robin as full-sequence
+campaigns; LinkedIn account health is one budget regardless of
+campaign type. `daily-connect` manages the global cap.
+
+## What this campaign does NOT do
+- No Message 2, 3, or 4. The four-message sequence does not apply.
+- No anchor phrase. The pain-focus / anchor-phrase question is
+  skipped at draft time.
+- No booking flow notes. The campaign has no path to a meeting via
+  outbound; if a lead organically books, that's `mark-booked`.
+- No `{first_name}` substitution. There is no message body to
+  substitute into.
+
+## Open questions for the client
+(Only if there are gaps. Mark inline `[CLIENT TO CONFIRM]` in copy
+for any specific claim that cannot be traced to the profile or
+first-party KB.)
+```
+
 ## Drafting rules
+
+These rules apply to BOTH campaign types unless explicitly scoped
+to one. Rules 4, 7, and 8 contain message-body constraints that
+naturally don't apply when there are no message bodies — those are
+called out inline.
 
 1. **Style guide is canon.** Re-read the Tone Definition contrast
    pairs after drafting. Every sentence must sit on the X side.
@@ -519,7 +659,9 @@ first-party KB.)
    `[CLIENT TO CONFIRM]` for gaps.
 4. **Sales Nav character limits + Message 1 rule.** Message 1
    (connect request) is intentionally BLANK. Never fill it in, even
-   if the ICP screams for it. Keep Messages 2–4 short; this is
+   if the ICP screams for it. **`campaign_type=connect-only`: Message 1
+   is the only message; the rest of this rule is moot.** For
+   `full-sequence` campaigns, keep Messages 2–4 short; this is
    LinkedIn, not an email sequence. Message 2 under ~400 characters.
    Messages 3 and 4 short paragraphs, never more than a short scroll
    on mobile. Respect the Sequence rules (hard) block above for
@@ -531,8 +673,10 @@ first-party KB.)
 6. **One campaign, one ICP, one saved search.** If the ICP implies
    two audiences, say so and ask the user to split the campaign into
    two slugs.
-7. **Self-check pass before writing.** After drafting Messages 2, 3,
-   4, run a literal search-and-check:
+7. **Self-check pass before writing (full-sequence campaigns only).**
+   `campaign_type=connect-only`: skip this rule entirely. There are
+   no message bodies to check. For `full-sequence` campaigns, after
+   drafting Messages 2, 3, 4, run a literal search-and-check:
    - Anchor phrase appears verbatim in Message 2? If no, rewrite.
    - Anchor phrase appears in Message 3 or Message 4 (verbatim OR
      obviously rehashed)? If yes, rewrite — Message 3 references the
@@ -573,9 +717,12 @@ first-party KB.)
    - Message 4 ends with a well-wish ("good luck," "wishing you") or
      a chase ("just bumping")? If yes, rewrite.
 8. **Stop-slop final pass (mandatory).** After the self-check
-   rewrites are done, run the campaign spec prose AND the three
-   sequence message bodies (Messages 2, 3, 4) through
-   `rockstarr-infra:stop-slop` as the final pre-write pass. This is
+   rewrites are done, run the campaign spec prose through
+   `rockstarr-infra:stop-slop` as the final pre-write pass. For
+   `full-sequence` campaigns, ALSO run the three sequence message
+   bodies (Messages 2, 3, 4) through stop-slop. For
+   `connect-only` campaigns, the message-body pass doesn't apply
+   (there are no bodies); the spec-prose pass still runs. This is
    the Growth OS contract: style-guide first, stop-slop last. Any
    flags raised by stop-slop (filler phrases, formulaic structures,
    passive voice, em dashes, vague declaratives, metronomic rhythm)

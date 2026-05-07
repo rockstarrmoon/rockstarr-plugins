@@ -1,6 +1,6 @@
 ---
 name: register-campaign
-description: "This skill should be used when the user says \"register this campaign\", \"launch the campaign\", \"go live on this campaign\", or names an approved campaign spec in 04_approved/outreach/. It promotes the approved campaign, adds a Campaigns row to outreach-tasks.xlsx, invokes crawl-lead-list to populate Leads from the saved Sales Navigator search URL, and seeds the initial connect tasks. Fails loudly if any lead already belongs to another active campaign."
+description: "This skill should be used when the user says \"register this campaign\", \"launch the campaign\", \"go live on this campaign\", or names an approved campaign spec in 04_approved/outreach/. It promotes the approved campaign, reads the campaign_type front-matter (full-sequence or connect-only), validates that connect-only specs do not contain a Sequence section, adds a Campaigns row to outreach-tasks.xlsx with the type recorded, invokes crawl-lead-list to populate Leads from the saved Sales Navigator search URL, and seeds the initial connect tasks. Fails loudly if any lead already belongs to another active campaign."
 ---
 
 # register-campaign
@@ -36,11 +36,38 @@ partially register.
 Read:
 
 1. `04_approved/outreach/campaign-<slug>.md` — full front-matter and
-   body. Extract `saved_search_url`, `target_lead_count`, sequence
-   copy, cadence, booking mode.
+   body. Extract `campaign_type` (default `full-sequence` if absent
+   for back-compat with pre-0.1.7 specs), `saved_search_url`,
+   `target_lead_count`, sequence copy (full-sequence only), cadence,
+   booking mode (full-sequence only).
 2. `00_intake/stack.md` — outreach keys + booking config.
 3. `02_inputs/outreach/outreach-tasks.xlsx` — current state of Leads,
    Tasks, Campaigns.
+
+### Campaign-type validation
+
+Before proceeding past Step 1, validate the spec against its
+declared `campaign_type`:
+
+- **`full-sequence`** — front-matter must include a non-empty
+  `anchor_phrase` and a `cadence` of `"day-of-accept, accept+3,
+  accept+7"` (or equivalent). Body must contain a `## Sequence`
+  section with Messages 1–4 fully drafted. If any of these are
+  missing, abort with a clear message pointing the user at
+  `draft-icp-campaign` to redraft.
+
+- **`connect-only`** — front-matter `anchor_phrase` must be empty,
+  `cadence` must be `"connect requests only — no post-accept
+  sequence"`, and `booking_mode` / `availability_source` must be
+  `"n/a"`. Body must NOT contain a `## Sequence` section, a
+  `## Pain focus + anchor phrase` section, or a `## Booking flow`
+  section. If any of these constraints are violated, abort with a
+  message naming the offending section and pointing the user at
+  `draft-icp-campaign` to redraft. The validation is loud on
+  purpose — the campaign-type field is load-bearing for downstream
+  skills (`detect-accepts`, `generate-message-tasks`,
+  `outreach-weekly-report`), and a mismatched spec creates silent
+  bugs at run time.
 
 ## Behavior
 
@@ -51,6 +78,9 @@ writes so the workbook does not end up in a half-registered state.
    Campaigns, Leads, Tasks sheets into memory.
 2. **Write the Campaigns row.** Append one row:
    - `campaign_slug`: the slug
+   - `campaign_type`: `full-sequence` or `connect-only` (from spec
+     front-matter; default to `full-sequence` for back-compat if
+     absent on a pre-0.1.7 spec)
    - `icp_ref`: path to the ICP file
    - `lead_list_saved_search_url`: from front-matter
    - `target_lead_count`: from front-matter

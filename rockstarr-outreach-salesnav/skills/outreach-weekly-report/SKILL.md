@@ -49,16 +49,35 @@ _Generated <YYYY-MM-DD HH:MM> by rockstarr-outreach-salesnav_
 
 Weekly cap used: **<used>/100** (<remaining> left)
 
-## Per campaign
+## Per campaign — full-sequence
 
 | Campaign | Connects | Accepts | Accept % | Msgs | Replies | Reply % | Bookings | Booking % |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | <slug-a> | 35 | 10 | 28.6% | 22 | 4 | 40.0% | 1 | 25.0% |
 | <slug-b> | 28 | 5  | 17.9% | 14 | 2 | 40.0% | 0 | 0%    |
 
+## Per campaign — connect-only
+
+Connect-only campaigns send connection requests only — no
+post-accept sequence, no reply funnel by design. Accept rate is the
+primary signal.
+
+| Campaign | Connects | Accepts | Accept % | Saved search status |
+|---|---:|---:|---:|---|
+| <slug-c> | 100 | 31 | 31.0% | active |
+| <slug-d> | 80  | 12 | 15.0% | exhausted — operator should stop |
+
+_Connect-only campaigns do not contribute to messages, replies, or
+bookings in the at-a-glance table above (their values are zero by
+design). They DO contribute to connects sent and accepts received._
+
 ### Week-over-week
 - <slug-a>: accept rate up from X → Y; +1 booking WoW.
 - <slug-b>: accept rate flat; reply rate up.
+- <slug-c>: connect-only — accept rate up 4 points; saved search
+  yielding fresh leads each day.
+- <slug-d>: connect-only — saved search exhausted; recommend stop
+  or refresh the search.
 
 ## Awaiting your approval
 
@@ -100,6 +119,35 @@ _No SLA is enforced on these. This callout exists so nothing rots._
   will be written by `backup-workbook` at end-of-week.
 ```
 
+## Render rules — campaign-type branching
+
+The per-campaign rendering forks on `campaign_type` from the
+Campaigns sheet:
+
+- **`full-sequence` campaigns** render in the "Per campaign —
+  full-sequence" table with the full column set: Connects, Accepts,
+  Accept %, Msgs, Replies, Reply %, Bookings, Booking %.
+- **`connect-only` campaigns** render in the "Per campaign —
+  connect-only" table with a narrower column set: Connects,
+  Accepts, Accept %, Saved search status. Reply / booking columns
+  are omitted entirely (zero by design is not the same as
+  underperforming, and showing zeros invites the wrong reading).
+
+Skip a table entirely if there are no campaigns of that type for
+the week. Don't render an empty "Per campaign — connect-only"
+section just to keep the structure symmetric.
+
+The "At a glance" totals at the top of the report aggregate
+honestly across BOTH types:
+
+- `Connections sent`, `Accepts`, `Opt-outs` — sum across
+  full-sequence + connect-only.
+- `Messages sent`, `Replies`, `Bookings` — sum across
+  full-sequence only. Connect-only campaigns contribute zero to
+  these by design, so the sum is naturally correct, but be explicit
+  about which type's denominator is in play if the per-type counts
+  could mislead.
+
 ## Write the "What Rachel / Jon should notice" block by hand
 
 The bullets and per-campaign commentary cannot be pure template.
@@ -116,6 +164,11 @@ client's style guide for tone; this is a client-facing report.
 - If the weekly cap bound (we hit 100 mid-week), flag it.
 - If `confirm-session` ever failed, surface it loudly in the
   heartbeat AND in this block.
+- For connect-only campaigns, accept rate is the only quality
+  signal. Don't invent a "reply rate looks low" line — the campaign
+  has no reply funnel by design, and zero replies is not a problem,
+  it's the point. Talk about accept rate, the saved-search yield,
+  and whether the campaign is approaching its target_lead_count.
 
 ## Stop-slop pass (mandatory)
 

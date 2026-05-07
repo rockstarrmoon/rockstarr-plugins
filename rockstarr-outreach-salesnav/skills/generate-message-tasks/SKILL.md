@@ -1,6 +1,6 @@
 ---
 name: generate-message-tasks
-description: "This skill should be used right after detect-accepts, or when the user says \"seed the sequence\", \"generate message tasks for newly accepted leads\", or \"schedule the follow-ups for this lead\". For each lead that just moved to state=accepted, it reads the approved campaign's 3-step sequence and writes message-step-1, message-step-2, and message-step-3 tasks into the Tasks sheet with due-dates at day-of-accept, accept+3, and accept+7 respectively. Idempotent — re-running on the same lead does not duplicate tasks."
+description: "This skill should be used right after detect-accepts, or when the user says \"seed the sequence\", \"generate message tasks for newly accepted leads\", or \"schedule the follow-ups for this lead\". For each lead that just moved to state=accepted in a full-sequence campaign, it reads the approved campaign's 3-step sequence and writes message-step-1, message-step-2, and message-step-3 tasks into the Tasks sheet with due-dates at day-of-accept, accept+3, and accept+7 respectively. Refuses to seed message tasks for leads in connect-only campaigns — those campaigns have no post-accept sequence by design. Idempotent — re-running on the same lead does not duplicate tasks."
 ---
 
 # generate-message-tasks
@@ -25,15 +25,30 @@ Turns an "accepted" signal into a concrete three-row plan the
 
 For each lead:
 
-1. **Read the approved campaign spec** at
+1. **Look up the campaign's `campaign_type`** from the matching
+   Campaigns row.
+   - If `connect-only`: REFUSE to seed message tasks for this lead.
+     Append a row to `_errors.md` with the lead, the campaign, and
+     a note: "generate-message-tasks invoked on connect-only
+     campaign — no message sequence by design; caller should not
+     have routed this lead here. Check detect-accepts'
+     full_sequence/connect_only partition." Continue to the next
+     lead. The accept on a connect-only lead is the terminal
+     state; the lead simply sits at `state=accepted` and feeds the
+     accept-rate metric. This is belt-and-suspenders defense —
+     `detect-accepts` should not call this skill for connect-only
+     leads, but if a programming error or an out-of-band invocation
+     gets us here, we fail safe.
+   - If `full-sequence` (or absent — default for back-compat): proceed.
+2. **Read the approved campaign spec** at
    `04_approved/outreach/campaign-<slug>.md`. Extract the bodies for
    Message 2 (day of accept), Message 3 (accept + 3), Message 4
    (accept + 7). Message 1 is the connect request and is
    intentionally BLANK — it does not map to a `message-step-N` task.
-2. **Check idempotency.** If the lead already has Tasks rows of type
+3. **Check idempotency.** If the lead already has Tasks rows of type
    `message-step-1`, `message-step-2`, `message-step-3` for this
    campaign (regardless of status), skip. Never create duplicates.
-3. **Create three tasks.** Append to Tasks (step numbers refer to the
+4. **Create three tasks.** Append to Tasks (step numbers refer to the
    post-connect sequence — step-1 is Message 2 in the campaign file,
    step-2 is Message 3, step-3 is Message 4):
    - `message-step-1` (campaign Message 2), due = `accepted_on`
@@ -51,7 +66,7 @@ For each lead:
      so `send-scheduled-messages` reads the canonical copy rather
      than a cached snapshot (if the client edits an approved
      campaign, they must re-register; see `register-campaign`).
-4. **Save.**
+5. **Save.**
 
 ## "Business days" rule
 
@@ -64,7 +79,11 @@ matters.
 
 ## Output
 
-Return `{created: N, skipped_already_seeded: M}` to the caller.
+Return `{created: N, skipped_already_seeded: M, refused_connect_only: K}`
+to the caller. `refused_connect_only` should normally be 0 — it
+counts the belt-and-suspenders refusals from Step 1, which only
+fire if `detect-accepts`'s partition is broken or this skill was
+invoked manually on a connect-only lead.
 
 ## What NOT to do
 
@@ -73,6 +92,10 @@ Return `{created: N, skipped_already_seeded: M}` to the caller.
   approved campaign file; `send-scheduled-messages` reads them at
   send time.
 - Do not create tasks for leads in `state != accepted`.
+- Do not create tasks for leads in connect-only campaigns. Step 1's
+  refusal is the gate. The accept on a connect-only lead is the
+  terminal state by design — there are no Messages 2/3/4 in the
+  approved campaign spec to seed from.
 - Do not re-create tasks after `detect-replies` cancelled them.
   Cancelled is cancelled — a subsequent accept cannot happen for the
   same lead/campaign because the reply already moved the lead off

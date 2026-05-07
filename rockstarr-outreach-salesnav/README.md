@@ -16,8 +16,9 @@ coordination across outreach + nurture, SLA escalations) belong in
 1. All sends happen in Sales Nav — no 3rd-party outreach tool.
 2. A lead belongs to exactly one campaign at a time. No duplicates.
 3. Connection requests are capped at **20 per day + 100 per ISO week**
-   across all active campaigns. Unused daily capacity carries forward
-   inside the current ISO week only. Weekly ceiling is hard.
+   across all active campaigns regardless of campaign type. Unused
+   daily capacity carries forward inside the current ISO week only.
+   Weekly ceiling is hard.
 4. Every reply routes through `rockstarr-reply` for client approval
    before sending.
 5. Before any daily send, `confirm-session` verifies the browser is
@@ -27,18 +28,45 @@ coordination across outreach + nurture, SLA escalations) belong in
    the client books manually and calls `mark-booked`.
 7. All state lives in `/rockstarr-ai/` per `rockstarr-infra`'s scaffold.
 
+## Campaign types
+
+Each campaign carries a `campaign_type` field on its Campaigns row,
+set at draft time and validated at registration:
+
+- **`full-sequence`** (default) — connect request + three-message
+  post-accept conversation aimed at opening conversations and
+  booking meetings. The original Rockstarr campaign shape; every
+  pre-0.1.7 campaign is implicitly this type.
+- **`connect-only`** — connection requests only, no post-accept
+  sequence. The campaign ends at the accept. Use this for
+  network-building or first-degree audience growth where the goal
+  is being-in-the-feed, not opening conversations.
+
+Both types share the global 20/day + 100/week cap, the same
+saved-search-driven Leads pull, the same `confirm-session` gate,
+and the same blank-connect rule. The difference is what happens
+after the accept — full-sequence chains into
+`generate-message-tasks` and the four-message sequence runs;
+connect-only stops at `state=accepted` and the campaign succeeds
+on accept-rate alone.
+
+A workspace can run any mix of full-sequence and connect-only
+campaigns simultaneously. `daily-connect` round-robins across all
+active campaigns regardless of type — LinkedIn account health is
+one budget, not two.
+
 ## Skills
 
 | Skill | Purpose |
 |-------|---------|
-| `draft-icp-campaign` | Given an ICP + saved Sales Nav search URL, write the campaign spec (filters, 3-step sequence, cadence, exit conditions). Ships inline for V0.1; will migrate to `rockstarr-infra/skills/_shared/`. |
-| `register-campaign` | Promote an approved campaign spec, crawl the saved search into Leads, seed initial connect tasks. |
+| `draft-icp-campaign` | Given an ICP + saved Sales Nav search URL, picks the campaign type (full-sequence or connect-only) and writes the campaign spec — full-sequence specs include filters + 3-step sequence + cadence + exit conditions; connect-only specs include filters + target_lead_count + exit conditions only. Ships inline for V0.1; will migrate to `rockstarr-infra/skills/_shared/`. |
+| `register-campaign` | Promote an approved campaign spec, validate against its `campaign_type`, crawl the saved search into Leads, seed initial connect tasks. |
 | `crawl-lead-list` | Paginate a saved Sales Nav search via Chrome MCP and populate Leads. Enforces "one campaign per lead". |
 | `confirm-session` | Pre-flight: verify the browser is signed in to the client's LinkedIn. Gate on the entire daily loop. |
 | `preview-queue` | Daily preview file listing every action the bot plans to take today. Togglable via `stack.md`. |
-| `daily-connect` | Compute today's budget (20/day + 100/week math), round-robin across active campaigns, send connect requests. Only skill that sends connects. |
-| `detect-accepts` | Detect newly accepted connections and flip `Leads.state=accepted`. |
-| `generate-message-tasks` | On accept, seed a 3-step sequence at day-of-accept / +3 / +7. |
+| `daily-connect` | Compute today's budget (20/day + 100/week math), round-robin across all active campaigns regardless of type, send BLANK connect requests via the row-level three-dot menu method with explicit handling of the three skip cases (Connect–Pending, 1st-degree, no-Connect-option). Only skill that sends connects. |
+| `detect-accepts` | Detect newly accepted connections and flip `Leads.state=accepted`. Partition by campaign type — full-sequence accepts chain into `generate-message-tasks`; connect-only accepts are terminal and don't trigger any further tasks. |
+| `generate-message-tasks` | On accept (full-sequence campaigns only), seed a 3-step sequence at day-of-accept / +3 / +7. Refuses to run for connect-only campaign leads. |
 | `send-scheduled-messages` | Execute `message-step-N` and follow-up tasks due today via Sales Nav messaging. |
 | `detect-replies` | Pull inbound messages, append to Replies, cancel pending tasks for the lead, drive `rockstarr-reply` synchronously to stage a draft per inbound, then fire one urgent client email summarizing every newly-staged draft via `rockstarr-infra:notify-reply-ready`. |
 | `send-approved-reply` | Send a reply approved by `rockstarr-reply`, seed a 2-day follow-up task. |
@@ -139,7 +167,7 @@ workbook.
 
 | Sheet | Role |
 |-------|------|
-| Campaigns | One row per campaign. Slug, ICP ref, lead-list saved-search URL, status (active / paused / stopped), date started, date stopped, target_lead_count, notes. |
+| Campaigns | One row per campaign. Slug, `campaign_type` (full-sequence / connect-only), ICP ref, lead-list saved-search URL, status (active / paused / stopped), date started, date stopped, target_lead_count, notes. |
 | Leads | Union of all leads. LinkedIn URL (primary key), name, company, title, `campaign_slug`, state (queued / connected / accepted / replied / booked / opted-out), date entered each state. A lead belongs to exactly one campaign at a time. |
 | Tasks | Work queue. id, lead URL, `campaign_slug`, type (connect / message-step-N / follow-up / review-reply / book-meeting), due date, status (pending / done / cancelled), created-at, completed-at. |
 | Connections | Daily log of connection requests sent. |
@@ -296,6 +324,48 @@ digest if it hasn't been approved by then.
      rules covering pre-resolution in approved files, the
      difference between the two fallback paths, and the residue
      check.
+- `0.1.7` — Two changes shipped together.
+  1. New `connect-only` campaign type. `draft-icp-campaign` now
+     asks at the top of Phase 1 whether the campaign is
+     `full-sequence` (the existing default — connect + 3-message
+     post-accept sequence) or `connect-only` (connection requests
+     only, no post-accept sequence). Connect-only branches the
+     drafting flow: skips the pain-focus and anchor-phrase
+     questions, skips the four-message Sequence section, skips
+     Sequence rules 1–9 and the Drafting rule 7 self-check (no
+     message bodies to check), runs stop-slop on the spec prose
+     only. Connect-only specs use a condensed body template
+     (filter summary + target ICP + why-now + lead source + exit
+     conditions + daily-cap-share + a "what this campaign does
+     NOT do" callout) — no Sequence section, no Booking flow
+     section. Front-matter gains `campaign_type`; per-campaign
+     ICP and Campaigns sheet schemas extend to carry it.
+     `register-campaign` reads the type, validates the spec
+     against it (connect-only specs must have empty
+     `anchor_phrase`, the right cadence string, and no Sequence
+     section), and writes to the Campaigns row. `detect-accepts`
+     partitions newly-accepted leads by type — full-sequence
+     accepts chain into `generate-message-tasks`, connect-only
+     accepts terminate at `state=accepted`. `generate-message-tasks`
+     gains a defensive refuse for connect-only leads.
+     `outreach-weekly-report` adds a separate "Per campaign —
+     connect-only" table (Connects / Accepts / Accept % / Saved
+     search status; reply-rate and book-rate columns omitted as
+     zero-by-design); the at-a-glance totals continue to sum
+     honestly across both types. Pre-0.1.7 specs without a
+     `campaign_type` field default to `full-sequence` (back-compat).
+  2. `daily-connect` tightened. Front-matter description corrected
+     ("BLANK connect requests via the Sales Nav row-level three-dot
+     menu" — the prior phrasing said "campaign-specific note" which
+     contradicted the spec). Send loop now enshrines the row-level
+     three-dot menu method as canonical and warns against the
+     side-panel overflow (which sometimes navigates to the full
+     profile page instead of opening a dropdown). Three explicit
+     skip cases added: Connect–Pending (already invited), 1st-degree
+     (already connected — flips state to `connected`), no-Connect-
+     option (restricted profile). Save-as-lead checkbox verification
+     added to the dialog step. Step numbering renumbered 1–11 to
+     fit the new structure.
 - Deferred to later versions: `force-send-today`, `refresh-lead-list`,
   `gcal-auto-booking`, weighted multi-campaign pacing, cross-bot touch
   caps.
