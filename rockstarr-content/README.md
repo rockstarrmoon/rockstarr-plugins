@@ -42,6 +42,61 @@ client's stack lights up the matching field.
   front-matter. The checklist closes the gap between
   professionally-written content and content that AI search
   systems actually cite.
+- **Strategic content planning (v0.5).** `seo-strategy` runs a
+  six-phase keyword research + topic clustering workflow per
+  client. Output: a strategy document plus a canonical backlog
+  of 25-32 prioritized blog topics organized into 4-5 clusters
+  (one pillar page + 4-6 supports each). `ideate-topics`,
+  `content-calendar`, and `outline-blog` are all backlog-aware
+  — strategy decides which topics matter; the monthly skills
+  sequence them.
+
+## v0.5 — strategic content planning
+
+The researched-blog lane in v0.4 produced individual blogs
+that ranked and got cited. v0.5 adds the layer above:
+strategic planning that decides which blogs matter for the
+client across 6-12 months and organizes them into pillar +
+supporting clusters that build topical authority over time.
+
+- **New skill: `seo-strategy`.** Run on demand, typically
+  quarterly. Six phases: gather inputs from intake artifacts
+  → research the client website + keyword landscape →
+  generate 30 seed keywords + 50 long-tail variants →
+  identify 5 competitor gaps and build 4-5 topic clusters →
+  write the strategy document and the canonical backlog →
+  verify cluster integrity. Two outputs: a dated strategy doc
+  at `02_inputs/seo/strategy_<YYYY-MM-DD>.md` (audit history
+  preserved across runs) and a canonical backlog at
+  `02_inputs/seo/backlog.md` (regenerated each run). No
+  ClickUp integration — the backlog file is the
+  production-tracking artifact in this stack.
+- **`ideate-topics` is backlog-aware.** When the SEO backlog
+  exists, `ideate-topics` reads it and prefers backlog items
+  over free ideation for the blog lane. Each backlog-sourced
+  angle carries `from_backlog: true`, slug, cluster,
+  cluster role, parent pillar slug, target keyword, search
+  intent, difficulty, and quick-win flag. The skill warns the
+  user when fewer than 2× monthly cadence remains in the
+  backlog so the strategist can refresh before it empties.
+  Other lanes (TL, newsletter, LinkedIn) ideate as before.
+- **`content-calendar` enforces cluster ordering.** When
+  cluster-tagged picks land in the same month, the pillar's
+  full chain (outline → draft → publish) calendars BEFORE
+  any supporting post in that cluster begins. Cross-month
+  dependencies are surfaced in the calendar's notes so the
+  strategist knows what unblocks next month.
+- **`outline-blog` defaults to cluster-aware internal
+  linking.** Supporting posts default to one link to the
+  parent pillar + 1-2 peer supports. Pillar pages default to
+  one outbound link per supporting post in their cluster
+  (the pillar is the cluster's navigation hub). The
+  human reviewer can adjust at outline-approval time.
+- **`draft-article` shim removed.** The v0.2 deprecation
+  finished its scheduled lifecycle. Any saved workflow
+  still referencing `draft-article` returns a "not found"
+  and routes the user to `outline-blog` or
+  `outline-thought-leadership` directly.
 
 ## v0.4 — researched-blog SEO + GEO integration
 
@@ -134,16 +189,17 @@ drafts generated.
 
 | Skill | Status | Purpose |
 |-------|--------|---------|
-| `ideate-topics` | UPDATED (0.3) | Monthly. Reads profile, style guide, first-party KB, publish log, stack-cadence. Proposes 8–12 ranked angles ONLY for enabled lanes. Each TL angle carries an `enemy` field; runs an enemy-diversity check across the month's TL slate to prevent four-pieces-restating-one-argument. Output: `02_inputs/content-topics_YYYY-MM.md`. |
-| `content-calendar` | UPDATED (0.3) | Monthly. Slots the user's picks across the month. Blog and TL outline-to-publish paths first (both lanes are now outline-first); newsletters anchored to preferred weekday; LinkedIn newsletters aligned to an approved TL. Output: `02_inputs/content-calendar_YYYY-MM.md`. |
-| `outline-blog` | UPDATED (0.4) | Outline-first gate for the researched blog lane. Now runs a WebSearch research phase on top of the first-party KB read, requires an FAQ section (3-5 questions) in the outline, and produces a keyword placement plan, internal linking plan, external sources table, and meta title + meta description drafts. Reads the shared blog-seo-geo reference. Approval required before `draft-blog` runs. |
+| `seo-strategy` | NEW (0.5) | Run on demand (typically quarterly). Six-phase keyword research + topic clustering workflow. Reads `client-profile.md`, `stack.md`, and the publish log; runs WebFetch on the client site and WebSearch on the keyword landscape; generates 30 seed keywords + 50 long-tail variants + 8-12 quick wins; identifies 5 competitor gaps; builds 4-5 topic clusters with one pillar page + 4-6 supports each. Outputs: `02_inputs/seo/strategy_<YYYY-MM-DD>.md` (audit-preserved) and `02_inputs/seo/backlog.md` (canonical, regenerated per run). 25-32 prioritized blog topics ready for `ideate-topics` to draw from monthly. |
+| `ideate-topics` | UPDATED (0.5) | Monthly. Reads profile, style guide, first-party KB, publish log, stack-cadence. **As of v0.5, also reads `02_inputs/seo/backlog.md` if it exists and prefers backlog items for the blog lane.** Each TL angle still carries an `enemy` field with diversity check; backlog-sourced blog angles carry slug + cluster + cluster role + parent pillar + target keyword + search intent + difficulty + quick-win flag. Surfaces a low-backlog warning when fewer than 2× monthly cadence remains. Output: `02_inputs/content-topics_YYYY-MM.md`. |
+| `content-calendar` | UPDATED (0.5) | Monthly. Slots the user's picks across the month. Blog and TL outline-to-publish paths first (both lanes are outline-first); newsletters anchored to preferred weekday; LinkedIn newsletters aligned to an approved TL. **As of v0.5, enforces cluster-aware ordering for backlog-sourced picks: pillar pages calendar before their supporting posts within the same cluster, and cross-month dependencies are flagged in the calendar's notes.** Output: `02_inputs/content-calendar_YYYY-MM.md`. |
+| `outline-blog` | UPDATED (0.5) | Outline-first gate for the researched blog lane. Runs a WebSearch research phase on top of the first-party KB read, requires an FAQ section (3-5 questions) in the outline, produces a keyword placement plan, internal linking plan, external sources table, and meta title + description drafts. **As of v0.5, defaults the internal linking plan to cluster-aware patterns when the topic comes from the SEO backlog**: supporting posts link to their parent pillar + 1-2 peer supports; pillar pages link out to one supporting post per H2 section. Reads the shared blog-seo-geo reference. Approval required before `draft-blog` runs. |
 | `outline-thought-leadership` | EXISTING (0.3) | Outline-first gate for the thought-leadership lane. Forces five required fields — thesis, smart-competitor counter-argument, opening scene, quotable line, buried proprietary term — applied from the canonical TL rubric. Approval required before `draft-thought-leadership` runs. |
-| `draft-blog` | UPDATED (0.4) | Researched, informational blog. Consumes the approved outline, produces a full post citing first-party KB and external sources. Body REQUIRES an FAQ section. Every external fact carries an inline `[Source: URL]` next to the claim plus a References section at the bottom. Runs the 13-item SEO/GEO quality checklist as Pass 1 before stop-slop (Pass 2). Front-matter carries `meta_title`, `meta_description`, `keyword_density`, and counts that the human reviewer can audit at a glance. |
-| `draft-thought-leadership` | UPDATED (0.3) | Opinion-driven piece. **Outline-gated** — refuses to run without an approved `outline-thought-leadership` output. Drafts the named thesis, opens on the named scene, places the named quotable line in the first third, buries the proprietary term until the second half. Runs the canonical TL rubric as Pass 1, then stop-slop as Pass 2 — argument quality before prose hygiene. |
-| `draft-article` | DEPRECATED | Back-compat shim. Asks the user which lane they meant and routes to `draft-blog` or `outline-thought-leadership`. Does not draft. Removed in v0.4. |
+| `draft-blog` | EXISTING (0.4) | Researched, informational blog. Consumes the approved outline, produces a full post citing first-party KB and external sources. Body REQUIRES an FAQ section. Every external fact carries an inline `[Source: URL]` next to the claim plus a References section at the bottom. Runs the 13-item SEO/GEO quality checklist as Pass 1 before stop-slop (Pass 2). |
+| `draft-thought-leadership` | EXISTING (0.3) | Opinion-driven piece. Outline-gated. Drafts the named thesis, opens on the named scene, places the named quotable line in the first third, buries the proprietary term until the second half. Runs the canonical TL rubric as Pass 1, then stop-slop as Pass 2. |
 | `draft-newsletter` | EXISTING | Single-shot email newsletter. CTA links the month's approved blog + TL pieces. Mandatory stop-slop pass on subject lines, preheader, and body. |
 | `draft-case-study` | EXISTING | Quarterly. Interview-driven via `AskUserQuestion` using the Rockstarr custom-GPT case-study prompt (sourced from rockstarr-infra). Transcript in `02_inputs/content/`; polished draft only after every required question is answered. Mandatory stop-slop on the polished prose; transcript exempt. |
 | `repurpose` | EXISTING | Takes one approved long-form piece and fans it into LinkedIn post, newsletter highlight, X/Threads thread, and (only when `records_videos=true`) a short video script. Mandatory stop-slop pass per derivative. |
+| `draft-article` | REMOVED (0.5) | Deprecated v0.2 shim deleted on schedule. Any saved workflow still referencing `draft-article` returns a "not found" error and routes the user to `outline-blog` or `outline-thought-leadership` directly. |
 | `publish-wp` | DEFER | WordPress publish connector. Builds when first client's stack lights up. |
 | `publish-ga` | DEFER | GrowthAmp blog publish connector. Builds when first client's stack lights up. |
 | `publish-linkedin-newsletter` | DEFER | Republish an approved TL piece as a LinkedIn newsletter via Chrome MCP. Builds when first client's `linkedin_newsletters_per_month >= 1`. |
@@ -299,20 +355,27 @@ Applied by every drafting skill.
 rockstarr-content reads:
   00_intake/client-profile.md
   00_intake/style-guide.md
-  00_intake/stack.md                       (content-cadence block required)
+  00_intake/stack.md                       (content-cadence block + website_base_url)
   01_knowledge_base/index.md
   01_knowledge_base/processed/**           (owned, style_guide_eligible)
   01_knowledge_base/processed/third-party/ (reference only)
-  04_approved/content/                     (draft-newsletter, repurpose)
-  05_published/_publish.log                (avoid recent topic repeats)
+  02_inputs/seo/backlog.md                 (ideate-topics, when present)
+  03_drafts/**                             (filter out in-flight slugs)
+  04_approved/content/                     (draft-newsletter, repurpose, slug filter)
+  05_published/_publish.log                (avoid repeats, resolve pillar URLs)
   rockstarr-infra/skills/_shared/references/case-study-prompt.md
+  rockstarr-infra/skills/_shared/references/tl-rubric.md
+  rockstarr-infra/skills/_shared/references/blog-seo-geo.md
   rockstarr-infra/skills/_shared/stop-slop/     (final pass, every drafting skill)
 
 rockstarr-content writes:
+  02_inputs/seo/strategy_<YYYY-MM-DD>.md   (seo-strategy, dated audit history)
+  02_inputs/seo/backlog.md                 (seo-strategy, canonical, regenerated per run)
   02_inputs/content-topics_YYYY-MM.md      (ideate-topics)
   02_inputs/content-calendar_YYYY-MM.md    (content-calendar)
   02_inputs/content/case-study-interview-<slug>.md (draft-case-study)
   03_drafts/content/outline_<slug>.md      (outline-blog)
+  03_drafts/content/outline-tl_<slug>.md   (outline-thought-leadership)
   03_drafts/content/<slug>.md              (draft-blog, draft-thought-leadership)
   03_drafts/content/<yyyy-mm-dd>_newsletter_<slug>.md (draft-newsletter)
   03_drafts/content/case-study-<slug>.md   (draft-case-study)
@@ -324,27 +387,42 @@ rockstarr-content writes:
 
 All paths are relative to the client's `/rockstarr-ai/` root.
 
-## Monthly flow
+## Strategic + monthly flow
 
 ```
-Day 1 (first business day)
+Quarterly or on-demand (strategy layer, v0.5)
+  seo-strategy             → 02_inputs/seo/strategy_<YYYY-MM-DD>.md
+                             02_inputs/seo/backlog.md (canonical, regenerated)
+                             (25-32 prioritized blog topics, 4-5 clusters)
+
+Day 1 (first business day, monthly)
   ideate-topics            → content-topics_YYYY-MM.md in 02_inputs/
-                             (user picks which to draft per lane)
+                             (reads SEO backlog when present, prefers backlog
+                              items for blog lane; runs free ideation for
+                              other lanes; user picks which to draft per lane)
 
 Day 2-3
   user marks Pick: yes in content-topics_YYYY-MM.md
 
 Day 3
   content-calendar         → content-calendar_YYYY-MM.md in 02_inputs/
+                             (enforces pillar-before-supports ordering when
+                              cluster-tagged picks land in the same month)
                              rockstarr-infra:approve (monthly gate)
 
 Days 4 through end-of-month (on calendar dates)
   blog outline slot        → outline-blog   → outline_<slug>.md
-                             (user approves outline)
+                             (research phase + FAQ + cluster-aware linking;
+                              user approves outline)
   blog draft slot          → draft-blog     → <slug>.md
+                             (FAQ body + inline sources + 13-item checklist
+                              Pass 1 + stop-slop Pass 2)
                              approve → publish
 
+  TL outline slot          → outline-thought-leadership → outline-tl_<slug>.md
+                             (5 required fields; user approves outline)
   TL draft slot            → draft-thought-leadership → <slug>.md
+                             (TL rubric Pass 1 + stop-slop Pass 2)
                              approve → publish
                              (publish-linkedin-newsletter eligible if TL slot has LinkedIn aligned)
 
@@ -390,6 +468,67 @@ On-demand
     in the chat summary. Scores below 35/50 flag for review.
   - Depends on `rockstarr-infra` v0.4 which ships the shared
     stop-slop skill.
+- `0.5.0` — Strategic content planning layer.
+  - **New skill: `seo-strategy`.** Runs the six-phase keyword
+    research + topic clustering workflow on demand
+    (typically quarterly). Reads existing intake artifacts
+    (no re-asking ICP and niche), runs WebFetch on the
+    client site + WebSearch on the keyword landscape,
+    generates 30 seed keywords + 50 long-tail variants,
+    identifies 5 competitor gaps, builds 4-5 topic clusters
+    with one pillar page + 4-6 supporting posts each.
+    Outputs a dated strategy document (audit-preserved
+    across runs) plus a canonical backlog at
+    `02_inputs/seo/backlog.md` (regenerated per run).
+    Backlog typically holds 25-32 prioritized blog topics.
+    No ClickUp integration — the backlog file is the
+    production-tracking artifact.
+  - **`ideate-topics` is backlog-aware.** When the SEO
+    backlog exists, blog-lane angles are sourced from the
+    backlog by default. Each angle carries the slug,
+    cluster name, cluster role (pillar / supporting),
+    parent pillar slug, target keyword, search intent,
+    difficulty estimate, and quick-win flag. Items already
+    in the workflow (published, approved, drafting, in the
+    current month's slate) are filtered out. A low-backlog
+    warning fires when fewer than 2× monthly cadence
+    remains so the strategist can refresh proactively.
+    TL, newsletter, and LinkedIn lanes ideate as before —
+    the backlog is blog-specific.
+  - **`content-calendar` enforces cluster ordering.** When
+    backlog-sourced picks land in the same month, the
+    pillar's full chain (outline → draft → publish) is
+    calendared before any supporting post in the cluster
+    starts. Cross-month dependencies (pillar this month,
+    support unblocked next month) surface in the
+    calendar's notes. A backwards dependency (support
+    picked, pillar not yet shipped) is flagged loudly and
+    the user is asked to resolve before approval.
+  - **`outline-blog` defaults to cluster-aware internal
+    linking.** Supporting posts default to one link to the
+    parent pillar + 1-2 peer supports. Pillar pages
+    default to one outbound link per supporting post
+    (the pillar is the cluster's navigation hub). Pillars
+    intentionally exceed the standard 3-5 link guidance —
+    the SEO/GEO checklist's link-count test reads
+    `cluster_role: pillar` and interprets "3-5 links" as
+    "≥3" rather than "exactly 3-5".
+  - **`draft-article` shim removed on schedule.** The v0.2
+    deprecation finished its lifecycle. Saved workflows
+    still referencing `draft-article` return a "not found"
+    error.
+  - **Folder additions.** New directory
+    `02_inputs/seo/` is created on first run of
+    `seo-strategy`. The `02_inputs/seo/strategy_*.md`
+    files are dated for audit; `02_inputs/seo/backlog.md`
+    is canonical and regenerated per run.
+  - No infra version bump required for this cohort. v0.5
+    introduces no new shared references — the
+    `seo-strategy` patterns are read by exactly one skill
+    and live inside `seo-strategy/SKILL.md`. If a second
+    consumer emerges later (e.g. a channel-specific
+    strategy variant), refactor to a shared reference at
+    that point.
 - `0.4.0` — Researched-blog SEO + GEO integration.
   - **Lane structural change.** The researched-blog lane now
     runs an external WebSearch research phase at outline time
@@ -437,8 +576,9 @@ On-demand
   - Depends on `rockstarr-infra` **v0.8.2+** for the shared
     reference. v0.8.1 had the TL rubric but not blog-seo-geo;
     upgrading is pure additive (one new file).
-  - **Still planned for a later cut:** remove the deprecated
-    `draft-article` shim (now scheduled for v0.5).
+  - **Note:** the deprecated `draft-article` shim was
+    scheduled for v0.5 removal; that landed alongside the
+    SEO strategy work in v0.5.0.
 - `0.3.0` — Thought-leadership rubric integration.
   - **Lane structural change.** Thought leadership is no longer
     single-shot. The lane now flows through

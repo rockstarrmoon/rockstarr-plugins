@@ -77,6 +77,18 @@ Slot order matters. Apply these in order:
      approval.
    - Publish target date: at least 2 business days after draft
      approval. Space blog publish dates at least 7 days apart.
+   - **Cluster-aware sequencing (v0.5).** When blog picks come
+     from `02_inputs/seo/backlog.md` (each carries `cluster`
+     and `cluster_role` from ideate-topics), enforce the
+     pillar-before-supports rule: within a single cluster, the
+     PILLAR page must publish BEFORE any of its supporting
+     posts. Supports link back to the pillar; if the pillar
+     hasn't shipped, the supports' inbound links die. If a
+     month's slate has both a pillar and one of its supports,
+     calendar the pillar's outline → draft → publish chain
+     entirely BEFORE the support's outline starts. If the
+     month can't fit both, flag the conflict and ask the user
+     which to defer.
 2. **Thought-leadership slots next.** Single-shot, so only the
    draft and publish dates matter. For each TL pick:
    - Draft target date: spaced so the client has real review time
@@ -100,6 +112,29 @@ lower-priority one (email < TL < blog) one business day later.
 
 Avoid the 1st, 15th (often US holidays nearby), and any date the
 client has flagged as unavailable.
+
+### Cluster cross-month dependencies
+
+If a pillar page is calendared this month and one of its
+supporting posts is in the backlog but NOT in this month's
+picks, the support is eligible for next month's slate
+(unblocked by the pillar shipping). Note this in the calendar's
+"Notes / flags" section so the user knows what's unblocked
+when next month's `ideate-topics` runs.
+
+If a pillar page from the backlog has not yet shipped (not in
+`05_published/_publish.log`) and one of its supporting posts is
+in this month's blog picks, that's a backwards dependency.
+Flag it loudly:
+
+> ⚠ Cluster ordering issue: support post "[support title]" is
+> calendared this month but its parent pillar "[pillar title]"
+> has not shipped yet. The support's inbound link to the
+> pillar will be broken at publish time. Recommend swapping
+> the pick to the pillar (or queue the pillar for the same
+> month and ship it first).
+
+Ask the user to resolve before approving the calendar.
 
 ## Output
 

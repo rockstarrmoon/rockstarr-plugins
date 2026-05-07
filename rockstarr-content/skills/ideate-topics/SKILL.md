@@ -51,23 +51,34 @@ Read in this order:
 
 1. `/rockstarr-ai/00_intake/client-profile.md` — positioning,
    audience, offers.
-2. `/rockstarr-ai/00_intake/style-guide.md` — voice, tone, pillars,
-   banned language.
+2. `/rockstarr-ai/00_intake/style-guide.md` — voice, tone,
+   pillars, banned language.
 3. `/rockstarr-ai/00_intake/stack.md` — content-cadence fields.
    This is the gate: only propose lanes whose cadence is >= 1.
-4. `/rockstarr-ai/01_knowledge_base/index.md` — summary of every KB
-   file with `kb_scope` tags.
-5. Every first-party processed KB file (`kb_scope: owned`) — pull
-   concrete claims, frameworks, numbers, customer stories, and
-   phrases the client has already used. These become evidence
-   pointers for topics.
-6. Third-party processed KB files (`kb_scope: third_party`) —
+4. **`/rockstarr-ai/02_inputs/seo/backlog.md`** if it exists.
+   The SEO content backlog is the strategic plan that scoped
+   which topics matter for this client across 6-12 months. When
+   present, **the backlog is the preferred source** for blog
+   lane topics — see "Backlog-aware ideation" below.
+5. `/rockstarr-ai/01_knowledge_base/index.md` — summary of every
+   KB file with `kb_scope` tags.
+6. Every first-party processed KB file (`kb_scope: owned`) —
+   pull concrete claims, frameworks, numbers, customer stories,
+   and phrases the client has already used. These become
+   evidence pointers for topics.
+7. Third-party processed KB files (`kb_scope: third_party`) —
    **reference only**. They can inform what competitors or the
    category are saying, but never act as voice signal and never
    get paraphrased into a topic angle.
-7. `/rockstarr-ai/05_published/_publish.log` — the last 90 days of
-   shipped pieces. Use this to avoid repeating recent topics within
-   90 days, and to spot pillars that are under-served.
+8. `/rockstarr-ai/05_published/_publish.log` — the last 90 days
+   of shipped pieces. Use this to avoid repeating recent topics
+   within 90 days, and to filter backlog items that have already
+   shipped.
+9. `/rockstarr-ai/04_approved/content/` and
+   `/rockstarr-ai/03_drafts/content/` — list the slugs currently
+   in flight. Filter these out of any backlog-driven proposals so
+   `ideate-topics` doesn't re-propose work already moving through
+   the workflow.
 
 ## Stack-cadence filter — the non-negotiable rule
 
@@ -91,6 +102,78 @@ lanes.
 
 Case studies are NOT generated here. They run on a quarterly
 reminder via `draft-case-study`, outside the monthly calendar.
+
+## Backlog-aware ideation (v0.5)
+
+If `/rockstarr-ai/02_inputs/seo/backlog.md` exists, the
+strategic plan has already decided which blog topics matter
+for this client. Monthly ideation in that case is sequencing,
+not free generation.
+
+### How the backlog changes the blog lane
+
+For the **researched-blog lane**, when the backlog exists:
+
+1. Read the backlog and parse every item's slug, cluster,
+   cluster role (pillar / supporting), parent pillar (for
+   supports), target keyword, search intent, difficulty, and
+   quick-win flag.
+2. Filter out items whose slug appears in:
+   - `05_published/_publish.log` (already published).
+   - `04_approved/content/` (approved, awaiting publish).
+   - `03_drafts/content/` (currently drafting).
+   - The previous month's `content-topics_<YYYY-MM>.md` with
+     `Pick: yes` (already in flight from last month).
+3. From the remaining backlog items, propose this month's
+   blog picks at roughly 2× monthly cadence (so the user has
+   choice). Ranking heuristic, in order:
+   - Quick-win items first (⭐ in the backlog).
+   - Pillar pages BEFORE their supporting posts within a
+     cluster (supports link to pillar; pillar should ship
+     first — `content-calendar` enforces this hard, but
+     ideate-topics should propose in the right order).
+   - Items in clusters that are not yet represented in any
+     month's ideation.
+4. Each proposed angle carries `from_backlog: true`,
+   `cluster: <cluster name>`, `cluster_role: pillar | supporting`,
+   `parent_pillar_slug: <slug or null>`, `target_keyword`,
+   `search_intent`, and `difficulty` in its line-item block —
+   so `outline-blog` downstream can use the cluster info for
+   internal linking defaults.
+
+For the **other lanes** (thought leadership, email
+newsletter, LinkedIn newsletter), the backlog is informational
+only. TL angles still come from the rubric-driven free
+ideation flow (the TL rubric is upstream of the SEO strategy
+— TL is opinion, not keyword-targeted). Newsletters anchor to
+the month's approved long-form pieces, same as before.
+
+### Low-backlog warning
+
+After filtering, count the remaining un-covered blog items in
+the backlog. If the count is fewer than 2× monthly blog
+cadence (e.g., for `blogs_per_month: 2`, fewer than 4 items
+remain), surface a warning to the user in the chat summary:
+
+> ⚠ SEO backlog is running thin. [N] blog items remain
+> against a monthly cadence of [N]. Consider re-running
+> `seo-strategy` to refresh the backlog before the next
+> ideation pass.
+
+This does NOT block ideation — propose what's there, plus
+fall back to free ideation for the remainder if needed. The
+warning just creates visibility so the strategist can refill
+before the backlog fully empties.
+
+### When the backlog does NOT exist
+
+Skip this section entirely. Run the original
+free-ideation flow for the blog lane (read profile, style
+guide, KB, publish log, propose topics that fit the client's
+pillars and the month's cadence). The backlog is additive —
+its absence is a fully supported state, especially for
+clients pre-onboarding or for clients on
+`blogs_per_month: 0`.
 
 ## Pillar selection
 
@@ -165,6 +248,15 @@ Lanes with cadence 0 are suppressed — no topics proposed.
 - **Why now:** [one line — topical, seasonal, gap in publish log, customer question]
 - **Rough length:** [800-word TL | 1500-word researched blog | 700-word newsletter | etc.]
 - **Handoff:** outline-blog | outline-thought-leadership | draft-newsletter | publish-linkedin-newsletter
+- **From backlog:** true | false (default false; true when the angle was sourced from `02_inputs/seo/backlog.md`)
+- **Slug:** kebab-cased-slug (required when from_backlog is true; carried verbatim from the backlog so downstream slug matching works)
+- **Cluster:** [cluster name from backlog] (blog lane, when from_backlog)
+- **Cluster role:** pillar | supporting (blog lane, when from_backlog)
+- **Parent pillar slug:** [slug] | null (when cluster_role=supporting)
+- **Target keyword:** [primary keyword from backlog] (blog lane, when from_backlog)
+- **Search intent:** Informational | Commercial | Transactional (blog lane, when from_backlog)
+- **Difficulty:** Low | Medium | High (blog lane, when from_backlog)
+- **Quick win:** true | false (blog lane, when from_backlog)
 
 ### 2. ...
 ```

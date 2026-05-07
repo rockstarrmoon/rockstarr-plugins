@@ -288,6 +288,44 @@ At least one entry must point to the client's primary service
 page related to the blog topic. If the topic doesn't have an
 obvious service-page match, flag it as an open question.
 
+### Cluster-aware defaults (v0.5)
+
+If the source topic carries `from_backlog: true` and a
+`cluster` + `cluster_role` (set by `ideate-topics` when it
+draws from `02_inputs/seo/backlog.md`), default the internal
+linking plan as follows:
+
+- **If `cluster_role: supporting`** — at least one entry
+  links to the parent pillar page. Use `parent_pillar_slug`
+  from the topic and resolve to the published URL via
+  `05_published/_publish.log` (search the log for that slug
+  and pull the URL). If the pillar has not shipped yet,
+  flag this as an open question — the support shouldn't
+  ship before its pillar (per content-calendar's
+  cluster-ordering rule), but if the user wants to proceed,
+  use a placeholder URL noted as `[CLIENT TO CONFIRM:
+  pillar URL when shipped]`.
+- **If `cluster_role: supporting`** — also include 1-2
+  links to peer supporting posts in the same cluster (read
+  the backlog to find them). Use the same publish-log
+  lookup; placeholder if not yet shipped.
+- **If `cluster_role: pillar`** — at least one entry per
+  H2 section links FROM the pillar TO a supporting post in
+  the cluster (inverse direction). Pillars carry the most
+  outbound cluster links because they're the cluster's
+  navigation hub. Aim for one link per support (5-7
+  internal links total when the pillar has 5-7 supports).
+  Pillars frequently exceed the standard 3-5 link guidance —
+  that's expected. Note in the front-matter that this is a
+  pillar page (`cluster_role: pillar`) so the SEO/GEO
+  checklist's "3-5 links" check is interpreted as "≥3"
+  rather than "exactly 3-5."
+
+These defaults are recommendations the human reviewer can
+adjust. The pillar↔support linking is what makes a topic
+cluster work as a topical-authority signal — skipping it
+sacrifices the strategic value of the cluster structure.
+
 ## External sources planned
 Every external statistic, regulation, or expert citation the
 draft will use. Each row carries the verbatim fact or stat,
