@@ -85,7 +85,7 @@ benefits from not being rushed.
 
 Open Cowork and go to **Plugin Settings**. Add the custom
 marketplace URL the Rockstarr team sent you (it looks like
-`https://github.com/rockstarrmoon/mkt-<your-token>`), authorize
+`https://github.com/rockstarr-moon/mkt-<your-token>`), authorize
 GitHub when prompted, and flip on the **Sync updates** toggle so
 you automatically receive improvements over time.
 
@@ -324,6 +324,21 @@ that's what we're here for.
   `rockstarr-content:draft-thought-leadership`, and
   `rockstarr-content:ideate-topics`. Do not fork — update in
   place.
+- `skills/_shared/references/blog-seo-geo.md` — canonical blog
+  SEO + GEO (Generative Engine Optimization) reference. Covers
+  the GEO patterns AI search systems reward (cited stats, named
+  sources, structured definitions, direct-answer-first,
+  consistent terminology, specific numbers and proper nouns),
+  the required FAQ section structure, keyword placement and
+  density rules, internal linking rules, the inline `[Source: URL]`
+  convention, meta title and meta description specs, and the
+  13-item quality checklist drafts run as Pass 1 before
+  stop-slop. Read by `rockstarr-content:outline-blog` (research
+  phase, FAQ outline, keyword and internal-linking plans, meta
+  drafts) and `rockstarr-content:draft-blog` (FAQ in body,
+  inline sources, keyword density, direct-answer pattern,
+  structured definitions, the quality checklist gate). Do not
+  fork — update in place.
 - `skills/_shared/stop-slop/` — MIT-licensed stop-slop skill. Every
   prose-producing Rockstarr bot must run this as the final pass before
   writing a draft to `03_drafts/`. Shared SKILL.md + `references/`
@@ -394,18 +409,54 @@ that's what we're here for.
     appended to call this skill with the just-staged paths. Wire
     that in the matching plugin bumps before the urgent
     notification fires for real.
+- `0.8.2` — Shared blog SEO + GEO reference.
+  - **New shared reference:
+    `skills/_shared/references/blog-seo-geo.md`** — canonical
+    SEO and GEO standard for the researched-blog lane. Covers
+    GEO patterns (cited stats, named sources, structured
+    definitions, direct-answer-first, consistent terminology,
+    specific numbers / dates / proper nouns), the required FAQ
+    section, keyword placement and density rules, internal
+    linking rules, the inline `[Source: URL]` convention, meta
+    title and description specs, and the 13-item quality
+    checklist that runs as Pass 1 before stop-slop.
+  - **Read by rockstarr-content v0.4+** — `outline-blog` (adds
+    a WebSearch research phase, FAQ outline, keyword placement
+    plan, internal linking plan, meta drafts) and `draft-blog`
+    (required FAQ in body, inline source URLs, direct-answer
+    pattern, structured definitions, density tracking, quality
+    checklist gate before stop-slop).
+  - Single source of truth — do not fork.
+  - Pure additive change. No skill behavior in this plugin
+    changes; the only delta is the new file under
+    `skills/_shared/references/`.
+- `0.8.1` — Shared thought-leadership rubric.
   - **New shared reference:
     `skills/_shared/references/tl-rubric.md`** — canonical
-    thought-leadership rubric. Read by rockstarr-content's
-    `outline-thought-leadership`, `draft-thought-leadership`, and
-    `ideate-topics` skills (rockstarr-content v0.3+). Defines
-    the three tests, patterns to cut, structural rewrite
-    checklist, enemy-diversity standard, and quick critique
-    frame. Single source of truth — update in place, don't fork.
+    thought-leadership rubric. Defines the three tests every TL
+    piece must pass (single argument a smart competitor could
+    publicly disagree with, one specific story told end-to-end,
+    one quotable line a reader would repeat at dinner), patterns
+    to cut on sight, the structural rewrite checklist, the
+    multi-article enemy-diversity standard, the seven-test quick
+    critique frame, the "what compelling actually means"
+    definition, and the dual-roles note for founder-as-writer vs.
+    bot-as-writer.
+  - **Read by rockstarr-content v0.3+** —
+    `outline-thought-leadership` (forces the five required
+    fields), `draft-thought-leadership` (post-draft rubric pass
+    before stop-slop), and `ideate-topics` (enemy-diversity check
+    across the month's TL slate).
+  - Single source of truth — do not fork. Updates land here and
+    propagate automatically to every consuming skill on the next
+    plugin sync.
+  - Pure additive change. No skill behavior in this plugin
+    changes; the only delta is the new file under
+    `skills/_shared/references/`.
 
 ## Backlog / future
 
-(Empty — every entry that was here in 0.7 is now shipped in 0.8.)
+(Empty — every entry that was here in 0.7 is now shipped in 0.8.x.)
 
 ## What this plugin does not do
 

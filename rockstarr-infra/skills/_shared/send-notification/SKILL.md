@@ -312,7 +312,7 @@ Invoke send-notification with:
 ## Related
 
 - Mailer Worker source + runbook:
-  `rockstarrmoon/rockstarr-mailer` on GitHub (local path during
+  `rockstarr-moon/rockstarr-mailer` on GitHub (local path during
   development: `~/Desktop/Claude/RockstarrAI/rockstarr-mailer/`).
 - Onboarding template seed: `scaffold-client` creates
   `.rockstarr-mailer.env` with placeholders; Rachel or Jon pastes the
