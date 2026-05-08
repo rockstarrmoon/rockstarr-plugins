@@ -1,0 +1,8 @@
+{
+  "name": "rockstarr-ops",
+  "version": "0.1.0",
+  "description": "Rockstarr AI sales-ops bot for the Growth OS. Tool-agnostic by design: every CRM, task system, meeting recorder, calendar, email platform, deliverability tool, and LinkedIn outreach tool is named in stack.md at install time. V0.1 covers daily call prep (orchestrator), Call 1 + Call 2 prep, client catch-up agendas, old-lead audits, lead reengagement, post-call transcript processing, and recurring email-deliverability tests. Drafting goes through rockstarr-reply; CRM writes go through the active rockstarr-ops-bot-<crm> variant; LinkedIn DM sends go through the active rockstarr-outreach-* variant. No baked-in framework, voice, pitch, or pricing — every behavior comes from intake-produced files (pitch.md, ops-call-framework.md, deliverability-config.md, icp-qualifications.md, style-guide.md) plus stack.md.",
+  "author": {
+    "name": "Rockstarr & Moon"
+  }
+}
