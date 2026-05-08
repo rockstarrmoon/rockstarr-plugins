@@ -78,10 +78,9 @@ one budget, not two.
 | `metrics-weekly` | Friday: per-campaign weekly roll-up into Metrics (Weekly). |
 | `outreach-weekly-report` | Markdown weekly report from Metrics (Weekly). |
 | `backup-workbook` | Weekly snapshot of `outreach-tasks.xlsx` into `/06_reports/data/`. |
-| `invite-page-followers` | Monthly action: invite the admin's first-degree LinkedIn connections to follow the configured company page. Drives the LinkedIn admin dashboard via Chrome MCP, identity-gates on profile-photo alt-text + admin-redirect, lazy-loads the connection picker, selects up to the page's monthly invite-credit ceiling (default 50 — LinkedIn's standard-tier cap as of May 2026; the legacy 250 cap is paid-only now), captures the confirmation, and logs the run. Cycle-deduplicated. Independent of the campaign workbook and the 20/100 connect cap. |
 
 Deferred past V0.1: `force-send-today`, `refresh-lead-list`,
-`gcal-auto-booking`, multi-page page-invites in one workspace.
+`gcal-auto-booking`.
 
 ## Preconditions (every client)
 
@@ -100,20 +99,6 @@ already produced:
   - `booking_link_url:` (if `availability_source: booking_link`)
   - `booking_link_required_fields: [email, phone, company]` (list)
   - `gcal_id:` (if `availability_source: gcal`)
-
-  Plus, if `invite-page-followers` is in use (optional, opt-in):
-
-  - `page_invite_enabled: true`
-  - `page_invite_target_url: "https://www.linkedin.com/company/<slug>/"`
-  - `page_invite_company_id: "<numeric id>"` (used in admin URLs)
-  - `page_invite_admin_display_name: "<full name>"` (for alt-text identity check)
-  - `page_invite_schedule_cron: "0 14 8-14 * 2"` (operator-configurable; default 2pm second Tuesday of each month)
-  - `page_invite_credit_target: 50` (optional, default 50 — caps the click count; LinkedIn's standard-tier monthly ceiling as of May 2026, raise only if the workspace is on a paid tier with a higher real ceiling)
-
-  If `page_invite_enabled` is `false` or absent, `invite-page-followers`
-  refuses to run with a clear message. The campaign skills are
-  unaffected by these keys.
-
 - `/rockstarr-ai/01_knowledge_base/index.md` with first-party processed
   files (campaign copy cites first-party proof).
 
@@ -218,34 +203,6 @@ Every step fails gracefully if the previous produced nothing. Order is fixed.
 An optional afternoon pass re-runs `detect-replies` only (no connect
 loop). Event-driven paths — `send-approved-reply`, `book-meeting`,
 `mark-booked` — run whenever they're triggered.
-
-## Page-follow invites (monthly, parallel)
-
-`invite-page-followers` runs once a month on the configured cron
-(default `0 14 8-14 * 2` — 2pm on the second Tuesday). It is wholly
-parallel to the campaign machinery: a different audience (the
-admin's existing first-degree connections, not search-derived
-leads), a different credit pool (page-level, refills monthly, 250
-max), a different cadence (monthly, not daily), and a different
-exit signal (credits exhausted, not target_lead_count reached).
-
-The skill identity-gates harder than the campaign skills. Both the
-profile-photo alt-text check and the admin-redirect check must pass
-before any send happens — wrong-account sending here would burn
-someone else's monthly invite quota and spam their network. There
-is no soft-fail path on the identity gate.
-
-Output is logged to
-`/05_published/outreach/page-invites/<YYYY-MM>.md` with one row per
-run, plus a one-line mention in the day's daily activity log. The
-campaign workbook (`outreach-tasks.xlsx`) is not touched. The
-weekly outreach report (`outreach-weekly-report`) does NOT roll
-page-invite numbers into its tables — the work is on a different
-clock and would muddle the campaign-funnel reading.
-
-One page per workspace. If a workspace needs to grow multiple pages
-(an agency case, or a founder running two businesses), each page
-goes in its own `/rockstarr-ai/` workspace with its own stack.md.
 
 ## Approvals
 
@@ -409,34 +366,28 @@ digest if it hasn't been approved by then.
      option (restricted profile). Save-as-lead checkbox verification
      added to the dialog step. Step numbering renumbered 1–11 to
      fit the new structure.
-- `0.1.9` — New `invite-page-followers` skill. Monthly page-growth
-  action that drives the LinkedIn admin dashboard via Chrome MCP,
-  identity-gates on profile-photo alt-text + admin-redirect (both
-  required), reads the page's invite-credit balance, lazy-loads the
-  connection picker, selects up to `min(credits_available,
-  page_invite_credit_target)` connections via label-clicks (not
-  raw-input clicks), sends, captures the confirmation, and logs
-  the run to `/05_published/outreach/page-invites/<YYYY-MM>.md`.
-  Cycle-deduplicated — refuses to fire twice in the same credit
-  cycle without an explicit `force_rerun: true`. Defaults to a 2pm
-  second-Tuesday cron (`0 14 8-14 * 2`); reference cron for
-  Wednesday cadence is `0 14 8-14 * 3`. New stack.md keys
-  (`page_invite_enabled`, `page_invite_target_url`,
-  `page_invite_company_id`, `page_invite_admin_display_name`,
-  `page_invite_schedule_cron`, optional `page_invite_credit_target`
-  defaulting to 50 — LinkedIn's standard-tier monthly ceiling as
-  of May 2026; the legacy 250 ceiling is paid-only and most
-  workspaces will not hold it) documented in Preconditions;
-  `rockstarr-infra:capture-stack` capture for these keys is
-  tracked separately. The skill is
-  wholly parallel to the campaign machinery — independent audience,
-  independent credit pool, independent cadence, independent run
-  log. The campaign workbook is not touched and the weekly outreach
-  report does not roll page-invite numbers into its tables. One
-  page per workspace; multi-page is a deferred extension. No other
-  skills changed. Capture-stack updates and a future "page invites
-  this month" inclusion in the weekly report are deferred to later
-  versions.
+- `0.1.9` — Briefly shipped the `invite-page-followers` skill (a
+  monthly page-growth action against the LinkedIn admin dashboard).
+  The skill, its stack.md keys (`page_invite_*`), and its run-log
+  surface (`/05_published/outreach/page-invites/`) all moved out of
+  this plugin in 0.2.0; see below.
+- `0.2.0` — Plugin refocused on lead pipelines only.
+  `invite-page-followers` and all its associated config and run-log
+  surface moved to the new `rockstarr-social` plugin, which is the
+  natural home for "grow the company page" work alongside scheduled
+  posts, repurposed content, and other social-channel surfaces.
+  Workspaces that were running the page-invite skill from this
+  plugin should install `rockstarr-social` and migrate their
+  `page_invite_*` stack.md keys there per that plugin's
+  Preconditions. This plugin's surface is back to lead-pipeline
+  outreach: campaign drafting + connects + sequence + replies +
+  bookings. No campaign-side behavior changed — every full-sequence
+  and connect-only campaign skill is byte-equivalent to 0.1.9. The
+  scope cleanup makes both plugins easier to reason about: the
+  campaign workbook stays in this plugin, the page-growth surface
+  stays in rockstarr-social, and the LinkedIn account health budget
+  is shared between them via the same `confirm-session` gate that
+  every Sales Nav skill already runs through.
 - Deferred to later versions: `force-send-today`, `refresh-lead-list`,
   `gcal-auto-booking`, weighted multi-campaign pacing, cross-bot touch
   caps.
@@ -450,6 +401,9 @@ digest if it hasn't been approved by then.
 
 - Does not install or talk to Interceptly, MeetAlfred, Dripify, Waalaxy.
 - Does not send email, schedule social posts, or drive CRM.
+- Does not run monthly page-follow invites. That work moved to the
+  `rockstarr-social` plugin in 0.2.0; install it alongside this one
+  if you want both pipeline outreach and page-growth automation.
 - Does not approve its own campaigns, replies, or bookings.
 - Does not hand the booking link to the lead. Ever.
 - Does not silently retry after a `confirm-session` failure. Wrong-

@@ -131,9 +131,9 @@ staged on this pass.
       }
       ```
 
-      Salesnav 0.1.9 does NOT run a `qualify-lead` pass and does NOT
+      Salesnav 0.2.0 does NOT run a `qualify-lead` pass and does NOT
       maintain `00_intake/icp-qualifications.md` — that capability is
-      tracked for the 0.2.0 ICP-qualifications track. Until then,
+      tracked as a future ICP-qualifications enhancement. Until then,
       every bundle goes out with `icp_verdict: "unknown"`.
       rockstarr-reply still drafts; it just doesn't get a per-reply
       verdict to specialize on.
