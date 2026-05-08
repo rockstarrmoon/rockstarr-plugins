@@ -78,7 +78,7 @@ one budget, not two.
 | `metrics-weekly` | Friday: per-campaign weekly roll-up into Metrics (Weekly). |
 | `outreach-weekly-report` | Markdown weekly report from Metrics (Weekly). |
 | `backup-workbook` | Weekly snapshot of `outreach-tasks.xlsx` into `/06_reports/data/`. |
-| `invite-page-followers` | Monthly action: invite the admin's first-degree LinkedIn connections to follow the configured company page. Drives the LinkedIn admin dashboard via Chrome MCP, identity-gates on profile-photo alt-text + admin-redirect, lazy-loads the connection picker, selects up to the page's monthly invite-credit ceiling (default 250), captures the confirmation, and logs the run. Cycle-deduplicated. Independent of the campaign workbook and the 20/100 connect cap. |
+| `invite-page-followers` | Monthly action: invite the admin's first-degree LinkedIn connections to follow the configured company page. Drives the LinkedIn admin dashboard via Chrome MCP, identity-gates on profile-photo alt-text + admin-redirect, lazy-loads the connection picker, selects up to the page's monthly invite-credit ceiling (default 50 — LinkedIn's standard-tier cap as of May 2026; the legacy 250 cap is paid-only now), captures the confirmation, and logs the run. Cycle-deduplicated. Independent of the campaign workbook and the 20/100 connect cap. |
 
 Deferred past V0.1: `force-send-today`, `refresh-lead-list`,
 `gcal-auto-booking`, multi-page page-invites in one workspace.
@@ -108,7 +108,7 @@ already produced:
   - `page_invite_company_id: "<numeric id>"` (used in admin URLs)
   - `page_invite_admin_display_name: "<full name>"` (for alt-text identity check)
   - `page_invite_schedule_cron: "0 14 8-14 * 2"` (operator-configurable; default 2pm second Tuesday of each month)
-  - `page_invite_credit_target: 250` (optional, default 250 — caps the click count)
+  - `page_invite_credit_target: 50` (optional, default 50 — caps the click count; LinkedIn's standard-tier monthly ceiling as of May 2026, raise only if the workspace is on a paid tier with a higher real ceiling)
 
   If `page_invite_enabled` is `false` or absent, `invite-page-followers`
   refuses to run with a clear message. The campaign skills are
@@ -409,7 +409,7 @@ digest if it hasn't been approved by then.
      option (restricted profile). Save-as-lead checkbox verification
      added to the dialog step. Step numbering renumbered 1–11 to
      fit the new structure.
-- `0.1.8` — New `invite-page-followers` skill. Monthly page-growth
+- `0.1.9` — New `invite-page-followers` skill. Monthly page-growth
   action that drives the LinkedIn admin dashboard via Chrome MCP,
   identity-gates on profile-photo alt-text + admin-redirect (both
   required), reads the page's invite-credit balance, lazy-loads the
@@ -423,9 +423,12 @@ digest if it hasn't been approved by then.
   Wednesday cadence is `0 14 8-14 * 3`. New stack.md keys
   (`page_invite_enabled`, `page_invite_target_url`,
   `page_invite_company_id`, `page_invite_admin_display_name`,
-  `page_invite_schedule_cron`, optional `page_invite_credit_target`)
-  documented in Preconditions; `rockstarr-infra:capture-stack`
-  capture for these keys is tracked separately. The skill is
+  `page_invite_schedule_cron`, optional `page_invite_credit_target`
+  defaulting to 50 — LinkedIn's standard-tier monthly ceiling as
+  of May 2026; the legacy 250 ceiling is paid-only and most
+  workspaces will not hold it) documented in Preconditions;
+  `rockstarr-infra:capture-stack` capture for these keys is
+  tracked separately. The skill is
   wholly parallel to the campaign machinery — independent audience,
   independent credit pool, independent cadence, independent run
   log. The campaign workbook is not touched and the weekly outreach

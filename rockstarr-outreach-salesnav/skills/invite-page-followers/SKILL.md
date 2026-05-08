@@ -1,6 +1,6 @@
 ---
 name: invite-page-followers
-description: "This skill should be used when the scheduled monthly run fires (default cron 0 14 8-14 * 2 — 2pm second Tuesday of the month, configurable per workspace), or when the user says \"invite page followers\", \"run the monthly page-follow invites\", \"invite my connections to follow the company page\", or \"do the page-invite run for this month\". Drives the LinkedIn admin dashboard via Chrome MCP for the configured company page, opens the Invite Connections modal at /company/<id>/admin/dashboard/?invite=true, verifies the signed-in profile photo matches the configured admin display name AND that the admin redirect succeeded, reads the credit balance, lazy-loads the connections list, selects up to min(credits_available, page_invite_credit_target) connections, clicks Invite, captures the confirmation, and logs the run to /05_published/outreach/page-invites/YYYY-MM.md. Cycle-deduplicated — refuses to fire twice in the same credit cycle without an explicit force_rerun override. Page-invite credits are page-level and refill monthly; they do NOT share the 20/day + 100/week connect-request cap that governs daily-connect."
+description: "This skill should be used when the scheduled monthly run fires (default cron 0 14 8-14 * 2 — 2pm second Tuesday of the month, configurable per workspace), or when the user says \"invite page followers\", \"run the monthly page-follow invites\", \"invite my connections to follow the company page\", or \"do the page-invite run for this month\". Drives the LinkedIn admin dashboard via Chrome MCP for the configured company page, opens the Invite Connections modal at /company/<id>/admin/dashboard/?invite=true, verifies the signed-in profile photo matches the configured admin display name AND that the admin redirect succeeded, reads the credit balance, lazy-loads the connections list, selects up to min(credits_available, page_invite_credit_target) connections, clicks Invite, captures the confirmation, and logs the run to /05_published/outreach/page-invites/YYYY-MM.md. Cycle-deduplicated — refuses to fire twice in the same credit cycle without an explicit force_rerun override. Default credit_target is 50 (LinkedIn's standard-tier monthly cap as of May 2026); operators on a paid LinkedIn tier with a higher ceiling can raise the value in stack.md. Page-invite credits are page-level and refill monthly; they do NOT share the 20/day + 100/week connect-request cap that governs daily-connect."
 ---
 
 # invite-page-followers
@@ -35,8 +35,14 @@ the Leads / Tasks / Connections / Replies workbook sheets.
   page_invite_company_id: "<numeric id>"          # used in admin URLs
   page_invite_admin_display_name: "<full name>"   # for alt-text check
   page_invite_schedule_cron: "0 14 8-14 * 2"
-  page_invite_credit_target: 250                  # optional, default 250
+  page_invite_credit_target: 50                   # optional, default 50
   ```
+
+  As of May 2026 LinkedIn caps page-invites at 50/month for the
+  standard tier; the legacy 250/month cap now requires a paid
+  upgrade most clients will not buy. Default is 50 so operators
+  do not have to think about it. Workspaces on the paid tier can
+  raise the value.
 
   If `page_invite_enabled` is `false` or absent, refuse and exit
   cleanly with `{status: "skipped", reason: "page_invite not enabled in stack.md"}`.
@@ -122,10 +128,12 @@ Parse the modal header for the credit display (typical shape:
 `<N>/<max> credits available · Credit refill: <date>`). Capture:
 
 - `credits_available` — current cycle balance
-- `credits_max` — should be 250 for page admins; if it shows 50, the
-  account is acting as a regular user, not a page admin (a clear
-  signal of a wrong-account state that the identity gate missed —
-  abort with a note in `_errors.md`)
+- `credits_max` — LinkedIn's per-cycle ceiling for this workspace's
+  tier. As of May 2026 the standard tier is 50/month; the legacy
+  250/month tier is paid-only. Record the value verbatim; do NOT
+  abort on any specific number. The admin-redirect check in Step
+  1b is what tells us the right person is logged in with admin
+  rights — credits_max is informational only.
 - `next_refill_date` — captured for the run log
 
 If `credits_available == 0`:
@@ -144,8 +152,13 @@ appearance-of-progress is misleading in logs.
 target_select = min(credits_available, page_invite_credit_target)
 ```
 
-`page_invite_credit_target` defaults to 250 (the LinkedIn admin max)
-and exists for workspaces that want to dial down deliberately.
+`page_invite_credit_target` defaults to 50 (LinkedIn's standard-tier
+monthly ceiling as of May 2026). Workspaces on a paid LinkedIn tier
+with a higher real ceiling can raise this in stack.md. The `min()`
+with `credits_available` means the actual sent count is always
+clamped by what LinkedIn will accept this cycle, so over-setting
+the target is harmless — it just resolves to whatever's actually
+available.
 
 ### Step 5 — Cycle-dedup
 
@@ -290,10 +303,10 @@ If skipped:
   surface, not part of the campaign lead pipeline.
 - Do NOT run twice in the same credit cycle without explicit
   authorization. Step 5's dedup is the gate; honor it.
-- Do NOT proceed if the credits-max value reads 50 instead of 250.
-  That's a personal-account state, not an admin state, and a sign
-  the identity gate missed something. Abort and ask the operator
-  to verify admin rights on the page.
+- Do NOT abort on a specific `credits_max` value. Both 50 (LinkedIn
+  standard tier) and 250 (paid tier) are legitimate readings under
+  the post-May-2026 policy. The admin-redirect check in Step 1b is
+  the wrong-account gate — credits_max is informational only.
 - Do NOT include the booking link, the saved-search URL, or any
   campaign-related material in the run log. The run log is purely
   about the page-invite action.
