@@ -51,7 +51,19 @@ allow a free-text "Other" answer.
 | Website platform   | WordPress              | Webflow, Squarespace, Wix, Framer, GrowthAmp     |
 | Social scheduler   | Publer                 | Buffer, Hootsuite, Later, GrowthAmp social       |
 | Email platform     | Same as CRM            | Gmail, Outlook, Mailchimp, ConvertKit            |
+| Task system        | ClickUp                | Asana, Linear, Notion, none                      |
 | Analytics          | Google Analytics       | Plausible, Fathom, built-in CRM analytics        |
+
+The Task system row gates every task-management integration in the
+plugin set (today: the ClickUp-closure step inside
+`rockstarr-social:li-comment-check`). Capture it even when the client
+isn't on a Rockstarr feature that uses it — the answer is what tells
+downstream skills whether to ask about task IDs at all. Pick `none`
+for clients who don't run a task system; that suppresses every
+task-related capture and makes every task-closure feature a no-op.
+Only `clickup` is wired into a feature today; `asana` / `linear` /
+`notion` are accepted for forward-compat and will light up when their
+adapters ship.
 
 For each category, capture:
 
@@ -90,6 +102,124 @@ Rules:
   bot reads it to propose times in replies, even though a human books.
 - If the client is on a different LI outreach tool (Interceptly,
   MeetAlfred, Dripify, Waalaxy), skip this whole section.
+
+## Social configuration (rockstarr-social)
+
+`rockstarr-social` reads several blocks out of `stack.md` to drive
+weekly drafting, channel routing, scheduler export, polls, page-follower
+invites, and the daily LinkedIn comment check. Mirror the
+content-cadence pattern: always capture the always-blocks (defaults of
+`0` / `false` / `off` are valid and mean "don't run that lane"), and
+ask the conditional blocks only when the gating answer warrants them.
+One `AskUserQuestion` per field; no batching.
+
+### Drafting + weekly batch (always)
+
+| Key                          | Type        | Default        | Prompt / guidance                                                                                  |
+|------------------------------|-------------|----------------|----------------------------------------------------------------------------------------------------|
+| `social_posts_per_week`      | integer     | `5`            | How many short-form posts per week should Social Bot draft? `0` is a valid answer — `fill-week` no-ops. |
+| `social_mix.promo`           | integer     | `1`            | Promo slots per week.                                                                              |
+| `social_mix.insight`         | integer     | `2`            | Insight slots per week.                                                                            |
+| `social_mix.case`            | integer     | `1`            | Case-story slots per week.                                                                         |
+| `social_mix.engagement`      | integer     | `1`            | Engagement-prompt slots per week.                                                                  |
+| `social_default_post_time`   | HH:MM (24h) | `"09:00"`      | Default time-of-day for scheduled posts (client-local).                                            |
+| `social_fill_week_cron`      | cron        | `"0 9 * * 5"`  | When `fill-week` runs each week. Default Friday 09:00 client-local.                                |
+
+Rules:
+
+- The four `social_mix` slots should sum to `social_posts_per_week`. If
+  they don't, ask the client to reconcile rather than silently
+  re-balancing.
+- A `social_posts_per_week: 0` is acceptable for clients who buy
+  Social later — capture the defaults of the mix anyway so the file is
+  shaped consistently.
+
+### Channels (always)
+
+For each channel, ask y/n. LinkedIn defaults `true`; X and Instagram
+default `false`.
+
+| Key                          | Type    | Default  | Prompt                                          |
+|------------------------------|---------|----------|-------------------------------------------------|
+| `social_channels.linkedin`   | boolean | `true`   | Publish to LinkedIn?                            |
+| `social_channels.x`          | boolean | `false`  | Publish to X (formerly Twitter)?                |
+| `social_channels.instagram`  | boolean | `false`  | Publish to Instagram?                           |
+
+### Publer account labels (only if `social_scheduler: publer`)
+
+The exact Publer label is required — `publer-export` matches the
+account by string equality, case-sensitive. Ask only for channels
+enabled above. Skip this whole subsection on `social_scheduler:
+growthamp` or `native`.
+
+| Key                          | Type   | Prompt / guidance                                                                  |
+|------------------------------|--------|------------------------------------------------------------------------------------|
+| `publer_accounts.linkedin`   | string | Exact Publer label for the LinkedIn account (e.g. `"Jane Doe (LinkedIn)"`).        |
+| `publer_accounts.x`          | string | Exact Publer label for X. Ask **only if** `social_channels.x: true`.               |
+| `publer_accounts.instagram`  | string | Exact Publer label for IG. Ask **only if** `social_channels.instagram: true`.      |
+
+### Polls cadence (always)
+
+| Key              | Type | Default     | Prompt                                                                                          |
+|------------------|------|-------------|-------------------------------------------------------------------------------------------------|
+| `polls_cadence`  | enum | `"monthly"` | LinkedIn polls cadence. Choose `monthly` / `quarterly` / `on-demand` / `off`.                   |
+
+### Page-follower invites (toggle-gated)
+
+Ask `page_invite_enabled` first. If `false`, skip the rest of this
+subsection.
+
+| Key                              | Type    | Default               | Prompt / guidance                                                                                          |
+|----------------------------------|---------|-----------------------|------------------------------------------------------------------------------------------------------------|
+| `page_invite_enabled`            | boolean | `false`               | Run the monthly LinkedIn page-follower invite?                                                             |
+| `page_invite_target_url`         | URL     | —                     | Public URL for the LinkedIn company page (`https://www.linkedin.com/company/<slug>/`).                     |
+| `page_invite_company_id`         | string  | —                     | Numeric LinkedIn company id (visible in the page admin URL).                                               |
+| `page_invite_admin_display_name` | string  | —                     | Admin's full name as shown on their LinkedIn profile photo. Used in the strict identity gate.              |
+| `page_invite_schedule_cron`      | cron    | `"0 14 8-14 * 2"`     | When the monthly invite run fires. Default 2pm second Tuesday client-local.                                |
+| `page_invite_credit_target`      | integer | `50`                  | Target invites per cycle. The skill caps at the lower of this number and the credits LinkedIn shows.       |
+
+### Daily LinkedIn comment check (toggle-gated)
+
+Ask `li_comment_check_enabled` first. If `false`, skip the rest of
+this subsection.
+
+| Key                              | Type    | Default                | Prompt / guidance                                                                                       |
+|----------------------------------|---------|------------------------|---------------------------------------------------------------------------------------------------------|
+| `li_comment_check_enabled`       | boolean | `false`                | Run the daily LinkedIn comment-check workflow?                                                          |
+| `li_comment_check_cron`          | cron    | `"30 8 * * 1-5"`       | When the daily comment check fires. Default 08:30 weekdays client-local.                                |
+| `li_comment_clickup_enabled`     | boolean | `false`                | **Ask only when `task_system: clickup`.** Auto-close the matching ClickUp task after a comment is sent? Opt-in. When `task_system` is anything else, write `false` without asking. |
+| `li_comment_accounts`            | list    | `[]`                   | One entry per managed LinkedIn account the bot monitors. Captured in a sub-loop (see below).            |
+
+For `li_comment_accounts`, run a per-account sub-loop. Per managed
+account, ask one `AskUserQuestion` at a time:
+
+| Field             | Type   | Required | Prompt                                                                                                |
+|-------------------|--------|----------|-------------------------------------------------------------------------------------------------------|
+| `name`            | string | yes      | Account holder's full name (e.g. `"Phil Katz"`).                                                      |
+| `slug`            | string | yes      | The `linkedin.com/in/<slug>` slug for that account (e.g. `"philipkatz1"`).                            |
+| `voice_notes`     | text   | yes      | Short description of the account holder's reply voice. The skill drafts replies in this voice.        |
+| `brand_kit_url`   | URL    | no       | Optional link to a brand kit or style sheet the bot should reference for this account.                |
+| `clickup_task_id` | string | no       | **Ask only when `task_system: clickup`.** ClickUp task id the comment-check loop closes when a send completes. Required only when `li_comment_clickup_enabled: true`. Omit the field entirely when `task_system` is anything else. |
+
+After each account, ask "Add another managed account? (y/n)". Stop the
+sub-loop on `n`.
+
+Rules:
+
+- A list of zero managed accounts is valid — the skill no-ops cleanly.
+- Every ClickUp-touching capture is gated on the categories-table
+  Task system answer. If `task_system != clickup`, write
+  `li_comment_clickup_enabled: false` without asking, omit
+  `clickup_task_id` from every account record, and proceed. The
+  comment-check skill silently skips its closure step when the
+  toggle is off, so the workflow still runs end-to-end.
+- `clickup_task_id` is irrelevant when `li_comment_clickup_enabled:
+  false` even within a ClickUp workspace; capture it anyway when
+  offered, so flipping the flag later doesn't require re-
+  interviewing.
+- Voice notes are short — one or two sentences. Treat anything longer
+  than a paragraph as a smell that the brand-kit URL would serve
+  better.
 
 ## Content cadence
 
@@ -131,15 +261,26 @@ Rules:
    turn. Skip the booking-link keys or the `gcal_id` key based on the
    `availability_source` answer.
 
-4. Ask each content-cadence key, one `AskUserQuestion` per turn, using
+4. Walk the **Social configuration** section. Always ask the always-
+   blocks (drafting + weekly batch, channels, polls cadence). Ask the
+   Publer-account-labels subsection only when `social_scheduler:
+   publer`. Ask the page-invite block only when
+   `page_invite_enabled: true`. Ask the comment-check block only when
+   `li_comment_check_enabled: true`, and run the per-account sub-loop
+   inside it until the user says no. Always capture this section even
+   when the client has not bought Social yet — defaults of `0` /
+   `false` / `off` keep the file shaped consistently.
+
+5. Ask each content-cadence key, one `AskUserQuestion` per turn, using
    the defaults as pre-filled answers. Always run this — even if the
    client has not bought Content yet, capture zeros so downstream bots
    can read a complete stack.
 
-5. Write `/rockstarr-ai/00_intake/stack.md`. The file has up to four
-   sections: front-matter, the categories table, a content-cadence
-   YAML block (always), and — when the LI outreach tool is Sales Nav
-   only — an "Outreach configuration" YAML block.
+6. Write `/rockstarr-ai/00_intake/stack.md`. The file has up to five
+   sections: front-matter, the categories table, the social-
+   configuration YAML block (always), the content-cadence YAML block
+   (always), and — when the LI outreach tool is Sales Nav only — an
+   "Outreach configuration" YAML block.
 
    Front-matter and table:
 
@@ -147,7 +288,7 @@ Rules:
    # ---
    client_id: "<from client.toml>"
    captured_at: "<ISO>"
-   capture_skill_version: "0.3.0"
+   capture_skill_version: "0.4.1"
    # ---
 
    # <Client Name> — Stack
@@ -157,6 +298,63 @@ Rules:
    | CRM              | The Growth Amplifier | granted   | ...          |
    | LI outreach tool | Sales Nav only       | pending   | ...          |
    | ...              | ...                  | ...       | ...          |
+   ~~~
+
+   Always append this social-configuration YAML block under a
+   `## Social configuration` heading. Show only the subsections that
+   apply — omit `publer_accounts` when `social_scheduler` is not
+   `publer`, omit the page-invite block when `page_invite_enabled:
+   false`, omit the comment-check block when
+   `li_comment_check_enabled: false`. Within an enabled section,
+   always emit every key:
+
+   ~~~yaml
+   # Drafting + weekly batch
+   social_posts_per_week: 5
+   social_mix:
+     promo: 1
+     insight: 2
+     case: 1
+     engagement: 1
+   social_default_post_time: "09:00"
+   social_fill_week_cron: "0 9 * * 5"
+
+   # Channels
+   social_channels:
+     linkedin: true
+     x: false
+     instagram: false
+
+   # Publer account labels (only when social_scheduler: publer)
+   publer_accounts:
+     linkedin: "Jane Doe (LinkedIn)"
+     # x and instagram only when the matching social_channels.* is true
+
+   # Polls
+   polls_cadence: "monthly"
+
+   # Page-follower invites (only when page_invite_enabled: true)
+   page_invite_enabled: false
+   page_invite_target_url: "https://www.linkedin.com/company/<slug>/"
+   page_invite_company_id: "<numeric id>"
+   page_invite_admin_display_name: "<full name>"
+   page_invite_schedule_cron: "0 14 8-14 * 2"
+   page_invite_credit_target: 50
+
+   # Daily LI comment check (only when li_comment_check_enabled: true)
+   # Omit li_comment_clickup_enabled and every account's
+   # clickup_task_id when task_system is not "clickup".
+   li_comment_check_enabled: false
+   li_comment_check_cron: "30 8 * * 1-5"
+   li_comment_clickup_enabled: false           # only when task_system: clickup
+   li_comment_accounts:
+     - name: "Phil Katz"
+       slug: "philipkatz1"
+       voice_notes: |
+         Corporate, professional. Measured, appreciative,
+         authoritative.
+       brand_kit_url: "..."
+       clickup_task_id: "868fzfgrf"            # only when task_system: clickup
    ~~~
 
    Always append this content-cadence YAML block under a
@@ -193,7 +391,7 @@ Rules:
    on a different LI outreach tool. Only include the key for the chosen
    `availability_source` — booking-link keys OR `gcal_id`, never both.
 
-6. Compute the **variant enable list** — the list of Rockstarr bot
+7. Compute the **variant enable list** — the list of Rockstarr bot
    plugin names that match this stack. Map:
 
    - CRM = The Growth Amplifier → `rockstarr-ops-ga`,
@@ -219,10 +417,15 @@ Rules:
      default; no variant)
    - Social scheduler = Buffer / Hootsuite / Later →
      `rockstarr-social-<tool>`
+   - Task system = ClickUp / Asana / Linear / Notion / none → no
+     plugin variant attaches today. The answer is captured to gate
+     task-closure features inside other plugins (currently the
+     ClickUp closure step in
+     `rockstarr-social:li-comment-check`).
    - `rockstarr-content` and `rockstarr-social` (base) are installed
      for all clients who purchased Content / Social.
 
-7. Print the variant enable list to the user with a clear CTA:
+8. Print the variant enable list to the user with a clear CTA:
 
    > Hand this list to the Rockstarr installer. They will enable these
    > plugins in the client's marketplace record.
