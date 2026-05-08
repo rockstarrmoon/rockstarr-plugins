@@ -1,0 +1,8 @@
+{
+  "name": "rockstarr-social",
+  "version": "0.1.0",
+  "description": "Rockstarr AI social plugin. Drafts daily/weekly LinkedIn (and X / IG) short-form posts in the client's approved voice, builds a balanced weekly batch, and exports to the client's scheduler (Publer default; GrowthAmp planner on demand). Bot does not post directly — every batch flows through the standard rockstarr-infra approve path, then a manually-triggered export skill writes a Publer-shaped CSV to /05_published-staging/social/. v0.1 also absorbs three formerly-adjacent surfaces: draft-polls (the LinkedIn polls lane, moved out of rockstarr-content where it shipped in v0.6 — short-form polls are a social lane, not a content lane), invite-page-followers (the monthly LinkedIn page-follow invite run, moved out of rockstarr-outreach-salesnav — page growth is a social-audience task, not an outreach campaign), and li-comment-check (a new daily skill for monitoring + responding to comments on managed LinkedIn accounts in the account holder's voice; multi-account rotation, ClickUp task closure optional). Per-week post count and mix ratios are config-driven in stack.md (social_posts_per_week + social_mix). Requires rockstarr-infra v0.8.2+ for the shared stop-slop pass and approvals lifecycle.",
+  "author": {
+    "name": "Rockstarr & Moon"
+  }
+}
