@@ -15,10 +15,19 @@ depend on files produced by these skills.
 | Skill                       | Purpose                                                                                                                                                          |
 |-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `scaffold-client`           | Create `/rockstarr-ai/` folder layout, `client.toml` (with `[approvals]` block), and the daily-digest + weekly-backlog scheduled tasks.                          |
-| `ingest-workbook`           | Parse `client-workbook.docx` → `client-profile.md`.                                                                                                              |
+| `ingest-workbook`           | Parse `client-workbook.docx` → `client-profile.md`. **Legacy path.** Preserved for clients who arrived with a completed Rockstarr AI Playbook. New clients run the intake-interview flow instead. |
+| `intake-icp`                | (v0.9.0) Two-phase ICP interview — Phase A captures the buyer profile, Phase B runs the Perception Gap exercise. Multi-ICP loop. Checkpoint-per-answer resume. Writes `00_intake/intake/icp.md`. |
+| `intake-transformations`    | (v0.9.1) Five-stage Top Transformations exercise — ICP review, evidence pre-read, candidate list (5 to 10 with specificity push), three-question pressure-test per candidate, narrow to top 3 to 5. Optional Case studies + Quantifiable proof points subsections. Writes `00_intake/intake/transformations.md`. |
+| `intake-competitors`        | (v0.9.2) Seven-stage Competition Crusher exercise — anchor, competitor selection (up to 3), per-competitor research via web fetch with paste-in fallback, competitive grid synthesis, five positioning artifacts (Brand Edge, Differentiation Summary, Messaging Opportunities, Risks, Quick Wins), Assumed-line validation pass, Key takeaways. Writes `00_intake/intake/competitors.md`; feeds both the Competitors section AND five subsections of the Positioning section of `client-profile.md`. |
+| `intake-platinum-message`   | (v0.9.3) Three-stage Platinum Message synthesis — anchor, tone capture, per-ICP messaging loop with three pitch options + three outcome statements. Self-validates each draft against the four principles (Appeal / Exclusivity / Clarity / Credibility) and revises before presenting. Always emits one per-ICP H3 block. Writes `00_intake/intake/platinum-message.md`. |
+| `intake-offer`              | (v0.9.4) Offer-by-offer capture in the canonical eight-field shape (Name, Who it's for, Problem, Outcome, Process, Experience, optional Edge, Why it works, Category-of-one positioning). Runs the Category-of-One check against `intake/competitors.md` after each offer with up to two sharpening rounds. No pricing by design. Writes `00_intake/intake/offer.md`. |
+| `intake-background`         | (v0.9.5) Foundational intake step — runtime Step 1. Five stages: tech stack (delegates to `capture-stack`), Company description (3 questions + stop-slop synthesis), content library loop (URLs + paste-ins + drops, first-party vs. third-party), voice samples loop (samples never stop-slopped — they're the calibration signal), optional Goals/constraints turn. Writes `00_intake/intake/background.md` plus the two downstream-readable files `samples/content-library.md` and `samples/voice-notes.md`. |
+| `run-intake`                | (v0.9.6) Stateful orchestrator for the intake flow. Owns `00_intake/intake/_progress.md`, handles the first-run workbook-or-interview path fork, dispatches to the six intake sub-skills in order with continue / redo / jump / stop / switch-paths controls, calls `compile-profile` once every sub-skill is complete. Switch-paths archives the prior path's artifacts to `99_archive/intake/<ISO>/` before resetting. Honors pause cleanly at every decision point. |
+| `run-onboarding`            | (v0.9.7) Thin client-facing entry point. Chains `scaffold-client` (idempotent) into `run-intake`, then on intake completion surfaces `kb-ingest` and `generate-style-guide` as next-step prompts. No auto-chain past intake. Owns no state. Idempotent at every layer. The single skill new clients invoke after install. |
+| `compile-profile`           | (v0.9.0) Deterministic assembler. Reads the six intake artifacts under `00_intake/intake/` and produces the canonical `00_intake/client-profile.md`. Archives prior versions to `99_archive/`. Replaces `ingest-workbook` on the interview path. |
 | `generate-style-guide`      | Produce `style-guide.md` from profile + voice samples using the ported Rockstarr prompt.                                                                         |
 | `kb-ingest`                 | Clean and tag raw knowledge-base files into `processed/` with a keyword index.                                                                                   |
-| `capture-stack`             | Interview client on CRM / LI tool / website / scheduler / email / analytics.                                                                                     |
+| `capture-stack`             | Interview client on CRM / LI tool / website / scheduler / email / task system / analytics.                                                                       |
 | `approve`                   | Promote a draft from `03_drafts/` to `04_approved/` with approval metadata.                                                                                      |
 | `publish-log`               | Record a shipped output in `05_published/<channel>/` for metrics review.                                                                                         |
 | `request-support`           | Draft + send a support email to `ai_support@rockstarrandmoon.com` on client approval.                                                                            |
@@ -93,7 +102,7 @@ Once the marketplace is connected, install **rockstarr-infra**. This
 is the foundation plugin — the bots we'll add later depend on it.
 
 > Nothing else will be visible to install yet. Your bots will appear
-> after we've captured your tool stack in step 5.
+> after intake completes and your strategist enables them.
 
 ### Step 1b — Allow the Rockstarr AI mailer
 
@@ -131,110 +140,59 @@ hold all of your Rockstarr AI work. A folder named `RockstarrAI` on
 your Desktop works well. Everything the plugin creates will live
 inside this folder.
 
-### Step 3 — Scaffold the folder layout
+### Step 3 — Run onboarding
 
-In Cowork, ask Claude to "scaffold the Rockstarr client folder." It
-will ask you for a short `client_id` (lowercase, hyphens only — e.g.
-`acme-corp`) and your company display name. Claude will then build
-out the full folder structure, a `client.toml` with your info, and a
-short README inside the folder.
+This is the main step. One command chains your folder scaffolding,
+your intake interview, and the post-intake prompts for knowledge
+base processing and style guide generation. In Cowork, ask Claude
+to "run onboarding."
 
-> This step is safe to re-run at any point if folders ever get
-> deleted or moved.
+Claude does three things in order:
 
-### Step 4 — Drop in your Getting Started Workbook
+1. **Scaffolds your folder.** Asks you for a short `client_id`
+   (lowercase, hyphens only — e.g. `acme-corp`) and your company
+   display name, then builds the full `/rockstarr-ai/` folder
+   structure with `client.toml` and a short README. Safe to re-run
+   at any point.
 
-Before going further, make sure you've completed your Rockstarr AI
-Playbook / Getting Started Workbook (the `.docx` your Rockstarr
-strategist sent you). Save your completed copy as:
+2. **Walks you through intake.** Asks how you want to capture your
+   business context:
 
-```
-/rockstarr-ai/00_intake/client-workbook.docx
-```
+   - **Workbook path** — if you have a completed Rockstarr AI
+     Playbook (.docx) ready, upload it and Claude parses it
+     directly into your profile.
+   - **Interview path** — six guided exercises in chat
+     (Background, ICP, Transformations, Competitors, Platinum
+     Message, Offer). One question at a time. Pause anywhere;
+     resume any time with "continue intake." Total time depends
+     on ICP count: usually 1.5–3 hours, split across as many
+     sessions as you want. Drop files and links into the
+     conversation as they come up — Claude routes each one to
+     the right destination without breaking flow.
 
-Then ask Claude to "ingest the workbook." It will read the document
-and turn it into three files you'll use throughout the system:
+   Either path produces the same `00_intake/client-profile.md`.
 
-- `client-profile.md` — your business, audience, and positioning
-- `stack.md` (first pass) — the tools you told us you use
-- `00_intake/samples/content-library.md` — voice samples extracted
-  from the workbook
+3. **Offers to continue with `kb-ingest` + `generate-style-guide`.**
+   After intake completes, Claude surfaces these two skills as the
+   natural next moves. Pick "yes, continue" to run them in
+   sequence, or pause and run them later. Both are required before
+   your drafting bots produce usable output, but neither is on a
+   timer.
 
-Take a few minutes to skim `client-profile.md` and make sure it
-reflects you accurately. Everything downstream uses it as the
-source of truth.
+   - `kb-ingest` reads any content URLs captured during intake
+     plus any files in `01_knowledge_base/raw/` and produces the
+     cleaned, tagged processed library.
+   - `generate-style-guide` reads your profile, samples, and
+     processed KB, then walks a focused interview that produces
+     `00_intake/style-guide.md` — the single voice document every
+     drafting bot reads. Budget 30–45 minutes.
 
-### Step 5 — Capture your tool stack
+> To redo any single intake exercise later without re-running
+> everything, ask Claude to "redo step N" (where N is 1 through 6:
+> 1 Background, 2 ICP, 3 Transformations, 4 Competitors,
+> 5 Platinum Message, 6 Offer).
 
-Ask Claude to "capture the stack." You'll answer a short interview
-about which tools you use for:
-
-- CRM (The Growth Amplifier, HubSpot, Pipedrive, Salesforce, Close)
-- LinkedIn outreach (Interceptly, MeetAlfred, Dripify, Waalaxy,
-  Sales Nav)
-- Website platform
-- Social scheduler (Publer is our default)
-- Email platform (Gmail or Outlook)
-- Analytics
-
-This writes the authoritative `00_intake/stack.md` and tells us
-which specific bot variants to turn on for you. Send the list back
-to your Rockstarr strategist — that's how we enable the right bots
-in your marketplace.
-
-### Step 6 — Seed your knowledge base (optional but highly recommended)
-
-Before the style-guide interview, give Claude some raw material to
-learn your voice from. The stronger the inputs here, the better
-every draft that follows.
-
-Drop content you have created or own the rights to into:
-
-```
-/rockstarr-ai/01_knowledge_base/raw/
-```
-
-Good things to include: existing blog posts, podcast transcripts,
-keynote or webinar decks, website copy, thought-leadership essays.
-
-If you have reference material you want the bots to be aware of but
-**not** imitate — competitor posts, industry research, articles you
-found useful — drop those into `raw/third-party/` instead. We keep
-these scopes strictly separate so your voice never gets diluted by
-someone else's.
-
-You can also give Claude a URL directly (e.g. "ingest this post:
-https://...") and it will fetch and clean it automatically.
-
-Once the files are in place, ask Claude to "ingest the knowledge
-base."
-
-### Step 7 — Build your style guide
-
-This is the most important step in the whole setup, and the one
-that earns the longest block of your time (budget 30–45 minutes).
-
-Ask Claude to "generate the style guide." It will:
-
-1. Pre-read your profile, samples, and first-party knowledge base,
-   and draft a first pass at every interview question — each marked
-   HIGH, MEDIUM, or LOW confidence — so you're never starting from
-   a blank page.
-2. Walk you through each question one at a time. You can confirm
-   Claude's pre-draft, amend it, reject it outright, or skip ahead.
-   The interview always runs in full, even when the pre-reads are
-   strong — this is where your voice gets made.
-3. Ask you to approve a short (≤120-word) positioning paragraph
-   before producing the final guide.
-4. Produce `00_intake/style-guide.md`, your authoritative voice
-   document, covering brand context, mission, brand approach,
-   personality, audience, tone, style rules, channel adaptation,
-   tone examples, and consistency principles.
-
-> Your style guide is the single reference every bot uses when
-> drafting. Take the time to get it right.
-
-### Step 8 — Review your intake artifacts
+### Step 4 — Review your intake artifacts
 
 Before turning on the drafting bots, read through these three files
 and fix anything that isn't right:
@@ -247,7 +205,7 @@ Loop in your Rockstarr strategist if you want a second set of eyes.
 Edits now are cheap; edits after bots start drafting cost you
 content that doesn't sound like you.
 
-### Step 9 — Bots get turned on
+### Step 5 — Bots get turned on
 
 Once your intake is solid, let your Rockstarr strategist know. We
 will enable your bot plugins in your marketplace on our side. When
@@ -268,7 +226,7 @@ Your first-wave bundle typically includes:
 - **rockstarr-ops** — CRM operations automations (when
   applicable)
 
-### Step 10 — Your day-to-day: draft, approve, publish
+### Step 6 — Your day-to-day: draft, approve, publish
 
 Once the bots are installed, your day-to-day cycle looks like this:
 
@@ -313,6 +271,18 @@ that's what we're here for.
   Rockstarr case-study interview prompt. Referenced by
   `rockstarr-content:draft-case-study` and any future bot that
   produces case-study output. Do not fork — update in place.
+- `skills/_shared/references/intake-interviewer-voice.md` —
+  (v0.9.0) single source of truth for the unified voice and
+  discipline every intake sub-skill follows. Covers the six
+  rules (one-question-at-a-time, pre-draft → confirm / amend /
+  reject / skip, checkpoint-per-answer, pause-as-first-class-verb,
+  accept-drops-mid-flow, no-silent-fabrication), the artifact
+  shape every intake-* skill writes, the provenance-comment
+  format, and the tone examples that distinguish the unified
+  voice from the original GPT registers it replaces. Read by
+  `intake-icp` and every future intake sub-skill (background,
+  transformations, competitors, platinum-message, offer). Do not
+  fork — update in place.
 - `skills/_shared/references/tl-rubric.md` — canonical
   thought-leadership rubric. Defines the three tests every TL
   piece must pass (single argument a smart competitor could
