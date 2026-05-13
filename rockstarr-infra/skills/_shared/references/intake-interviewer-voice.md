@@ -70,6 +70,26 @@ everything at once. Each field gets its own turn. This is slower in
 the median case but vastly more reliable, and the client can pause
 between any two turns.
 
+**Concrete failure mode this rule prevents.** Consider content
+cadence. There are six fields (blogs / thought-leadership / email
+newsletters / LinkedIn newsletters / records videos / case studies
+per quarter). The wrong pattern is one question:
+
+> "What's your content cadence? Blogs per month, thought-leadership
+> per month, newsletters per month, ..."
+
+That question fails every time. The user types a comma-separated
+string or freezes. The right pattern is six separate
+`AskUserQuestion` turns, one per field, each a single short prompt
+("How many blog posts per month should we draft?") with a single
+free-text or option answer. Free-text integers are fine when the
+answer is a number; the granularity rule is about ONE field per
+turn, not about the input type.
+
+Same rule applies to every multi-field block in this plugin:
+social channels asked per channel, ICP pain points captured one at
+a time, competitor research extracted field-by-field, etc.
+
 ### 2. Pre-draft → confirm / amend / reject / skip
 
 Where evidence exists on disk (the workbook, ingested KB material,
@@ -89,6 +109,56 @@ the client which proposals to scrutinize and which to wave through.
 
 When no evidence exists for a field, ask the question cold. Don't
 fabricate a proposal.
+
+**Pre-draft visibility is non-negotiable.** The pre-draft text
+appears in the **question body** of the `AskUserQuestion` call,
+formatted as a markdown blockquote above the option list. Never
+pass the pre-draft as input placeholder, ghost text, or pretext
+that disappears the moment the client clicks into the answer
+field. Disappearing pretext makes Amend painfully bad — the
+client loses what they were editing the second they tap the box.
+
+When the client picks **Amend**, the follow-up turn does two
+things:
+
+1. Repeats the pre-draft in the follow-up question body, again as
+   a blockquote, so the client can read and reference it without
+   scrolling back.
+2. Pre-fills the answer field with the pre-draft text as the
+   actual default value (not placeholder), so the client edits a
+   real seeded string instead of starting from a blank box.
+
+Concrete shape:
+
+> AskUserQuestion turn 1 (Confirm/Amend/Reject/Skip):
+>
+> ```
+> Question body:
+>   "Here's what I've drafted for <field>:
+>
+>   > <pre-draft text on its own line, blockquote-formatted>
+>
+>   Confirm, amend, reject, or skip?"
+>
+> Options: Confirm / Amend / Reject / Skip
+> ```
+>
+> If the client picks **Amend**:
+>
+> ```
+> Question body:
+>   "Edit the draft directly. Original:
+>
+>   > <pre-draft text again, blockquote>
+>
+>   What's the corrected version?"
+>
+> Answer: free-text input, DEFAULT VALUE seeded with the pre-draft.
+> ```
+
+The client sees the pre-draft twice — once in the original turn,
+once in the Amend follow-up — and they can copy / edit it
+directly. No clicks where the text vanishes.
 
 ### 3. Checkpoint per answer
 

@@ -82,17 +82,18 @@ each is its own `AskUserQuestion` turn — no batching.
 The `rockstarr-outreach-salesnav` plugin refuses to run without these
 keys. Capture every one during intake:
 
-| Key                             | Type              | Prompt / guidance                                                                                       |
-|---------------------------------|-------------------|---------------------------------------------------------------------------------------------------------|
-| `outreach_tool`                 | fixed             | Always `salesnav` for this variant. Write it; don't ask.                                                |
-| `linkedin_expected_profile_url` | URL               | The client's personal LinkedIn profile URL (the account sends will go out from). Full `https://www.linkedin.com/in/...` form. |
-| `outreach_daily_run_time`       | HH:MM (24h)       | What local time of day the daily send loop should fire. Default `"09:00"` client local.                 |
-| `outreach_daily_preview`        | boolean           | Write the daily preview file before sending? Default `true`. Offer `true` / `false`.                    |
-| `booking_mode`                  | automated / manual | Should the bot drive the booking link itself (`automated`) or does the client book manually (`manual`)? |
-| `availability_source`           | booking_link / gcal | Where does the bot read availability from? Booking link form, or Google Calendar?                      |
-| `booking_link_url`              | URL               | Ask **only if** `availability_source: booking_link`. The booking URL (Calendly, GrowthAmp calendar, etc.). |
-| `booking_link_required_fields`  | list              | Ask **only if** `availability_source: booking_link`. Which fields the form requires (e.g., `[email, phone, company]`). Free-text; accept a comma-separated list and normalize to a YAML sequence. |
-| `gcal_id`                       | string            | Ask **only if** `availability_source: gcal`. The Google Calendar ID to read availability from.          |
+| Key                             | Type                              | Prompt / guidance                                                                                       |
+|---------------------------------|-----------------------------------|---------------------------------------------------------------------------------------------------------|
+| `outreach_tool`                 | fixed                             | Always `salesnav` for this variant. Write it; don't ask.                                                |
+| `linkedin_expected_profile_url` | URL                               | The client's personal LinkedIn profile URL (the account sends will go out from). Full `https://www.linkedin.com/in/...` form. |
+| `outreach_campaign_mode`        | full / connect_only / none        | The client's **default campaign preference**. `full` = full-sequence (connect + 3 post-accept messages) is the default; `connect_only` = connect-only is the default; `none` = no campaigns by default (e.g., the client bought the plugin to draft copy but isn't ready to execute). This is a default, not a hard gate — `draft-icp-campaign` still runs on demand and surfaces an explicit confirm prompt when the requested campaign type deviates from the captured preference. Default value at intake: `full`. |
+| `outreach_daily_run_time`       | HH:MM (24h)                       | What local time of day the daily send loop should fire. Default `"09:00"` client local.                 |
+| `outreach_daily_preview`        | boolean                           | Write the daily preview file before sending? Default `true`. Offer `true` / `false`.                    |
+| `booking_mode`                  | automated / manual                | Should the bot drive the booking link itself (`automated`) or does the client book manually (`manual`)? |
+| `availability_source`           | booking_link / gcal               | Where does the bot read availability from? Booking link form, or Google Calendar?                      |
+| `booking_link_url`              | URL                               | Ask **only if** `availability_source: booking_link`. The booking URL (Calendly, GrowthAmp calendar, etc.). |
+| `booking_link_required_fields`  | list                              | Ask **only if** `availability_source: booking_link`. Which fields the form requires (e.g., `[email, phone, company]`). Free-text; accept a comma-separated list and normalize to a YAML sequence. |
+| `gcal_id`                       | string                            | Ask **only if** `availability_source: gcal`. The Google Calendar ID to read availability from.          |
 
 Rules:
 
@@ -136,27 +137,41 @@ Rules:
 
 ### Channels (always)
 
-For each channel, ask y/n. LinkedIn defaults `true`; X and Instagram
+For each channel, ask y/n in its **own** `AskUserQuestion` turn.
+LinkedIn defaults `true`; X, Instagram, and Google Business
 default `false`.
 
-| Key                          | Type    | Default  | Prompt                                          |
-|------------------------------|---------|----------|-------------------------------------------------|
-| `social_channels.linkedin`   | boolean | `true`   | Publish to LinkedIn?                            |
-| `social_channels.x`          | boolean | `false`  | Publish to X (formerly Twitter)?                |
-| `social_channels.instagram`  | boolean | `false`  | Publish to Instagram?                           |
+| Key                                | Type    | Default  | Prompt                                          |
+|------------------------------------|---------|----------|-------------------------------------------------|
+| `social_channels.linkedin`         | boolean | `true`   | Publish to LinkedIn?                            |
+| `social_channels.x`                | boolean | `false`  | Publish to X (formerly Twitter)?                |
+| `social_channels.instagram`        | boolean | `false`  | Publish to Instagram?                           |
+| `social_channels.google_business`  | boolean | `false`  | Publish to Google Business Profile?             |
 
-### Publer account labels (only if `social_scheduler: publer`)
+### Publer account labels (deferred to `rockstarr-social`)
 
-The exact Publer label is required — `publer-export` matches the
-account by string equality, case-sensitive. Ask only for channels
-enabled above. Skip this whole subsection on `social_scheduler:
-growthamp` or `native`.
+**Do not ask the client to type Publer labels during onboarding.**
+Most clients don't know the exact label strings, and asking them
+to guess produces wrong values that break `publer-export` silently.
 
-| Key                          | Type   | Prompt / guidance                                                                  |
-|------------------------------|--------|------------------------------------------------------------------------------------|
-| `publer_accounts.linkedin`   | string | Exact Publer label for the LinkedIn account (e.g. `"Jane Doe (LinkedIn)"`).        |
-| `publer_accounts.x`          | string | Exact Publer label for X. Ask **only if** `social_channels.x: true`.               |
-| `publer_accounts.instagram`  | string | Exact Publer label for IG. Ask **only if** `social_channels.instagram: true`.      |
+Instead, write the `publer_accounts` block to `stack.md` with every
+enabled channel's value set to `null` (a placeholder). When the
+client first runs `rockstarr-social`, that plugin opens Publer via
+Chrome MCP, reads the Social Accounts list, and lets the client
+pick the correct label per channel — then writes the resolved
+labels back into `stack.md`'s `publer_accounts` block. Same
+deferral pattern `rockstarr-outreach-salesnav` uses for discovering
+managed accounts.
+
+Skip this entire subsection if `social_scheduler` is `growthamp` or
+`native` — Publer labels don't apply there.
+
+| Key                                  | Type           | Behavior                                                                            |
+|--------------------------------------|----------------|-------------------------------------------------------------------------------------|
+| `publer_accounts.linkedin`           | string \| null | Write `null`. Populated by `rockstarr-social` on first run when LinkedIn is enabled. |
+| `publer_accounts.x`                  | string \| null | Write `null` only if `social_channels.x: true`. Populated by `rockstarr-social`.     |
+| `publer_accounts.instagram`          | string \| null | Write `null` only if `social_channels.instagram: true`. Populated by `rockstarr-social`. |
+| `publer_accounts.google_business`    | string \| null | Write `null` only if `social_channels.google_business: true`. Populated by `rockstarr-social`. |
 
 ### Polls cadence (always)
 
@@ -226,8 +241,16 @@ Rules:
 `rockstarr-content` gates every drafting lane on these numbers.
 Always capture them during intake, even when the client is not yet on a
 Content package — defaults of `0` / `false` / `1` are valid and mean
-"don't run that lane." One `AskUserQuestion` per field; no batching.
+"don't run that lane." **One `AskUserQuestion` per field; no batching.**
 Offer the default as the pre-filled answer.
+
+**Concrete:** do NOT ask "What's your content cadence?" as a single
+question expecting the client to type six numbers. Ask six separate
+turns, one per row in the table below. Each turn shows the field's
+prompt and accepts a single free-text integer (or yes/no for
+`records_videos`). Six questions; six short answers. The shared
+voice reference's "one question at a time" rule applies here without
+exception.
 
 | Key                              | Type    | Default | Prompt / guidance                                                                                   |
 |----------------------------------|---------|---------|-----------------------------------------------------------------------------------------------------|
@@ -288,7 +311,7 @@ Rules:
    # ---
    client_id: "<from client.toml>"
    captured_at: "<ISO>"
-   capture_skill_version: "0.4.1"
+   capture_skill_version: "0.5.0"
    # ---
 
    # <Client Name> — Stack
@@ -324,11 +347,17 @@ Rules:
      linkedin: true
      x: false
      instagram: false
+     google_business: false
 
    # Publer account labels (only when social_scheduler: publer)
+   # Every value is null at intake — rockstarr-social populates them
+   # on its first run via Chrome MCP. Emit a key per enabled channel
+   # so the schema is stable; downstream skills key off the presence
+   # of the field, not its value.
    publer_accounts:
-     linkedin: "Jane Doe (LinkedIn)"
-     # x and instagram only when the matching social_channels.* is true
+     linkedin: null
+     # x, instagram, google_business only when the matching
+     # social_channels.* is true
 
    # Polls
    polls_cadence: "monthly"
@@ -375,6 +404,7 @@ Rules:
    ~~~yaml
    outreach_tool: salesnav
    linkedin_expected_profile_url: https://www.linkedin.com/in/<handle>
+   outreach_campaign_mode: full   # full | connect_only | none — default preference, not a hard gate
    outreach_daily_run_time: "09:00"
    outreach_daily_preview: true
    booking_mode: automated

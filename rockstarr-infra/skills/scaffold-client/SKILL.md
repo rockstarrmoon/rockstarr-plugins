@@ -69,8 +69,18 @@ Create these directories and placeholder files under the workspace root:
 
    - If `/rockstarr-ai/client.toml` already exists, read both values from
      it. Do not ask the user again on re-runs.
-   - Otherwise, ask the user for `client_id` (kebab-case, must match
-     `[a-z0-9-]+`, e.g. `acme-corp`) and `client_name` (display name).
+   - Otherwise, ask the user for both as **two separate `AskUserQuestion`
+     turns** with free-text answers. The client_id question accepts
+     kebab-case matching `[a-z0-9-]+` (e.g. `acme-corp`); the
+     client_name question accepts the display name verbatim.
+
+     **Never infer client_name on the first run.** Do not pre-fill the
+     answer field from the Cowork workspace folder name, the workspace
+     path, the user's email, the marketplace token, or any other
+     ambient source. The client states their own display name; the
+     skill captures it verbatim. The same rule applies to client_id —
+     ask, don't guess. Pre-drafts and defaults are reserved for re-runs
+     where `client.toml` already has the value on disk.
 
 4. Create each directory above. Use `mkdir -p` semantics — never overwrite or
    delete existing contents. If `/rockstarr-ai/` already exists, add only the

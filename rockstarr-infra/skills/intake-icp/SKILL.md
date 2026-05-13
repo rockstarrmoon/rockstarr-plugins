@@ -82,9 +82,15 @@ sequence:
    on their plate. Plain prose, two to four sentences. Specific
    beats general.
 
-5. **Pain points** — Bulleted list. Five to ten items if the client
-   can produce them; three minimum. The interviewer pushes for
-   specificity ("anxiety about quarterly numbers" beats "stressed").
+5. **Pain points** — One pain per turn in a loop, not a bulleted list
+   captured in a single answer. After each captured pain, ask "Add
+   another? (yes / no)". Aim for three at minimum, five to ten in
+   the median case. The interviewer pushes for specificity per pain
+   ("anxiety about quarterly numbers" beats "stressed"); same
+   one-push discipline as other intake skills. The captured pains
+   render as a bulleted list in the artifact, but every bullet is
+   its own captured field — never a free-text list typed into one
+   answer box.
 
 6. **Transformation sought** — What changes when the buyer engages
    the client's solution. Outcome-focused, not activity-focused.
