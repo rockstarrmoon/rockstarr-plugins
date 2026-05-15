@@ -154,7 +154,7 @@ Create these directories and placeholder files under the workspace root:
    # hits Reply on a digest / draft-ready / urgent notification, it
    # routes here. Defaults to the assigned Rockstarr strategist.
    # Override only if a different person on the R&M team owns this
-   # account. The Worker's shared fallback (hello@rockstarrandmoon.com)
+   # account. The Worker's shared fallback (hello@rockstarr.ai)
    # applies only if this field is empty.
    ROCKSTARR_STRATEGIST_EMAIL=rachel@rockstarrandmoon.com
    ```
@@ -234,7 +234,7 @@ Create these directories and placeholder files under the workspace root:
 
    ```bash
    curl -sS -m 5 -o /dev/null -w "%{http_code}" \
-     https://mail.rockstarrandmoon.com/healthz
+     https://mail.rockstarr.ai/healthz
    ```
 
    Three outcomes:
@@ -245,12 +245,12 @@ Create these directories and placeholder files under the workspace root:
      output** — sandbox egress is blocked. Print a WARNING block in
      the output summary (do not abort the scaffold):
 
-     > ⚠ Heads up: the Cowork sandbox can't reach `mail.rockstarrandmoon.com`
+     > ⚠ Heads up: the Cowork sandbox can't reach `mail.rockstarr.ai`
      > yet. Your scaffold is complete, but bot notifications will fail
      > until you:
      >
      > 1. Open **Cowork → Settings → Capabilities**
-     > 2. Add `mail.rockstarrandmoon.com` to the Network Allowlist
+     > 2. Add `mail.rockstarr.ai` to the Network Allowlist
      > 3. Save
      > 4. **Open a new Cowork conversation** — the allowlist is pinned
      >    at session start, so your current chat can't pick up the

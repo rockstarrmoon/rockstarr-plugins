@@ -108,7 +108,7 @@ is the foundation plugin — the bots we'll add later depend on it.
 
 Rockstarr bots email you notifications — draft-ready pings,
 approvals digests, urgent replies — through a Rockstarr-controlled
-mail service at `mail.rockstarrandmoon.com`. Cowork's sandbox
+mail service at `mail.rockstarr.ai`. Cowork's sandbox
 enforces an outbound network allowlist by default, so the mail
 service needs to be explicitly permitted before anything can reach
 it.
@@ -117,7 +117,7 @@ Open **Cowork → Settings → Capabilities** and add this host to
 the Network Allowlist:
 
 ```
-mail.rockstarrandmoon.com
+mail.rockstarr.ai
 ```
 
 Save.
@@ -131,7 +131,7 @@ Save.
 
 If your Cowork plan is Team or Enterprise, your workspace admin may
 need to make this change on your behalf. Ask them to allowlist
-`mail.rockstarrandmoon.com` in the workspace's Capabilities settings.
+`mail.rockstarr.ai` in the workspace's Capabilities settings.
 
 ### Step 2 — Select your working folder
 
@@ -315,7 +315,7 @@ that's what we're here for.
   (phrases, structures, examples); consumers wire it in, do not fork.
 - `skills/_shared/send-notification/` — cross-bot helper that sends a
   single email from Rockstarr AI to the client (or their strategist)
-  via the Rockstarr mailer at `mail.rockstarrandmoon.com`. Used by
+  via the Rockstarr mailer at `mail.rockstarr.ai`. Used by
   `approvals-digest`, `approvals-backlog-alert`, `notify-reply-ready`,
   `request-support`, and any bot that needs to emit an out-of-band
   notification (draft ready, reply landed, digest rollup). Reads the

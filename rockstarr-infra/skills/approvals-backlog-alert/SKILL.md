@@ -41,7 +41,7 @@ over `N` and goes silent the moment it drops back under.
 
 - `ROCKSTARR_NOTIFY_TO` should also be set so the alert's reply-to
   routes back to the client. If missing, fall through to the
-  Worker's default reply-to (`hello@rockstarrandmoon.com`) and warn
+  Worker's default reply-to (`hello@rockstarr.ai`) and warn
   the user — that's a usable fallback but not the intended route.
 - `/rockstarr-ai/client.toml` exists. Read `client_name` and the
   optional `[approvals]` block.

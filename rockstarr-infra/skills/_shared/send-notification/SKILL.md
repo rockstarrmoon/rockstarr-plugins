@@ -1,13 +1,13 @@
 ---
 name: send-notification
 description: |
-  Cross-bot helper. Sends a single email from Rockstarr AI to the client through the Rockstarr mailer. Use when another skill says "notify the client", "send the approvals digest email", "ping the client about the new draft", "let them know a reply landed", or otherwise needs to emit an out-of-band email from a Rockstarr bot to the human running the workspace. Wraps the POST to mail.rockstarrandmoon.com/send with payload validation, bearer lookup, error handling, and a local log so individual bot skills do not re-implement the contract. Not for sending email on behalf of the client to third parties — that flows through the reply plugin using the client's own mailbox OAuth.
+  Cross-bot helper. Sends a single email from Rockstarr AI to the client through the Rockstarr mailer. Use when another skill says "notify the client", "send the approvals digest email", "ping the client about the new draft", "let them know a reply landed", or otherwise needs to emit an out-of-band email from a Rockstarr bot to the human running the workspace. Wraps the POST to mail.rockstarr.ai/send with payload validation, bearer lookup, error handling, and a local log so individual bot skills do not re-implement the contract. Not for sending email on behalf of the client to third parties — that flows through the reply plugin using the client's own mailbox OAuth.
 ---
 
 # send-notification
 
 Send one email from Rockstarr AI to the client via the Rockstarr
-mailer at `https://mail.rockstarrandmoon.com/send`.
+mailer at `https://mail.rockstarr.ai/send`.
 
 Every bot that needs to nudge a human routes through here. Keeps the
 endpoint URL, bearer lookup, payload shape, and retry policy in one
@@ -48,7 +48,7 @@ using the client's own Gmail or Outlook OAuth.
   Rachel or Jon fills in the values). `NOTIFY_*` values are only
   required at recipient-resolution time — see step 2.
 
-- Network reachability to `mail.rockstarrandmoon.com` (Cloudflare
+- Network reachability to `mail.rockstarr.ai` (Cloudflare
   anycast — almost always fine).
 
 ## Inputs
@@ -83,7 +83,7 @@ The calling skill supplies:
 - `reply_to` — optional override. Resolution order when omitted:
   1. `ROCKSTARR_STRATEGIST_EMAIL` from the env file (per-client).
   2. The mailer's `DEFAULT_REPLY_TO` fallback
-     (`hello@rockstarrandmoon.com` — shared R&M inbox).
+     (`hello@rockstarr.ai` — shared R&M inbox).
   Most client-bound emails should rely on (1). Callers that route to a
   non-client recipient (e.g. `request-support` → `ai_support@...`) pass
   an explicit `reply_to` to override this chain.
@@ -166,7 +166,7 @@ The calling skill supplies:
    cat > "$payload" <<'JSON'
    <payload>
    JSON
-   curl_out=$(curl -sS -v -X POST https://mail.rockstarrandmoon.com/send \
+   curl_out=$(curl -sS -v -X POST https://mail.rockstarr.ai/send \
      -H "Authorization: Bearer $ROCKSTARR_MAILER_TOKEN" \
      -H "Content-Type: application/json" \
      --data @"$payload" 2>&1)
@@ -186,11 +186,11 @@ The calling skill supplies:
      `403 Forbidden` specifically from `CONNECT`). Do NOT retry. Show
      the user this exact message:
 
-     > The Cowork sandbox can't reach `mail.rockstarrandmoon.com` yet.
+     > The Cowork sandbox can't reach `mail.rockstarr.ai` yet.
      > To fix:
      >
      > 1. Open **Cowork → Settings → Capabilities**
-     > 2. Add `mail.rockstarrandmoon.com` to the Network Allowlist
+     > 2. Add `mail.rockstarr.ai` to the Network Allowlist
      > 3. Save
      > 4. **Open a new Cowork conversation** — the allowlist is pinned
      >    at session start, so your current chat can't pick up the

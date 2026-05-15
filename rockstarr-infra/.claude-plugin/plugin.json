@@ -1,6 +1,6 @@
 {
   "name": "rockstarr-infra",
-  "version": "0.9.9",
+  "version": "0.9.11",
   "description": "Rockstarr AI infrastructure plugin — the foundation every Rockstarr bot depends on. Scaffolds each client's /rockstarr-ai/ folder, runs the guided intake interview (or the legacy workbook flow) to produce a canonical client-profile.md, generates the brand voice and style guide, ingests the knowledge base, captures the tool stack, and owns the approve and publish-log lifecycle every downstream plugin uses. Ships the cross-bot notification layer — approvals-digest (daily client email), approvals-backlog-alert (weekly strategist email when the queue is heavy), and notify-reply-ready (urgent client email when an outreach reply lands) — on top of the rockstarr-mailer Worker, with scheduled tasks wired at scaffold time. Exposes shared references the content, social, outreach, reply, and ops bots consume: the thought-leadership rubric, the blog SEO + GEO checklist, and the mandatory stop-slop pass. The entry point for every new client is run-onboarding; nothing else in the Rockstarr AI stack runs until this plugin has done its work.",
   "author": {
     "name": "Rockstarr & Moon"
