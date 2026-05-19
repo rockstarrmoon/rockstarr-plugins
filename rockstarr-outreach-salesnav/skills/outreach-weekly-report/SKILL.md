@@ -21,6 +21,11 @@ else in the plugin feeds this moment.
 - Metrics (Weekly) rows for the prior week (for deltas).
 - Tasks sheet filtered to `type = review-reply`, `status = pending`
   (for the "awaiting you" callout).
+- Leads sheet, filtered per campaign to rows where `state` is
+  `accepted` or later AND `date_accepted` falls in the ISO week
+  (for the connect-only named-accepts block — see Render rules).
+- Campaigns sheet (for `campaign_type` lookup driving the
+  full-sequence vs connect-only render branch).
 - `_errors.md` lines timestamped within the week (for the bot-
   heartbeat callout).
 
@@ -70,6 +75,26 @@ primary signal.
 _Connect-only campaigns do not contribute to messages, replies, or
 bookings in the at-a-glance table above (their values are zero by
 design). They DO contribute to connects sent and accepts received._
+
+### Accepted this week — named list
+
+For each connect-only campaign with one or more accepts this week,
+name the accepting leads. The accept IS the success event for these
+campaigns; surfacing names is what makes the report actionable
+beyond an accept-rate percentage.
+
+**<slug-c>** — 31 accepts this week:
+- Jane Doe — CMO at SaaS Co
+- John Smith — Head of RevOps at Mid-Co
+- Sarah Lee — CTO at Series-B Co
+- ... (12 more shown; +16 over the soft cap, see workbook Leads
+  filtered to `campaign_slug=<slug-c>`, `state=accepted`,
+  `date_accepted` in this week)
+
+**<slug-d>** — 12 accepts this week:
+- Michael Brown — VP Eng at Enterprise Co
+- Pat Johnson — COO at Manufacturing Co
+- ...
 
 ### Week-over-week
 - <slug-a>: accept rate up from X → Y; +1 booking WoW.
@@ -137,6 +162,36 @@ Skip a table entirely if there are no campaigns of that type for
 the week. Don't render an empty "Per campaign — connect-only"
 section just to keep the structure symmetric.
 
+The "Accepted this week — named list" sub-block under the
+connect-only section follows the same skip rule: omit it entirely
+if no connect-only campaigns posted accepts this week. Per-campaign
+list:
+
+- Query Leads sheet for rows where `campaign_slug` matches a
+  connect-only campaign, `state` is `accepted` or later, AND
+  `date_accepted` falls inside the ISO week being rendered.
+- Render each as `<lead_name> — <lead_title> at <lead_company>`.
+  If `title` or `company` is missing on a row, render the name
+  alone; never render `— at` or trailing punctuation that implies
+  missing data.
+- Sort by `date_accepted` descending (most recent first) within
+  each campaign so the operator's eye lands on the latest names.
+- Soft cap at 15 names per campaign. Past the cap, render
+  `... (X more shown; +<N> over the soft cap, see workbook Leads
+  filtered to <filter expression>)` so the operator has a clear
+  path to the full list without bloating the report.
+- Connect-only campaigns with zero accepts this week appear in the
+  per-campaign table (with `Accepts: 0` and `Accept %: 0%`) but
+  do NOT appear in the named-list sub-block at all. A 0-accepts
+  campaign needs a different conversation than a long list of
+  names.
+
+Full-sequence campaigns do NOT get a parallel named-accepts block.
+Their accept is an intermediate step, not the success event;
+downstream replies and bookings are where the named events live,
+and naming accepts there would clutter the report with leads who
+may never reply. The asymmetry is deliberate.
+
 The "At a glance" totals at the top of the report aggregate
 honestly across BOTH types:
 
@@ -181,13 +236,15 @@ this report are:
 - `## Actions for next week` narrative bullets (the `continue /
   pause / tweak` reasoning text, not the slug labels themselves)
 
-The tables, heartbeat lines, and stale-task callout are structural
-artifacts and are exempt. Fix any slop flags (filler phrases, binary
-contrasts, passive voice, em dashes, vague declaratives, metronomic
-rhythm) before the report lands in `/06_reports/weekly/`. Order is
-style-guide first, stop-slop last. If stop-slop is unavailable,
-refuse and tell the user `rockstarr-infra` needs to be installed or
-updated.
+The tables, heartbeat lines, stale-task callout, and the connect-
+only named-accepts list are structural artifacts and are exempt
+(lead names, titles, and companies are data — not prose, and not
+something stop-slop should rewrite). Fix any slop flags (filler
+phrases, binary contrasts, passive voice, em dashes, vague
+declaratives, metronomic rhythm) before the report lands in
+`/06_reports/weekly/`. Order is style-guide first, stop-slop last.
+If stop-slop is unavailable, refuse and tell the user
+`rockstarr-infra` needs to be installed or updated.
 
 ## What NOT to do
 

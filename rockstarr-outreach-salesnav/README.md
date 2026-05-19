@@ -388,6 +388,31 @@ digest if it hasn't been approved by then.
   stays in rockstarr-social, and the LinkedIn account health budget
   is shared between them via the same `confirm-session` gate that
   every Sales Nav skill already runs through.
+- `0.2.1` — Connect-only campaigns now surface their accepting
+  leads by name. `detect-accepts` adds a publish-log write to
+  `/05_published/outreach/<today>.md` on any run that produces
+  accepts — full-sequence accepts get a count-only summary
+  (the downstream sequence is where the real signal lives), and
+  connect-only accepts get a per-lead named list as
+  `<Name> (<title> at <company>)` because the accept IS the
+  success event for those campaigns. Skipped on quiet days. The
+  output block grows: `newly_accepted` now carries
+  `lead_name` / `lead_company` / `lead_title` inline, and a new
+  `connect_only_accepts_by_campaign` map gives downstream
+  callers the per-slug named lists without re-reading Leads.
+  `outreach-weekly-report` adds an "Accepted this week — named
+  list" sub-block under the existing "Per campaign —
+  connect-only" section, listing each campaign's accepting leads
+  sorted most-recent-first with a 15-name soft cap and overflow
+  pointer to the workbook. Full-sequence campaigns do NOT get a
+  parallel named-accepts block — their accept is intermediate, not
+  a success event, and the named events surface downstream in
+  replies and bookings. No workbook schema changes — the existing
+  `Leads.state=accepted` + `date_accepted` + `campaign_slug`
+  columns are the source of truth; this release just surfaces that
+  data in two more places (daily activity log + Friday report) so
+  the operator never has to open the workbook to see who joined a
+  network-build audience.
 - Deferred to later versions: `force-send-today`, `refresh-lead-list`,
   `gcal-auto-booking`, weighted multi-campaign pacing, cross-bot touch
   caps.

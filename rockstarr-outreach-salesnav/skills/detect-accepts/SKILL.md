@@ -1,6 +1,6 @@
 ---
 name: detect-accepts
-description: "This skill should be used in the daily outreach loop after preview-queue, or when the user says \"detect new accepts\", \"check who accepted my connection requests\", or \"scan for new connections\". It checks Sales Navigator and LinkedIn notifications via Chrome MCP for newly accepted connection requests, matches each accepted connection to a Leads row, and flips Leads.state to accepted (with date_accepted). For full-sequence campaigns, chains directly into generate-message-tasks so the 3-step sequence starts on the same run; for connect-only campaigns, the accept is the terminal state and no message tasks are seeded."
+description: "This skill should be used in the daily outreach loop after preview-queue, or when the user says \"detect new accepts\", \"check who accepted my connection requests\", or \"scan for new connections\". It checks Sales Navigator and LinkedIn notifications via Chrome MCP for newly accepted connection requests, matches each accepted connection to a Leads row, and flips Leads.state to accepted (with date_accepted). For full-sequence campaigns, chains directly into generate-message-tasks so the 3-step sequence starts on the same run; for connect-only campaigns, the accept is the terminal state and no message tasks are seeded. Appends a named summary of connect-only accepts to /05_published/outreach/<today>.md so the operator sees who joined each network-build campaign without opening the workbook."
 ---
 
 # detect-accepts
@@ -53,22 +53,66 @@ forward in the pipeline.
      `campaign_type=connect-only`. The accept is the terminal
      state; do NOT call `generate-message-tasks` for these. They
      simply sit at `state=accepted` and feed the campaign's
-     accept-rate metric.
-7. **Return** the structured summary below to the caller.
+     accept-rate metric. These are the leads whose names will be
+     surfaced in Step 8 and in the Friday report.
+7. **Log to publish-log.** Append one line per run to
+   `/05_published/outreach/<today>.md`, with two distinct
+   summaries based on campaign type:
+
+   ```
+   detect-accepts — <total> new accepts across <M> campaigns
+     Full-sequence: <count> (chained into generate-message-tasks)
+       <slug-a>: <n_a>
+       <slug-b>: <n_b>
+     Connect-only: <count> (terminal — accept IS the success metric)
+       <slug-c>: <n_c> — <Name> (<title> at <company>), <Name> (...), ...
+       <slug-d>: <n_d> — <Name> (...)
+   ```
+
+   The full-sequence sub-block is a count-only summary because the
+   accept itself is not the milestone for those campaigns — the
+   downstream sequence and replies are where the real signal lives,
+   and the named replies will show up via `detect-replies` later
+   in the loop. The connect-only sub-block names each lead because
+   the accept IS the success event for those campaigns; surfacing
+   the names in the daily activity log lets the operator see who
+   joined the network-build audience that day without opening the
+   workbook.
+
+   Format for each connect-only name: `<Name> (<title> at
+   <company>)`. Pull from the matching Leads row. If `title` or
+   `company` is missing on a lead, render the name alone — never
+   render `(at )` or `( at )`. If a connect-only campaign has
+   more than 15 named accepts in a single run, render the first
+   15 plus `... +<N> more` at the end of that campaign's line.
+
+   If neither full-sequence nor connect-only accepts happened this
+   run, skip the publish-log write entirely. The summary only
+   appears on days something happened.
+
+8. **Return** the structured summary below to the caller.
 
 ## Output
 
 Structured summary:
 
-- `newly_accepted` — list of `{lead_url, campaign_slug,
-  campaign_type, accepted_on}`. Includes both full-sequence and
-  connect-only.
+- `newly_accepted` — list of `{lead_url, lead_name, lead_company,
+  lead_title, campaign_slug, campaign_type, accepted_on}`.
+  Includes both full-sequence and connect-only. `lead_name`,
+  `lead_company`, `lead_title` are pulled from the matching Leads
+  row so callers and the publish-log summary in Step 7 do not
+  need to re-read Leads.
 - `full_sequence_accepts` — count of newly-accepted leads whose
   campaign is full-sequence (these chained into
   `generate-message-tasks`).
 - `connect_only_accepts` — count of newly-accepted leads whose
   campaign is connect-only (these did not chain into
-  `generate-message-tasks` — their accept is terminal).
+  `generate-message-tasks` — their accept is terminal). The names
+  of these leads are surfaced in the publish-log entry in Step 7
+  and aggregated weekly by `outreach-weekly-report`.
+- `connect_only_accepts_by_campaign` — map of `slug` → list of
+  `{lead_name, lead_title, lead_company}` for the run. Empty
+  entries for campaigns with zero accepts this run are omitted.
 - `ignored_non_campaign` — count of accept events that didn't match
   any campaign lead
 - `already_processed` — count
@@ -92,3 +136,15 @@ Structured summary:
   Default to `full-sequence` (back-compat with pre-0.1.7
   registrations) and log a low-severity note to `_errors.md` so
   the operator can fix the row.
+- Do not render an empty publish-log line on quiet days. Step 7
+  skips the write when no accepts happened in either type. The
+  daily activity log should not get a "0 new accepts" row every
+  day — it would push more useful events off the visible scroll.
+- Do not list every connect-only acceptor name inline when the
+  run produced more than 15 named accepts for one campaign.
+  Truncate at 15 with `... +<N> more` and let the weekly report
+  pick up the full named list.
+- Do not pull lead name / title / company from the Sales Nav
+  notifications feed. Use the Leads row only — the workbook is
+  the source of truth and the notifications feed sometimes
+  truncates company or shows stale titles.
