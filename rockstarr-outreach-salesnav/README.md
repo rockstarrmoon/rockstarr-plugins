@@ -413,6 +413,28 @@ digest if it hasn't been approved by then.
   data in two more places (daily activity log + Friday report) so
   the operator never has to open the workbook to see who joined a
   network-build audience.
+- `0.2.2` — `daily-connect` Send loop reordered: click the lead's
+  name first to register a profile view in the Sales Nav side
+  preview, THEN open the row-level three-dot menu. The
+  operator's saved searches are configured to hide already-viewed
+  profiles so each day's queue starts at the top with fresh
+  names; the previous loop skipped the name-click and left every
+  touched lead in tomorrow's results, corrupting the
+  "start-at-the-top" workflow. The new Step 3 clicks the name
+  link via Chrome MCP `find` (lead's name as the accessible name
+  on the `<a>` element in the search row), confirms the side
+  preview populated before continuing, and includes a fallback
+  for Sales Nav UI variants that route the name link to the full
+  profile page instead of the side panel (use browser back; the
+  navigation itself counts as a profile view). The profile-view
+  registration applies to skipped leads too — Connect-Pending,
+  1st-degree, and no-Connect-option cases all hit Step 3 before
+  the skip-check in Step 4, so every lead the bot touches drops
+  off the next-day queue regardless of whether the connect went
+  through. Send loop renumbered 1–12 to fit. Two new
+  What-NOT-to-do bullets enforce the new ordering. Front-matter
+  description updated to name the click-first pattern so other
+  skills discovering this one via description see the contract.
 - Deferred to later versions: `force-send-today`, `refresh-lead-list`,
   `gcal-auto-booking`, weighted multi-campaign pacing, cross-bot touch
   caps.

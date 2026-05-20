@@ -131,7 +131,7 @@ staged on this pass.
       }
       ```
 
-      Salesnav 0.2.1 does NOT run a `qualify-lead` pass and does NOT
+      Salesnav 0.2.2 does NOT run a `qualify-lead` pass and does NOT
       maintain `00_intake/icp-qualifications.md` — that capability is
       tracked as a future ICP-qualifications enhancement. Until then,
       every bundle goes out with `icp_verdict: "unknown"`.
