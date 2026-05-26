@@ -92,7 +92,8 @@ keys. Capture every one during intake:
 | `booking_mode`                  | automated / manual                | Should the bot drive the booking link itself (`automated`) or does the client book manually (`manual`)? |
 | `availability_source`           | booking_link / gcal               | Where does the bot read availability from? Booking link form, or Google Calendar?                      |
 | `booking_link_url`              | URL                               | Ask **only if** `availability_source: booking_link`. The booking URL (Calendly, GrowthAmp calendar, etc.). |
-| `booking_link_required_fields`  | list                              | Ask **only if** `availability_source: booking_link`. Which fields the form requires (e.g., `[email, phone, company]`). Free-text; accept a comma-separated list and normalize to a YAML sequence. |
+| `booking_link_required_fields`  | list                              | Ask **only if** `availability_source: booking_link`. Which fields the form **requires** (booking aborts if any of these has no source value at send-time — typically just `[email]` for Cal.com, sometimes `[email, phone, company]` for richer forms). Free-text; accept a comma-separated list and normalize to a YAML sequence. |
+| `booking_link_optional_fields`  | list                              | Ask **only if** `availability_source: booking_link`. Which fields the form accepts but does not require (e.g., `[company, notes]`). Booking fills these from `Leads.company` etc. when a value is available and leaves them empty otherwise — they never block. Free-text; accept a comma-separated list and normalize to a YAML sequence. If the client doesn't know, default to `[]`. |
 | `gcal_id`                       | string                            | Ask **only if** `availability_source: gcal`. The Google Calendar ID to read availability from.          |
 
 Rules:
@@ -103,6 +104,34 @@ Rules:
   bot reads it to propose times in replies, even though a human books.
 - If the client is on a different LI outreach tool (Interceptly,
   MeetAlfred, Dripify, Waalaxy), skip this whole section.
+
+### Local-area face-to-face handling (toggle-gated)
+
+Some clients have a strong local presence (e.g., Austin / Leander, TX
+for RigTex) and want **in-person meeting requests handled differently
+from remote bookings** — typically routed to manual review so the
+client schedules coffee personally instead of the bot auto-proposing
+booking-link slots.
+
+Ask `local_meet_handoff_enabled` first. If `false`, skip the rest
+of this subsection.
+
+| Key                              | Type    | Default        | Prompt / guidance                                                                                                                                                                                                              |
+|----------------------------------|---------|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `local_meet_handoff_enabled`     | boolean | `false`        | Should `rockstarr-reply` route in-person meeting requests to manual review instead of proposing booking-link slots? Set to `true` only if the client wants coffee meetings handled personally.                                  |
+| `local_meet_trigger_terms`       | list    | (see below)    | Words / phrases that signal a local face-to-face ask. Ask the client to confirm the suggested defaults and add local city names. Suggested defaults: `["coffee", "in person", "in-person", "meet up", "meetup", "stop by", "grab coffee", "grab a coffee", "lunch"]` + local cities (e.g., for an Austin-based client: `["austin", "round rock", "cedar park", "leander", "georgetown", "pflugerville"]`). Case-insensitive substring match against the inbound message text. |
+
+Rules:
+
+- The trigger-terms list applies to ALL outreach variants the
+  client runs (Sales Nav, Interceptly, etc.) — `rockstarr-reply`
+  reads it from `stack.md` regardless of caller.
+- Empty list with `local_meet_handoff_enabled: true` is allowed
+  but pointless — the feature won't fire on any message. Warn the
+  user.
+- When a match fires, `rockstarr-reply` routes the thread to its
+  flag-for-review path with reason `local_face_to_face_request`.
+  The operator handles the coffee scheduling outside the bot.
 
 ## Social configuration (rockstarr-social)
 
@@ -412,9 +441,22 @@ Rules:
    booking_link_url: https://calendly.com/<client>/<slug>
    booking_link_required_fields:
      - email
-     - phone
+   booking_link_optional_fields:
      - company
+     - notes
    # gcal_id only present when availability_source: gcal
+
+   # Local-area face-to-face handling — only present when
+   # local_meet_handoff_enabled: true.
+   local_meet_handoff_enabled: false
+   local_meet_trigger_terms:
+     - "coffee"
+     - "in person"
+     - "in-person"
+     - "meet up"
+     - "stop by"
+     - "lunch"
+     # plus local city names captured from the client
    ~~~
 
    Omit the "Outreach configuration" block entirely when the client is

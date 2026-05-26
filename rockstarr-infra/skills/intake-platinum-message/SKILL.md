@@ -1,6 +1,6 @@
 ---
 name: intake-platinum-message
-description: "This skill should be used when the user asks to \"run the platinum message step\", \"build the platinum message\", \"draft the elevator pitch\", \"capture the messaging\", or when run-intake dispatches to the platinum-message step of the intake flow. Reads the three upstream artifacts (icp.md, transformations.md, competitors.md), captures the client's desired tone, and walks through a per-ICP loop: draft three pitch options, self-validate each against the four principles (Appeal, Exclusivity, Clarity, Credibility), revise any failure before presenting, capture the client's pick as the canonical Platinum Message, then draft three outcome statements with the same validation. Always emits one ### <ICP> — Platinum message H3 per ICP, even when there is one ICP. One question at a time, in the unified intake voice. Checkpoints every answer to /00_intake/intake/platinum-message.md."
+description: "This skill should be used when the user asks to \"run the platinum message step\", \"build the platinum message\", \"draft the elevator pitch\", \"capture the messaging\", or when run-intake dispatches to the platinum-message step of the intake flow. Reads the three upstream artifacts (icp.md, transformations.md, competitors.md), captures the client's desired tone, and walks through a per-ICP loop: draft three pitch options, self-validate each against the four principles (Appeal, Exclusivity, Clarity, Credibility), revise any failure before presenting, capture the client's pick as the canonical Platinum Message, then draft three outcome statements with the same validation. Always emits one ### [ICP] — Platinum message H3 per ICP, even when there is one ICP. One question at a time, in the unified intake voice. Checkpoints every answer to /00_intake/intake/platinum-message.md."
 ---
 
 # intake-platinum-message
@@ -304,7 +304,7 @@ Body shape:
 ...
 ~~~
 
-`compile-profile` lifts the `### <ICP> — Platinum message` H3
+`compile-profile` lifts the `### [ICP] — Platinum message` H3
 blocks (blockquote + Outcome statements bullets) into the
 **Messaging** section of `client-profile.md`. The principles
 validation table stays in the intake artifact for audit; it does
