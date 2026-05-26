@@ -53,6 +53,12 @@ labeling and task creation.
     incomplete enough that the bot can't safely draft
   - `cold_bump_exhausted` — the bot has already drafted 3 Cold
     bumps with no reply; surfacing the lead for human review
+  - `local_face_to_face_request` — the inbound contains a term from
+    `stack.md.local_meet_trigger_terms` (typically "coffee", "in
+    person", a local city name) and the client has
+    `local_meet_handoff_enabled: true`. Fired from `draft-reply`'s
+    Hot pre-check; operator handles the scheduling personally
+    instead of the bot proposing booking-link slots.
 - `context` — optional one-paragraph summary of what the pipeline
   knows so far (icp_verdict if any, bucket if any, evidence
   excerpt, prior-draft count).

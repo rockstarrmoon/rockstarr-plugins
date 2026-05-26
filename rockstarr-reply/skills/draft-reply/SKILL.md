@@ -91,7 +91,23 @@ From the bucket × icp_verdict matrix (see classify-reply's semantics
 table):
 
 **Hot — propose a meeting.**
-Call `rockstarr-infra:propose-meeting-times` (shared) for 2–3 slots
+
+**Pre-check: local-area face-to-face handling.** Before calling
+`propose-meeting-times`, check `stack.md` for
+`local_meet_handoff_enabled`. If `true`, scan the most recent
+inbound message (case-insensitive substring match) against
+`stack.md.local_meet_trigger_terms`. If ANY term matches, do NOT
+propose booking-link slots — emit a `flag` response with
+`reason: "local_face_to_face_request"`, include the matched term
+in `evidence`, and return immediately. The operator will handle
+the coffee/in-person scheduling outside the bot. The flag routes
+through `flag-for-review`'s normal path (caller labels the thread
+`Follow Up`, creates a 2-business-day review task). Skip this
+pre-check entirely when `local_meet_handoff_enabled` is unset or
+`false`.
+
+Otherwise (no local-area match, or feature disabled): call
+`rockstarr-infra:propose-meeting-times` (shared) for 2–3 slots
 from the client's availability source (booking-link page or Google
 Calendar, per `stack.md.availability_source`). Draft a body that
 names the specific slots and asks the lead to pick one. Include a
