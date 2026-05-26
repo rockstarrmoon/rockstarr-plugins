@@ -1,6 +1,6 @@
 ---
 name: daily-connect
-description: "This skill should be used as the final send-step of the daily outreach loop, or when the user says \"run today's connects\", \"send today's Sales Nav connection requests\", or \"execute the connect loop\". It computes the day's budget as min(20 + carry_forward_this_week, 100 − connections_sent_this_week), picks the highest-priority un-contacted leads across all active campaigns (full-sequence + connect-only, round-robin by campaign), and for each lead clicks the name first to register a profile view in the Sales Nav side preview (so the lead drops off tomorrow's already-viewed-filtered saved search) BEFORE opening the row-level three-dot menu to send a BLANK connect request through Chrome MCP. Applies the three skip rules (Connect–Pending / 1st-degree / no-Connect-option) — skipped leads still get the profile-view-first treatment, so they drop off tomorrow's queue too. Logs to Connections and marks connect tasks done. This is the ONLY skill allowed to send connection requests in this plugin."
+description: "This skill should be used as the final send-step of the daily outreach loop, or when the user says \"run today's connects\", \"send today's Sales Nav connection requests\", or \"execute the connect loop\". It computes the day's budget as min(20 + carry_forward_this_week, 100 − connections_sent_this_week), picks the highest-priority un-contacted leads across all active campaigns (full-sequence + connect-only, round-robin by campaign), and for each lead navigates directly to the lead's Sales Nav profile URL (the canonical lead_profile_overflow path; the visit itself registers the profile view that drops the lead off tomorrow's already-viewed-filtered saved search) and uses the lead-page overflow menu to send a BLANK connect request through Chrome MCP. Pacing is 60–90s per-lead jitter plus a FULL page refresh after every 3 successful sends — Sales Nav SPA JS state accumulates and a refresh is the only thing that reliably clears it. Applies the four skip rules (Connect–Pending / 1st-degree / no-Connect-option / requires-email — the last is terminal because the lead's privacy setting blocks blank invites). Logs to Connections and marks connect tasks done. This is the ONLY skill allowed to send connection requests in this plugin."
 ---
 
 # daily-connect
@@ -61,114 +61,219 @@ If `confirm-session` has not passed this run, refuse and return
 
 ## Send loop
 
-The canonical UI path is **click the lead's name first** (to
-register a profile view in the side preview, which removes them
-from tomorrow's already-viewed-filtered saved search), THEN the
-**row-level three-dot menu** on each search result card. NOT the
-side panel's overflow button — that tends to navigate to the full
-profile page instead of opening a dropdown. The row-level button
-reliably exposes Connect / View profile / Add to map. Locate both
-elements via Chrome MCP `find` with the lead's name and click by
-ref ID rather than by pixel coordinate — viewport changes will
-move absolute coordinates but accessible-name lookups stay stable.
+### UI path — `lead_profile_overflow` is canonical
 
-The operator's saved searches are configured to hide profiles the
-account has already viewed, so each day's queue is clean.
-Skipping the profile-view click keeps already-touched leads in
-tomorrow's results and corrupts the "start at the top" workflow.
+Two paths exist for "open the row's overflow and click Connect":
+
+- **`lead_profile_overflow` (canonical, Chrome MCP).** Navigate the
+  same tab directly to the lead's Sales Nav profile URL
+  (`/sales/lead/<urn>`, stored on the Leads row). The page loads
+  the lead's full record. The "..." overflow at the top of that
+  page exposes Connect / View profile / Add to map. **This is the
+  only path that reliably works inside Chrome MCP today.** The
+  direct navigation itself registers as a profile view in Sales
+  Nav, so it satisfies the dedup goal (the lead drops off
+  tomorrow's already-viewed-filtered saved search) as a side
+  effect of how the path works — no separate "click the name
+  first" step is needed.
+- **`side_preview_overflow` (fallback, human-natural; degraded
+  under Chrome MCP).** The path a human user actually clicks:
+  open the saved-search results page, click the lead's name to
+  populate the side preview pane on the right, click the "..." at
+  the top of the preview, click Connect. Inside Chrome MCP this
+  path is currently unreliable because Sales Nav virtualizes the
+  saved-search result rows and lazy-loads them on scroll — the
+  rows often don't hydrate within Chrome MCP's `Runtime.evaluate`
+  window, so the bot can't see the name link to click. Keep this
+  path documented as a fallback that the bot can attempt if
+  `lead_profile_overflow` fails on a specific lead, and revisit
+  promoting it to canonical only if Sales Nav fixes the
+  virtualization timing.
+
+The canonical / fallback split is also encoded in `stack.md`:
+
+```yaml
+daily_connect_path: lead_profile_overflow
+daily_connect_fallback_path: side_preview_overflow
+```
+
+The bot reads those keys at run start. If they're missing, default
+canonical = `lead_profile_overflow`, fallback = `side_preview_overflow`.
+
+### Click pattern — pure JS, not element refs
+
+Sales Nav's SPA invalidates element refs from `read_page` /
+`browser_snapshot` mid-batch — by the third or fourth send in a
+session, refs captured earlier in the run point at stale DOM nodes
+and clicks silently fail. **Use a pure-JS one-shot click pattern as
+the primary click method:** locate the target element inside
+`javascript_tool` (or `mcp__Claude_in_Chrome__javascript_tool`)
+by accessible name / aria-label / text content, dispatch the click
+in the same JS execution, and read the resulting DOM state from the
+same script's return value. Do not split "find ref" and "click ref"
+across two MCP calls.
+
+If a pure-JS click fails (element not present, role mismatch),
+fall back to a fresh `find` + click — but never reuse a ref captured
+more than one MCP call ago.
+
+### Pacing — page refresh every 3 sends
+
+Two-part rule, both required:
+
+- **Per-lead jitter: 60–90 seconds, randomized.** LinkedIn's
+  anti-spam heuristics flag accounts whose actions cluster too
+  tightly. Older 25–45s pacing was too aggressive and increased
+  send-not-confirmed failures on Sales Nav specifically.
+- **Full page refresh after every 3 successful sends.** Navigate
+  the tab to `https://www.linkedin.com/sales/`, wait 10s for the
+  shell to settle, then continue with the next lead. The Sales Nav
+  SPA accumulates JS state across rapid actions in the same browser
+  session — modals stop opening, screenshots time out, send
+  buttons hang. A passive cooldown (sleep without reloading) does
+  not clear this; only a fresh page load does. Reset the
+  successful-send counter to 0 after each refresh. This is the
+  single most load-bearing change relative to V0.2.x — without it,
+  daily-connect hits a hard ceiling around send #3–5 per session
+  even with longer jitter.
+
+### Per-lead procedure
 
 For each lead selected:
 
 1. **Pre-flight the count.** If the cumulative send this run would
-   push `connections_sent_this_week` past 100, stop immediately.
-   Do not send one more than the ceiling.
-2. **Locate the lead in the Sales Nav search result list.** If
-   you're working from a specific saved-search results page, the
-   lead's row should be visible. If you've navigated past the lead's
-   row (or the lead is not on the current page), paginate via the
-   "Next" button or open the lead's row by URL — but always operate
-   on the row-level UI, not the full-profile UI.
-3. **Click the lead's name to register a profile view.** Use
-   Chrome MCP `find` to locate the lead's name link in the search
-   result row (query the lead's name as the accessible name on an
-   `<a>` element inside the result card). Click it by ref ID. The
-   right-side preview panel populates with the lead's profile —
-   confirm by `find`ing a recognizable side-panel element (e.g.,
-   the side-panel's headline or the "Send InMail" button that
-   appears at the top of the preview) before continuing. Do NOT
-   skip this step. The profile-view registration is what removes
-   this lead from tomorrow's already-viewed-filtered saved search,
-   and it happens whether or not the connect goes through — so
-   leads that hit any of Step 4's skip cases still drop off the
-   next-day queue. If clicking the name accidentally navigates
-   away from the search results page (some Sales Nav UI variants
-   route the name link to the full profile page instead of the
-   side preview), use the browser back button to return to the
-   results page; the navigation itself counts as a profile view,
-   so the dedup goal is still met.
-4. **Open the row-level three-dot menu.** Use Chrome MCP `find` with
-   `"See more actions for [Lead's Name]"` and click by ref ID. A
-   dropdown appears. Three skip cases the dropdown surfaces:
+   push `connections_sent_this_week` past 100, stop immediately. Do
+   not send one more than the ceiling.
+2. **Navigate to the lead's profile URL.** Read `lead_url` from the
+   Leads row (it is a `/sales/lead/<urn>...` URL). Navigate the same
+   tab there. Wait up to 15 seconds for the lead-page shell to
+   render (title element, headline, the "..." overflow button
+   present in the DOM). If the page does not render within 15
+   seconds — body still shows the `.initial-load-animation` SPA
+   loader, no headline — log this lead's URL + the timeout to
+   `_errors.md` with reason `lead_page_did_not_render`, skip the
+   lead, leave its task pending, run a single 90-second cooldown
+   nav to `https://www.linkedin.com/sales/`, then resume with the
+   next lead. The direct navigation itself is what registers as a
+   profile view, so the dedup goal is met even when the page hangs
+   on the loader.
+3. **Inspect the degree badge.** Read the lead's degree (1st / 2nd
+   / 3rd / out-of-network) from the page header. Three skip cases
+   surface here, before the overflow even opens:
 
-   - **"Connect" is clickable** — proceed to step 5.
-   - **"Connect — Pending"** (grayed out) — the lead already has a
-     pending invitation from a prior run. Press Escape to close
-     the dropdown, log a skip with reason
-     `connect_pending_already_invited` to `_errors.md`, do NOT
-     decrement the budget, do NOT mark the connect task done (it's
-     still pending in our state if we're surprised), continue.
-   - **No "Connect" option appears** (only "View profile," "Add to
-     map," etc.) — the profile has restrictions or the lead is
-     1st-degree already (already connected). Log a skip with reason
-     `no_connect_option`, flip Leads.state to `connected` if the
-     lead is 1st-degree (the row UI sometimes shows "Message"
-     instead of "Connect" for 1st-degrees), otherwise leave
-     `state=queued` for a future retry, do NOT decrement the
-     budget, continue.
+   - **1st-degree.** The lead is already a connection. Log a skip
+     with reason `no_connect_option`, flip `Leads.state` to
+     `connected` (it was already connected — workbook just lagged),
+     do NOT decrement the budget, continue. The page-view already
+     dropped the lead from tomorrow's queue.
+   - **A pending "Connect" badge** ("Pending" / "Invitation sent")
+     visible on the header without opening the overflow. Log a
+     skip with reason `connect_pending_already_invited`, leave
+     `Leads.state` and the connect task alone (the prior send is
+     still in flight), do NOT decrement the budget, continue.
+   - **Out-of-network with no Connect surface available.** Log a
+     skip with reason `no_connect_option`, leave `Leads.state =
+     queued`, do NOT decrement the budget, continue.
 
-   In every skip case above, the profile view from Step 3 has
-   already registered, so the lead drops off tomorrow's queue
-   regardless. That is the point — skipped leads should not
-   re-surface tomorrow either.
+4. **Open the lead-page overflow menu.** Use the pure-JS click
+   pattern (see "Click pattern" above) to click the "..." button at
+   the top of the lead page. The dropdown should expose Connect,
+   View profile, and a handful of other actions.
 
-   Side-panel overflow can open the full profile page instead of a
-   dropdown. If you find yourself on a profile page after clicking
-   the three-dot, you used the wrong button — back out and use the
-   row-level one.
+5. **Inspect the Connect surface.** Two skip cases the overflow
+   surfaces:
 
-5. **Click Connect.** From the row-level dropdown, click "Connect."
-   The "Send invitation" dialog opens.
-6. **Verify "Save as lead" is unchecked** in the dialog. Row-level
-   sends typically have it unchecked by default; first send of a
-   session may have it checked if the prior session opened a full
-   profile. Uncheck it before sending — checking it auto-saves the
-   lead into Sales Nav's lead-list which is not what we want for a
-   connect-only or full-sequence campaign.
-7. **Send the request WITHOUT a note.** Message 1 in the approved
-   campaign is intentionally BLANK — LinkedIn's default connect
-   behavior is the cleanest first touch and keeps Message 2 free to
-   do the real work (full-sequence campaigns) or simply minimizes
-   the spam-flag risk (connect-only campaigns). Do NOT attach a
-   note, even if one is present in the campaign file (it should not
-   be). If the campaign's Message 1 section contains any body copy,
-   treat it as a config error: log to `_errors.md` asking the
-   client to re-approve the campaign with Message 1 blank, skip
-   this lead, and do not decrement the budget. Click the blue
-   "Send Invitation" button.
-8. **Verify the send.** Wait for the confirmation UI. If the
-   request fails or the UI does not confirm, log to `_errors.md`
-   and skip without decrementing the budget.
-9. **Write to Connections.**
-   - `date` = today, ISO
-   - `lead_url`
-   - `campaign_slug`
-   - `note_sent` = `""` (always empty — Message 1 is blank by spec)
-   - `source` = `sales_nav`
-10. **Update Leads.** `state = connected`, `date_connected = today`.
-11. **Mark the Tasks row done.** `status = done`, `completed_at = now`.
-12. **Polite rate.** Wait 25–45 seconds (randomized) between sends.
-    LinkedIn rate-limits aggressive clicking far below 20/day if
-    they all hit in the same minute.
+   - **No "Connect" item in the dropdown.** The profile has
+     restrictions. Log a skip with reason `no_connect_option`,
+     leave `Leads.state = queued`, do NOT decrement the budget,
+     press Escape, continue.
+   - **"Connect — Pending"** (em-dash, grayed out). Already
+     invited. Log a skip with reason
+     `connect_pending_already_invited`, do NOT decrement the
+     budget, press Escape, continue.
+
+6. **Click Connect.** Pure-JS click on the "Connect" item in the
+   dropdown. The "Send invitation" dialog opens. Two skip cases the
+   dialog surfaces:
+
+   - **"Add a personal note" modal that requires an email
+     address** ("We need to verify they know you" / "Please enter
+     [lead's] email"). This is a Sales Nav privacy setting on the
+     lead's side that blocks blank invites — it is NOT a transient
+     error and NOT a retry case. Log a skip with reason
+     `requires_email` (a NEW terminal skip reason as of V0.3.0),
+     flip `Leads.state` to `requires_email_skip` so the lead is
+     never re-surfaced for connect attempts, mark the connect
+     `Tasks` row `cancelled` with reason `requires_email`,
+     dismiss the modal, do NOT decrement the budget, continue.
+   - **Dialog never opens** (the click registered but no modal
+     appeared after 5 seconds). Treat as a UI anomaly: log to
+     `_errors.md` as `send_not_confirmed`, leave the task pending
+     (it will be retried at the end of the same run after the
+     next page refresh — see "Retry semantics" below), do NOT
+     decrement the budget, continue.
+
+7. **Verify "Save as lead" is unchecked.** First send of a session
+   may have it pre-checked. Uncheck before sending — Sales Nav's
+   workbook is NOT our source of truth (the outreach workbook is)
+   and we don't want duplicate state.
+
+8. **Send the request WITHOUT a note.** Message 1 in the approved
+   campaign is intentionally BLANK. Do NOT attach a note even if
+   the campaign file contains body copy under Message 1 — if it
+   does, treat as a config error: log to `_errors.md` asking the
+   client to re-approve, skip the lead, do not decrement the
+   budget. Click the blue "Send Invitation" button (pure-JS click).
+
+9. **Verify the send.** Re-open the lead-page overflow within 3
+   seconds and look for **"Connect — Pending"** (with an em-dash,
+   not an ASCII hyphen — the literal UI string is the em-dash;
+   regex must match `Connect\s*—\s*Pending`, not
+   `Connect\s*-\s*Pending`). If "Connect — Pending" is present, the
+   send is confirmed.
+
+   If the overflow does not show "Connect — Pending" after the click
+   (regardless of why), log to `_errors.md` with reason
+   `send_not_confirmed`, leave the task pending for the in-run
+   retry queue (see "Retry semantics"), do NOT decrement the
+   budget, continue.
+
+10. **Write to Connections.**
+    - `date` = today, ISO
+    - `lead_url`
+    - `campaign_slug`
+    - `note_sent` = `""` (always empty — Message 1 is blank by spec)
+    - `source` = `sales_nav`
+    - `path` = `lead_profile_overflow` (or `side_preview_overflow`
+      if the bot used the fallback path on this lead)
+
+11. **Update Leads.** `state = connected`, `date_connected = today`.
+
+12. **Mark the Tasks row done.** `status = done`, `completed_at = now`.
+
+13. **Pacing — apply both rules.**
+    - Wait 60–90 seconds (randomized) before starting the next lead.
+    - Increment a per-run successful-send counter. If the counter
+      reaches 3, perform a full page refresh: navigate to
+      `https://www.linkedin.com/sales/`, wait 10 seconds, reset the
+      counter to 0. The next lead's navigation in step 2 will load
+      its profile from the freshly-loaded shell.
+
+### Retry semantics for `send_not_confirmed`
+
+When a send hits `send_not_confirmed` (dialog never opened, or the
+overflow did not show "Connect — Pending" after the click), the
+lead's task is left `pending` and added to an in-memory retry
+queue scoped to THIS run only. After the normal queue completes (or
+after the budget is otherwise exhausted), attempt each retry-queue
+lead exactly ONE more time, each preceded by a full page refresh.
+If the retry also fails, log to `_errors.md` with reason
+`send_not_confirmed_retry_failed` and abandon the lead for this
+run — tomorrow's loop will pick it up fresh.
+
+Do not retry a lead more than once per run. Retries do not
+double-count toward the daily / weekly cap; only confirmed sends
+count.
 
 ## Save + publish-log
 
@@ -190,7 +295,16 @@ Return a structured summary to the caller:
 - `today_budget`
 - `sent` (total)
 - `per_campaign` (map of slug → sent count)
-- `skipped` (list of lead_url + reason)
+- `per_path` (map of `lead_profile_overflow` / `side_preview_overflow`
+  → sent count — confirms which UI path is actually doing the work)
+- `skipped` (list of `{lead_url, reason}`; reasons are
+  `connect_pending_already_invited`, `no_connect_option`,
+  `requires_email`, `lead_page_did_not_render`)
+- `retried` (count of leads that hit `send_not_confirmed` and were
+  re-attempted; reported separately from `sent`)
+- `retry_failed` (count of leads abandoned after the in-run retry)
+- `page_refreshes` (count of Rule B refreshes during this run —
+  expect `floor(sent / 3)`)
 - `weekly_used` after this run
 - `weekly_remaining`
 
@@ -208,21 +322,35 @@ Return a structured summary to the caller:
   2–4, not in a 300-character note. If the approved campaign file
   contains body copy under Message 1, treat it as a config error and
   surface it to the client; do not silently send the note.
-- Do not retry on LinkedIn UI anomalies. Skip the lead, log to
-  `_errors.md`, move on. A silent retry masks UI breakage the
-  weekly report needs to surface.
+- Do not retry on LinkedIn UI anomalies inside the normal queue.
+  Skip the lead, log to `_errors.md`, move on. The in-run retry
+  for `send_not_confirmed` (one pass at end-of-queue, after a
+  page refresh) is the ONLY retry permitted; a silent in-line
+  retry masks UI breakage the weekly report needs to surface.
 - Do not touch leads in paused campaigns.
-- Do not skip the click-the-name-first step (Step 3 of the Send
-  loop). The operator's saved searches are configured to hide
-  already-viewed profiles, so each day's queue is meant to start
-  at the top with fresh names. Skipping the profile-view click
-  leaves already-touched leads in tomorrow's results and breaks
-  the operator's workflow. This applies to skipped leads too — a
-  Connect-Pending or no-Connect-option lead still needs the
-  profile view registered so it drops off the next-day queue.
-- Do not open the row-level three-dot menu before clicking the
-  lead's name. Even if the connect call goes through, skipping
-  the profile-view-first ordering leaves the lead in tomorrow's
-  saved-search results because LinkedIn does not register a view
-  from the row-level overflow menu — only from a name-link click
-  that loads the side preview.
+- Do not treat `requires_email` as a retry case. The "We need to
+  verify they know you / please enter [lead's] email" modal is a
+  Sales Nav privacy setting on the lead's side. Retrying produces
+  the same modal every time. `requires_email` is terminal — flip
+  `Leads.state` to `requires_email_skip` and cancel the connect
+  task. The lead is unreachable through a blank invite forever.
+- Do not reuse element refs captured from `read_page` /
+  `browser_snapshot` across more than one MCP call. The Sales Nav
+  SPA invalidates them mid-batch. Use the pure-JS one-shot click
+  pattern (see "Click pattern") as the primary; a fresh find is
+  only acceptable as a one-shot fallback when the JS click fails.
+- Do not skip the Rule B page refresh after every 3 successful
+  sends. Even at 60–90s per-lead jitter, the SPA's JS state
+  accumulates and the send pipeline degrades to silent failures.
+  Passive cooldowns (sleeping without a reload) do not clear this.
+- Do not use the `side_preview_overflow` path as the primary in
+  Chrome MCP today. Sales Nav virtualizes the saved-search rows
+  and they do not hydrate inside Chrome MCP's `Runtime.evaluate`
+  window reliably. Treat `side_preview_overflow` as the documented
+  fallback only.
+- Do not assume "Connect — Pending" uses an ASCII hyphen. The
+  literal UI string is an em-dash (Unicode U+2014). The verify
+  regex must match the em-dash explicitly, e.g.
+  `Connect\s*—\s*Pending`. A regex matching the ASCII hyphen
+  produces false negatives on every confirmed send, which then
+  triggers spurious `send_not_confirmed` retries.

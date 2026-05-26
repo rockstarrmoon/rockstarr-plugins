@@ -61,10 +61,10 @@ one budget, not two.
 |-------|---------|
 | `draft-icp-campaign` | Given an ICP + saved Sales Nav search URL, picks the campaign type (full-sequence or connect-only) and writes the campaign spec — full-sequence specs include filters + 3-step sequence + cadence + exit conditions; connect-only specs include filters + target_lead_count + exit conditions only. Ships inline for V0.1; will migrate to `rockstarr-infra/skills/_shared/`. |
 | `register-campaign` | Promote an approved campaign spec, validate against its `campaign_type`, crawl the saved search into Leads, seed initial connect tasks. |
-| `crawl-lead-list` | Paginate a saved Sales Nav search via Chrome MCP and populate Leads. Enforces "one campaign per lead". |
+| `crawl-lead-list` | Idempotent crawl of a saved Sales Nav search via Chrome MCP — paginates, scrolls each row into view and waits for it to hydrate, commits only fully-hydrated rows to Leads, and resumes silently across re-invokes (URL-dedup against existing leads for the campaign). Enforces "one campaign per lead" across campaigns. |
 | `confirm-session` | Pre-flight: verify the browser is signed in to the client's LinkedIn. Gate on the entire daily loop. |
 | `preview-queue` | Daily preview file listing every action the bot plans to take today. Togglable via `stack.md`. |
-| `daily-connect` | Compute today's budget (20/day + 100/week math), round-robin across all active campaigns regardless of type, send BLANK connect requests via the row-level three-dot menu method with explicit handling of the three skip cases (Connect–Pending, 1st-degree, no-Connect-option). Only skill that sends connects. |
+| `daily-connect` | Compute today's budget (20/day + 100/week math), round-robin across all active campaigns regardless of type, send BLANK connect requests via the `lead_profile_overflow` Chrome MCP path (direct nav to each lead's `/sales/lead/[urn]` page, then the overflow "..." menu — the only path that reliably survives Sales Nav's virtualized saved-search hydration). Pure-JS one-shot click pattern, 60–90s per-lead jitter, full page refresh every 3 successful sends. Four skip rules: Connect–Pending, 1st-degree, no-Connect-option, requires-email (terminal). Only skill that sends connects. |
 | `detect-accepts` | Detect newly accepted connections and flip `Leads.state=accepted`. Partition by campaign type — full-sequence accepts chain into `generate-message-tasks`; connect-only accepts are terminal and don't trigger any further tasks. |
 | `generate-message-tasks` | On accept (full-sequence campaigns only), seed a 3-step sequence at day-of-accept / +3 / +7. Refuses to run for connect-only campaign leads. |
 | `send-scheduled-messages` | Execute `message-step-N` and follow-up tasks due today via Sales Nav messaging. |
@@ -188,7 +188,8 @@ Task types:
 
 ## Daily operational loop
 
-At `stack.md.outreach_daily_run_time` (client's local time):
+The fixed step order (every step degrades gracefully if the prior
+produced nothing):
 
 1. `confirm-session` — verify LinkedIn session. Gate on everything below.
 2. `preview-queue` — write `queue-<date>.md` (if `outreach_daily_preview: true`).
@@ -198,11 +199,80 @@ At `stack.md.outreach_daily_run_time` (client's local time):
 6. `daily-connect` — compute budget, round-robin across campaigns, send connects.
 7. `metrics-daily` — roll up today's numbers per campaign; update ISO-week totals.
 
-Every step fails gracefully if the previous produced nothing. Order is fixed.
-
 An optional afternoon pass re-runs `detect-replies` only (no connect
 loop). Event-driven paths — `send-approved-reply`, `book-meeting`,
 `mark-booked` — run whenever they're triggered.
+
+### Scheduling the loop
+
+Workspaces wire this loop up as one or more scheduled tasks in
+Cowork. There are two viable patterns, and the right choice depends
+on campaign volume.
+
+**Single-task pattern (default for low-volume workspaces).** One
+scheduled task runs steps 1–7 in order at
+`stack.md.outreach_daily_run_time`. Simple, the canonical fixed
+order maps 1:1 to one task. Use this when:
+
+- The workspace runs at most 1–2 full-sequence campaigns
+- Average day produces ≤3 accepts (so step 4 sends ≤3 messages)
+- Daily connect budget is well under 20 (e.g., the operator wants
+  to ramp gently)
+
+**Split-task pattern (recommended for full-volume workspaces).**
+The single-task pattern works mathematically but bumps into a
+practical ceiling: Cowork imposes a per-scheduled-task budget on
+the number of agent turns a single run can consume (~100 turns as
+of this writing). A morning that needs to seed 5–7 M2/M3/M4 sends
+*plus* 20 connect attempts *plus* a detect-replies sweep regularly
+needs 150–200 turns and is cut off mid-run when the budget is hit.
+Splitting into two scheduled tasks gives each side its own budget:
+
+| Task | Time (offset) | Steps | Typical turn cost |
+|---|---|---|---|
+| `<slug>-outreach-messages` | `outreach_daily_run_time` | confirm-session → preview-queue → detect-accepts → generate-message-tasks → send-scheduled-messages → detect-replies → metrics-daily (partial) | 40–60 turns |
+| `<slug>-outreach-connects` | `outreach_daily_run_time + 60 min` | confirm-session → (optional) crawl-on-shortfall → daily-connect | 80–120 turns (mostly daily-connect's 6 turns/send × 20 sends) |
+
+The 60-minute offset is the practical minimum — both tasks open
+the same Sales Nav session, and back-to-back runs amplify the SPA
+state degradation that `daily-connect`'s page-refresh-every-3-sends
+pacing is designed to manage. An hour gives the SPA fresh space
+and matches realistic operator-presence windows.
+
+**`crawl-on-shortfall` step (split pattern only).** The connects
+task can include a pre-step that calls `crawl-lead-list` when an
+active campaign has fewer queued leads than its target. The check
+runs as: for each campaign with `status = active`, if
+`Leads.count(campaign, state=queued) + today_budget <
+target_lead_count × 1.5`, invoke `crawl-lead-list` with that
+campaign's slug, saved-search URL, and remaining count.
+`crawl-lead-list` is idempotent (since 0.3.0) — re-invoking it
+against a campaign that already has some leads picks up from where
+the prior partial crawl stopped without duplicating. Skip the step
+entirely when the queue is sufficient for today's budget.
+
+### Scheduling environment
+
+Two operational realities to surface to the operator on day one,
+because both have caught new clients by surprise:
+
+- **The bot only runs when Claude Desktop is open and the laptop is
+  awake.** If your laptop sleeps at the scheduled time, the task
+  fires on next launch — i.e., when you wake the laptop. For most
+  workdays this is fine (the daily window straddles when you're
+  already at your machine), and the slight time jitter is
+  ironically a small LinkedIn-anti-spam benefit. For multi-day
+  absences or strict-window send-cadence requirements, run the
+  laptop in clamshell mode connected to power.
+- **Each scheduled task creates its own Chrome MCP tab group.**
+  The Chrome MCP API does not expose cross-session group rename or
+  merge — every scheduled task's session gets its own auto-named
+  group (`<task-name>`). A workspace with the split pattern will
+  therefore have at least two outreach groups visible in the tab
+  bar (one per scheduled task). This is cosmetic; sends still log
+  correctly. Don't write loop prompts that try to consolidate
+  groups across sessions — it isn't possible from inside the
+  agent.
 
 ## Approvals
 
@@ -413,6 +483,65 @@ digest if it hasn't been approved by then.
   data in two more places (daily activity log + Friday report) so
   the operator never has to open the workbook to see who joined a
   network-build audience.
+- `0.3.0` — Chrome MCP × Sales Nav reality alignment plus scheduling
+  guidance, driven by field data from the first full-volume
+  rockstarr-outreach-salesnav rollout. Three shipped together (one
+  PR each, all targeting 0.3.0):
+  1. `daily-connect` + `send-scheduled-messages` reworked. The
+     previously-canonical "row-level three-dot menu on the
+     saved-search page" path is unreachable in Chrome MCP because
+     Sales Nav virtualizes saved-search rows and they don't hydrate
+     within `Runtime.evaluate`'s window. New canonical:
+     `lead_profile_overflow` — direct navigation to each lead's
+     `/sales/lead/[urn]` page (which itself registers the profile
+     view for the dedup filter), then the lead-page overflow menu.
+     `side_preview_overflow` documented as the human-natural
+     fallback that only becomes viable if Sales Nav fixes its
+     virtualization timing. Pacing rewritten to 60–90s per-lead
+     jitter PLUS a full page refresh after every 3 successful
+     sends — passive cooldowns alone hit a 3–5 send ceiling
+     because the SPA's JS state accumulates; a reload is the only
+     thing that reliably clears it. Pure-JS one-shot click pattern
+     is now primary (refs from `read_page` expire mid-batch on
+     the SPA). Verify regex uses em-dash explicitly ("Connect — Pending",
+     U+2014). New terminal skip reason `requires_email` for leads
+     whose Sales Nav privacy setting blocks blank invites — flips
+     `Leads.state` to `requires_email_skip` so the lead is never
+     re-surfaced. In-run retry semantics for `send_not_confirmed`
+     (one pass at end-of-queue after a page refresh, then abandon).
+     Output schema gains `per_path`, `retried`, `retry_failed`,
+     `page_refreshes`. `send-scheduled-messages` inherits the same
+     pacing and click pattern. New optional `stack.md` keys
+     `daily_connect_path` and `daily_connect_fallback_path` with
+     sensible defaults.
+  2. `crawl-lead-list` is now idempotent. New step 0 reads existing
+     Leads for the campaign, computes remaining target, returns
+     `noop` if already met, and uses an existing-URL set to silently
+     skip already-crawled leads on resumption. Per-row hydration:
+     `scrollIntoView` each row individually and poll up to 4s for
+     its `<article>` to populate (replaces the broken whole-page
+     wait that returned before most rows hydrated). Commit-only-
+     fully-hydrated contract: rows with blank `company` or `title`
+     are logged as warnings and skipped — partial rows poison the
+     exclusion filter and downstream ICP sanity checks. Output
+     schema becomes structured: `status` (complete / partial /
+     aborted / noop), `existing_count_before`, `inserted_this_run`,
+     `total_after`, `pages_walked`, hydration counts. New "Caller-
+     side smart-defer" section documents the recommended gating
+     rule for daily loops (only invoke when
+     `queued + today_budget < target_lead_count × 1.5`).
+  3. Scheduling guidance documented. The README's Daily Operational
+     Loop section gains a "Scheduling the loop" subsection covering
+     the split-task pattern (recommended for full-volume workspaces:
+     one task for accepts/messages/replies + another for connects,
+     60-minute offset), the rationale (Cowork's per-scheduled-task
+     turn budget), and the optional `crawl-on-shortfall` pre-step
+     for the connects task. New "Scheduling environment" subsection
+     surfaces the laptop-awake expectation (tasks fire when Claude
+     Desktop is running, not when the OS clock ticks) and the
+     Chrome MCP tab-group reality (each scheduled task creates its
+     own auto-named group; cross-session consolidation is not in
+     the Chrome MCP API and loop prompts should not try to do it).
 - `0.2.2` — `daily-connect` Send loop reordered: click the lead's
   name first to register a profile view in the Sales Nav side
   preview, THEN open the row-level three-dot menu. The

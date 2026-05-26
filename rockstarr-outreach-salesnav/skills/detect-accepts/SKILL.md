@@ -1,6 +1,6 @@
 ---
 name: detect-accepts
-description: "This skill should be used in the daily outreach loop after preview-queue, or when the user says \"detect new accepts\", \"check who accepted my connection requests\", or \"scan for new connections\". It checks Sales Navigator and LinkedIn notifications via Chrome MCP for newly accepted connection requests, matches each accepted connection to a Leads row, and flips Leads.state to accepted (with date_accepted). For full-sequence campaigns, chains directly into generate-message-tasks so the 3-step sequence starts on the same run; for connect-only campaigns, the accept is the terminal state and no message tasks are seeded. Appends a named summary of connect-only accepts to /05_published/outreach/<today>.md so the operator sees who joined each network-build campaign without opening the workbook."
+description: "This skill should be used in the daily outreach loop after preview-queue, or when the user says \"detect new accepts\", \"check who accepted my connection requests\", or \"scan for new connections\". It checks Sales Navigator and LinkedIn notifications via Chrome MCP for newly accepted connection requests, matches each accepted connection to a Leads row, and flips Leads.state to accepted (with date_accepted). For full-sequence campaigns, chains directly into generate-message-tasks so the 3-step sequence starts on the same run; for connect-only campaigns, the accept is the terminal state and no message tasks are seeded. Appends a named summary of connect-only accepts to /05_published/outreach/today.md so the operator sees who joined each network-build campaign without opening the workbook."
 ---
 
 # detect-accepts
@@ -56,7 +56,7 @@ forward in the pipeline.
      accept-rate metric. These are the leads whose names will be
      surfaced in Step 8 and in the Friday report.
 7. **Log to publish-log.** Append one line per run to
-   `/05_published/outreach/<today>.md`, with two distinct
+   `/05_published/outreach/today.md`, with two distinct
    summaries based on campaign type:
 
    ```

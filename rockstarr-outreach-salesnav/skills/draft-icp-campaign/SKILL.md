@@ -178,7 +178,22 @@ possible):
 - Seniority / titles to exclude
 - Buying signals to require (funding, hiring, tech-stack, recent
   event)
-- Disqualifiers (do-not-contact lists, blocked companies, titles)
+- Disqualifiers — **two distinct things, ask about both**:
+  - **Disqualifier patterns** (titles to avoid, company-size bands
+    to skip, geography exclusions, function exclusions). These go
+    in the per-campaign ICP file's Disqualifiers section as prose
+    descriptions, and ideally feed back into the Sales Nav saved
+    search itself as exclusion filters.
+  - **Named exclusion lists** (specific companies to skip — past
+    clients, the client's own entities, partners, lookalikes). These
+    do NOT go in the ICP file as named lists. They belong in the
+    workspace-wide `/02_inputs/outreach/_excluded-companies.md` file
+    that `register-campaign` scaffolds. Ask the user "do you have
+    specific company names to exclude?" — if yes, capture them in a
+    note for the user (do not write to the file yourself; that's
+    `register-campaign`'s scaffolding step) and reference them in
+    the ICP file as a forward-pointer: "Named exclusions: see
+    `02_inputs/outreach/_excluded-companies.md`."
 - Pain focus for this campaign (which of the profile's pains is the
   anchor for the sequence — pick exactly one; see Sequence rules).
   **SKIP this dimension when `campaign_type=connect-only`** — there
@@ -242,7 +257,23 @@ phrase. See Sequence Rule 4.>
 <!-- OMIT this section entirely when campaign_type=connect-only. -->
 
 ## Disqualifiers
-<Companies, titles, geographies this campaign will not contact.>
+
+**Patterns this campaign will not contact** (titles, company-size
+bands, geographies, functions). Prose descriptions, not named lists.
+These ideally also live as exclusion filters on the Sales Nav saved
+search itself.
+
+<Examples (delete and replace):
+- Junior titles (Associate, Coordinator, Specialist) — out of buying
+  authority for the typical $1M ACV deal.
+- Companies under 50 employees — below the revenue band where the
+  pain anchor lands.
+- Geography outside US + Canada — operator's stated focus.>
+
+**Named exclusions** — see `02_inputs/outreach/_excluded-companies.md`
+(workspace-wide). This per-campaign file does NOT carry the named
+list; that file is shared across all campaigns so a past client
+added once is excluded everywhere.
 
 ## Overrides vs. baseline
 <Bulleted diff from client-profile.md for audit.>
@@ -746,6 +777,73 @@ ran with no unresolved flags. End with:
 > only runs against an approved campaign file.
 
 Do not call `approve` yourself. Human review is the gate.
+
+## Step after writing — capture voice overrides (full-sequence only)
+
+After the user has had a chance to read the drafted Messages 2 / 3 /
+4 (full-sequence campaigns only — connect-only has no bodies), ask
+ONE consolidated `AskUserQuestion` turn:
+
+> Anything about these message bodies you'd want different — that
+> we should treat as a voice preference, not a one-off edit?
+> Examples: where `{first_name}` lands (start vs. end of opener),
+> term preferences (e.g., "firms" not "shops", no hyphen in
+> "professional services"), diagnostic restraint (don't name a
+> root-cause you can't yet know).
+
+Capture the user's response verbatim — free text. If the user says
+"no" or doesn't supply anything substantive, skip the rest of this
+section.
+
+If the user supplies real overrides:
+
+1. **Append a "Per-campaign voice overrides" section** to the
+   campaign spec at `03_drafts/outreach/campaign-<slug>.md`
+   (immediately above the `## What this campaign does NOT do`
+   callout, or at the end if that section doesn't exist).
+   Structure:
+
+   ~~~markdown
+   ## Per-campaign voice overrides
+
+   These overrides apply to this campaign's message bodies and
+   any follow-up replies drafted by `rockstarr-reply` against
+   threads from this campaign. They are deviations from the
+   client's global `style-guide.md` — recorded here so the
+   reason for the divergence is auditable.
+
+   - <Each captured override, one per line, in the user's words>
+   ~~~
+
+2. **Offer global promotion.** Ask a follow-up `AskUserQuestion`:
+
+   > Promote these to your global `style-guide.md` so they apply
+   > to ALL future drafts across content, social, outreach,
+   > replies, and newsletters?
+   > Options:
+   >   - Yes — these are universal voice preferences
+   >   - No — they apply only to this campaign
+
+   - On "Yes": tell the user to re-run
+     `rockstarr-infra:generate-style-guide` and include these
+     overrides during the interview, OR to paste them directly
+     into the appropriate section of
+     `/rockstarr-ai/00_intake/style-guide.md`. **Do NOT edit
+     style-guide.md from this skill** — that file is owned by
+     `rockstarr-infra` and direct cross-plugin writes break the
+     contract. (A future `rockstarr-infra:promote-voice-override`
+     skill could close this loop without a manual step;
+     [[promote-voice-override]] not yet shipped.)
+   - On "No": no further action. The overrides stay scoped to
+     this campaign.
+
+The voice-overrides capture exists because RigTex's voice
+preferences — `{first_name}` placement, "firms not shops", no
+hyphen in "professional services", diagnostic restraint — emerged
+during M2 review, not during ICP clarification. Capturing them
+upfront in this skill (instead of one-by-one during message
+review) collapses several turns of edit-and-redraft into a single
+turn at the right moment.
 
 ## What NOT to do
 

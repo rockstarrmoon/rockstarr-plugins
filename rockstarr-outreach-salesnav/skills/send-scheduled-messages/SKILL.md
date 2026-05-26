@@ -1,6 +1,6 @@
 ---
 name: send-scheduled-messages
-description: "This skill should be used in the daily outreach loop after generate-message-tasks, or when the user says \"send today's scheduled Sales Nav messages\", \"execute the messages due today\", or \"run the sequence sends\". It executes every message-step-N task and follow-up task due today by resolving {first_name} and {company} placeholders against the Leads row (with shape-aware parse-failure fallbacks: bare-name comma-led drops the prefix and capitalizes; greeting-led substitutes 'there'), sending the resolved body via Sales Nav messaging through Chrome MCP, logging each send to the Messages sheet, and marking the task done. Refuses to run if confirm-session has not passed in this run. Aborts an individual send if any literal {...} placeholder remains after substitution."
+description: "This skill should be used in the daily outreach loop after generate-message-tasks, or when the user says \"send today's scheduled Sales Nav messages\", \"execute the messages due today\", or \"run the sequence sends\". It executes every message-step-N task and follow-up task due today by resolving {first_name} and {company} placeholders against the Leads row (with shape-aware parse-failure fallbacks: bare-name comma-led drops the prefix and capitalizes; greeting-led substitutes 'there'), sending the resolved body via Sales Nav messaging through Chrome MCP using the pure-JS one-shot click pattern, logging each send to the Messages sheet, and marking the task done. Paces sends at 60–90s per-message jitter plus a full page refresh after every 3 successful sends to clear Sales Nav SPA JS state. Refuses to run if confirm-session has not passed in this run. Aborts an individual send if any literal {...} placeholder remains after substitution."
 ---
 
 # send-scheduled-messages
@@ -137,8 +137,12 @@ from the approved campaign file at send time (or drafted fresh via
       log to `_errors.md`, mark the task `cancelled` with reason
       `thread_missing`, flip Leads.state to `opted-out`, cancel
       remaining sequence tasks for this lead.
-   c. **Send the body.** Paste into the message composer, submit.
-      Verify the message appears in the thread after send.
+   c. **Send the body.** Paste into the message composer using the
+      pure-JS one-shot click pattern (see `daily-connect`'s "Click
+      pattern" section — same rule: do not reuse element refs from
+      `read_page` / `browser_snapshot` across MCP calls, the Sales
+      Nav SPA invalidates them mid-batch). Submit. Verify the message
+      appears in the thread after send.
    d. **Write to Messages.** Row per send:
       - `date` = now (ISO timestamp)
       - `lead_url`
@@ -146,12 +150,53 @@ from the approved campaign file at send time (or drafted fresh via
       - `step` = `message-step-1|2|3` or `follow-up`
       - `body_sent` = exact body submitted (post-substitution)
    e. **Mark the task done.** `status = done`, `completed_at = now`.
-   f. **Polite rate.** 25–45 seconds random wait between sends.
+   f. **Pacing — both rules apply, same as `daily-connect`.**
+      - **Per-message jitter: 60–90 seconds, randomized**, before
+        starting the next message.
+      - **Full page refresh after every 3 successful sends.**
+        Navigate the same tab to
+        `https://www.linkedin.com/sales/messaging/`, wait 10 seconds
+        for the messaging shell to settle, reset the per-run
+        successful-send counter to 0, then proceed to the next
+        message. Same rationale as `daily-connect`: the Sales Nav
+        SPA accumulates JS state across rapid actions and only a
+        fresh load reliably clears it.
 3. **Save the workbook.**
 4. **Log to publish-log.** Append a per-campaign summary line to
-   `/05_published/outreach/<today>.md`:
+   `/05_published/outreach/<today>.md` using the spec's M2/M3/M4
+   labels (see "Logging vocabulary" below):
    `send-scheduled-messages — <N> sends across <M> campaigns
-   (<slug-a>: <n_a>, <slug-b>: <n_b>)`.
+   (<slug-a>: <a-M2>M2 / <a-M3>M3 / <a-M4>M4 / <a-fu>follow-up,
+   <slug-b>: ...)`.
+
+## Logging vocabulary — match the spec, not the workbook
+
+The workbook's `Tasks.type` and `Messages.step` columns store
+1-indexed values: `message-step-1`, `message-step-2`,
+`message-step-3`. The approved campaign spec, by contrast, calls
+these **M2, M3, M4** (because M1 is the blank connect request,
+which is `daily-connect`'s job — never this skill's). The two
+numbering systems are intentional artifacts of how the workbook
+schema evolved, but they cause genuine confusion when the bot
+summarizes its work in chat or to publish-log.
+
+**Rule:** in every user-facing summary (chat output, publish-log
+lines, error messages), use the spec's M2/M3/M4 labels, not the
+workbook's `message-step-1/2/3`. Map at output time:
+
+| Workbook `type` / `step` | Spec label | What it is |
+|---|---|---|
+| `connect` | M1 | Blank connection request. `daily-connect`'s job — never sent by THIS skill. |
+| `message-step-1` | **M2** | First post-accept message (curiosity opener, day-of-accept). |
+| `message-step-2` | **M3** | Second post-accept message (first real touch, accept + 3 days). |
+| `message-step-3` | **M4** | Third post-accept message (respectful close, accept + 7 days). |
+| `follow-up` | follow-up | 2-day follow-up after a sent reply (drafted fresh per due-date by `rockstarr-reply:draft-reply`). |
+
+Common bot failure mode this rule prevents: calling the first
+post-accept message "M1" in a chat summary because the workbook
+says `message-step-1`. M1 is the blank connect; saying "M1 sent" in
+a `send-scheduled-messages` summary is wrong by definition (this
+skill never sends connects).
 
 ## Output
 

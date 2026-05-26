@@ -50,6 +50,34 @@ staged on this pass.
 
 ## Behavior
 
+0. **Pre-check: anything to look at?** Before opening Chrome MCP and
+   spending turns on inbox navigation, read the workbook and check
+   whether any campaign reply is structurally possible:
+
+   - If `Connections.count(this workspace)` is `0`, no connects have
+     ever been sent. No campaign lead can have replied (there's no
+     prior contact to reply to). Return immediately as a clean no-op:
+
+     ```yaml
+     status: skipped
+     reason: no_prior_outbound
+     new_replies: 0
+     drafts_staged: 0
+     notify_message_id: null
+     ```
+
+     Do NOT navigate to Sales Nav, do NOT fire `notify-reply-ready`,
+     do NOT write anything to the workbook. The morning loop's
+     metrics-daily step will record the zero row as normal.
+
+   - Otherwise proceed to step 1.
+
+   This pre-check exists because workspaces in their first day or
+   two (or whose entire active queue is still in `state = queued`)
+   were burning ~10 Chrome MCP turns per run navigating an inbox
+   that could not possibly contain a relevant message. Skip when
+   the math says skip.
+
 1. **Open the Sales Nav messaging inbox** via Chrome MCP. If Sales
    Nav inbox is not available to the client, fall back to the
    LinkedIn messaging inbox at `https://www.linkedin.com/messaging/`.
@@ -242,6 +270,11 @@ staged on this pass.
 
 ## Output
 
+- `status` — `"ok"` on a normal run; `"skipped"` when the step 0
+  pre-check short-circuited. When `"skipped"`, every other field
+  below is `0` / `null` / `[]`.
+- `reason` — populated only when `status: "skipped"`. Values:
+  `"no_prior_outbound"`.
 - `new_replies` — count of inbounds captured this run.
 - `threads_handed_off` — count of `review-reply` tasks newly created
   this run.
