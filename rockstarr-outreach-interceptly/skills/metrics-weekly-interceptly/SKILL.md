@@ -87,10 +87,10 @@ sheet. Schema:
 
 | column | value |
 |---|---|
-| iso_week | `<YYYY-WW>` |
+| iso_week | `[YYYY-WW]` |
 | week_start | `YYYY-MM-DD` |
 | week_end | `YYYY-MM-DD` |
-| account_label | `<account>` |
+| account_label | `[account]` |
 | total_unreads_processed | N |
 | total_sends | N |
 | total_bookings | N |
@@ -123,7 +123,7 @@ sheet. Schema:
 
 Call `outreach-weekly-report-interceptly` with `iso_week` = this week.
 That skill produces the human-readable markdown at
-`/06_reports/weekly/outreach-<YYYY-WW>.md`.
+`/06_reports/weekly/outreach-[YYYY-WW].md`.
 
 ### Step 7 — Return
 

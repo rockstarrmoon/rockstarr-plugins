@@ -39,17 +39,17 @@ Interceptly's to protect.
    incident — and refuse. Tell the operator to rebuild via
    `rockstarr-reply`'s inbox pass before retrying.
 2. **Compute the target path.**
-   `/rockstarr-ai/06_reports/data/outreach-mirror-backup-<iso_week>.xlsx`.
+   `/rockstarr-ai/06_reports/data/outreach-mirror-backup-[iso_week].xlsx`.
 3. **Check for collisions.** If a backup already exists for this
    ISO week, keep both:
    - Rename the existing file to
-     `outreach-mirror-backup-<iso_week>-v1.xlsx`.
+     `outreach-mirror-backup-[iso_week]-v1.xlsx`.
    - Write the new one to the canonical name.
    - If both v1 and v2 already exist, append v3, v4, etc.
 4. **Copy the file.** Byte-for-byte. Do not open + re-serialize —
    a copy preserves the workbook exactly, including any manual
    client edits to sheets we did not touch.
-5. **Log.** Append to `/05_published/outreach/<today>.md`:
+5. **Log.** Append to `/05_published/outreach/[today].md`:
    `backup-workbook-interceptly — snapshot written to <target path>`.
 
 ## Output

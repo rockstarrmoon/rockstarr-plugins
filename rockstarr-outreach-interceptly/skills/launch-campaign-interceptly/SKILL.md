@@ -11,13 +11,13 @@ operator presses Start.
 
 ## When to run
 
-- User says "launch the <slug> campaign" and the approved spec
-  exists at `/04_approved/outreach/campaign-<slug>.md`.
+- User says "launch the [slug] campaign" and the approved spec
+  exists at `/04_approved/outreach/campaign-[slug].md`.
 - After `rockstarr-infra:approve` promotes a campaign draft.
 
 ## Preconditions
 
-- `/04_approved/outreach/campaign-<slug>.md` exists (promoted by
+- `/04_approved/outreach/campaign-[slug].md` exists (promoted by
   `approve`). If only the draft exists, refuse and point at
   `approve`.
 - `/02_inputs/outreach/outreach-mirror.xlsx` exists. If not, create
@@ -31,7 +31,7 @@ operator presses Start.
 
 ## Inputs
 
-- `/04_approved/outreach/campaign-<slug>.md` — the approved spec.
+- `/04_approved/outreach/campaign-[slug].md` — the approved spec.
 - `/00_intake/stack.md` — managed accounts list for `all_accounts`
   scope.
 
@@ -107,14 +107,14 @@ Append a row to the `Campaigns` sheet of
 
 | column | value |
 |---|---|
-| campaign_slug | `<slug>` |
+| campaign_slug | `[slug]` |
 | interceptly_campaign_id | `<id from Step 5>` |
 | account_label | `<managed account under which configured>` |
-| scope | `all_accounts` or `<account_label>` |
+| scope | `all_accounts` or `[account_label]` |
 | status | `configured` |
-| configured_at | `<ISO>` |
+| configured_at | `[ISO]` |
 | started_at | (blank — human fills when they press Start) |
-| spec_path | `/04_approved/outreach/campaign-<slug>.md` |
+| spec_path | `/04_approved/outreach/campaign-[slug].md` |
 
 If scope is `all_accounts`, this step writes N rows (one per
 managed account). The slug is shared; the Interceptly campaign id
@@ -124,7 +124,7 @@ differs per account.
 
 Return a message the user can act on:
 
-> Campaign `<slug>` is configured under `<account_label>` but NOT
+> Campaign `[slug]` is configured under `[account_label]` but NOT
 > started. Press `Start` in Interceptly when you're ready.
 > Interceptly will send the connect note on the cadence you
 > configured. Every reply routes through `rockstarr-reply`'s daily

@@ -21,7 +21,7 @@ the draft. Ships one message per call.
 
 - `confirm-session-interceptly` has passed for the currently-
   active account within this run. If not, refuse.
-- Draft file exists at `/04_approved/outreach/replies/<thread>.md`
+- Draft file exists at `/04_approved/outreach/replies/[thread].md`
   with `awaiting_approval: false`, `authorized_at` set,
   `resolved_action: send`.
 - Thread is open in Chrome (the per-reply pipeline navigated
@@ -83,7 +83,7 @@ If none of these signals appears within 6 seconds, retry once —
 clear the composer, re-paste, re-click. On second failure,
 abort: write a loud _errors.md block, leave the draft in
 `/04_approved/` with `send_attempted: true,
-send_failed_reason: <reason>`, do NOT apply the label, do NOT
+send_failed_reason: [reason]`, do NOT apply the label, do NOT
 create the follow-up task. The approver can retry manually.
 
 ### Step 6 — Log to the Messages sheet
@@ -92,21 +92,21 @@ Append to the `Messages` sheet of `outreach-mirror.xlsx`:
 
 | column | value |
 |---|---|
-| ts | `<ISO>` |
-| lead_url | `<URL>` |
+| ts | `[ISO]` |
+| lead_url | `[URL]` |
 | thread_id | `<Interceptly thread id>` |
 | campaign_slug | `<slug or blank>` |
 | account_label | `<active managed account>` |
-| signer_persona | `<same>` |
+| signer_persona | `[same]` |
 | verdict | `<target / not_target>` |
 | bucket | `<hot / warm / cold / skeptical>` |
 | pattern | `<hot / warm_icp / cold_bump / ...>` |
 | body_snippet | `<first 80 chars of the send body>` |
-| draft_path | `/04_approved/outreach/replies/<thread>.md` |
+| draft_path | `/04_approved/outreach/replies/[thread].md` |
 
 ### Step 7 — Return
 
-Return `{sent: true, ts: <ISO>, thread_id, lead_url}` to the
+Return `{sent: true, ts: [ISO], thread_id, lead_url}` to the
 caller. The caller (the per-reply pipeline) then calls
 `apply-label` and `create-followup-task` in that order.
 

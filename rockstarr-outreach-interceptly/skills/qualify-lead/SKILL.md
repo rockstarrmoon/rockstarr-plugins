@@ -1,6 +1,6 @@
 ---
 name: qualify-lead
-description: "This skill should be used on every reply in the per-reply pipeline, or when the user says \"qualify this lead\", \"does this lead match our ICP\", or \"run ICP qualification on this lead\". Reads the Interceptly right-panel (title, company, Work Experience) plus any optional LinkedIn fallback, checks the lead against /00_intake/icp-qualifications.md (tightened by the active campaign's per-campaign ICP overrides if any), and returns one of four verdicts: target / not_target / ambiguous / unknown — with the matching rule cited. Runs on every reply, not just once per lead — the lead's company or title may have changed since the last check."
+description: "This skill should be used on every reply in the per-reply pipeline, or when the user says \"qualify this lead\", \"does this lead match our ICP\", or \"run ICP qualification on this lead\". Reads the Interceptly right-panel (title, company, Work Experience) plus optional LinkedIn fallback, checks the lead against /00_intake/icp-qualifications.md (tightened by the active campaign's per-campaign overrides), and returns one of four verdicts: target / not_target / ambiguous / unknown — with the matching rule cited. Runs on every reply, not just once per lead — title or company may have changed."
 ---
 
 # qualify-lead
@@ -15,7 +15,7 @@ not draft, label, or take any action.
 
 - Step 1 of the per-reply pipeline, inside `process-inbox` and
   `process-my-tasks`.
-- On demand when the user says "qualify `<lead>`" — useful when
+- On demand when the user says "qualify `[lead]`" — useful when
   they want to sanity-check the rules against a specific lead
   before refining `icp-qualifications.md`.
 
@@ -44,7 +44,7 @@ not draft, label, or take any action.
 1. Read `/00_intake/icp-qualifications.md`. Parse the target,
    not-target, and ambiguous rule lists.
 2. If `active_campaign_slug` is provided, read
-   `/02_inputs/outreach/icps/<slug>.md` and layer its
+   `/02_inputs/outreach/icps/[slug].md` and layer its
    `## Per-campaign tightening` block on top. Tightenings ADD
    restrictions; they never loosen.
 
@@ -89,8 +89,8 @@ Append a row to the `Qualifications` sheet of
 
 | column | value |
 |---|---|
-| ts | `<ISO>` |
-| lead_url | `<URL>` |
+| ts | `[ISO]` |
+| lead_url | `[URL]` |
 | campaign_slug | `<slug or blank>` |
 | verdict | `target / not_target / ambiguous / unknown` |
 | rule_cited | `<the matching rule text>` |

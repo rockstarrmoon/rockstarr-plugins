@@ -1,6 +1,6 @@
 ---
 name: create-followup-task
-description: "This skill should be used after apply-label completes in the per-reply pipeline, or when the user says \"create a follow-up task\", \"schedule the bump\", or \"put this lead on a three-day timer\". Takes the follow-up-timer keyword proposed by rockstarr-reply:follow-up-timer (meeting_proposed / general / referral / cold_bump / none) and converts it to an Interceptly task with Interceptly's business-days math + Friday→Monday shift for meeting_proposed. Applies stack.md.followup_timers overrides. Mirrors the task into the Tasks sheet of outreach-mirror.xlsx. The `none` keyword is a no-op; Ignore / Not Interested / Bad Fit never get tasks."
+description: "This skill should be used after apply-label completes in the per-reply pipeline, or when the user says \"create a follow-up task\", \"schedule the bump\", or \"put this lead on a three-day timer\". Takes the timer keyword from rockstarr-reply:follow-up-timer (meeting_proposed / general / referral / cold_bump / none) and creates an Interceptly task with business-days math + Friday then Monday shift for meeting_proposed. Applies stack.md.followup_timers overrides. Mirrors into Tasks sheet of outreach-mirror.xlsx. `none` is a no-op."
 ---
 
 # create-followup-task
@@ -74,7 +74,7 @@ Precedence:
 
 If the reason is `none`, refuse. If the reason is not in the map
 above and not in `stack.md.followup_timers`, fall back to
-`general` and log `fallback_reason: <original>` into the mirror.
+`general` and log `fallback_reason: [original]` into the mirror.
 
 ### Step 2 — Business-day math + Friday→Monday shift
 
@@ -97,7 +97,7 @@ Click `Create task` (text match).
 ### Step 4 — Fill the task form
 
 - Title: a short human-readable string, e.g.,
-  `Bump: <reason> — <lead name>`. Keep under 80 chars.
+  `Bump: [reason] — <lead name>`. Keep under 80 chars.
 - Due date: use the Interceptly date picker.
   **Known quirk:** the Same-day dropdown is labeled oddly in
   some revisions; avoid it by always explicitly picking the
@@ -120,20 +120,20 @@ Append to the `Tasks` sheet of `outreach-mirror.xlsx`:
 | column | value |
 |---|---|
 | task_id | `<Interceptly task id if readable; else blank>` |
-| created_at | `<ISO>` |
-| lead_url | `<URL>` |
-| thread_id | `<id>` |
+| created_at | `[ISO]` |
+| lead_url | `[URL]` |
+| thread_id | `[id]` |
 | campaign_slug | `<slug or blank>` |
 | account_label | `<active managed account>` |
-| reason | `<reason>` |
-| due_date | `<YYYY-MM-DD>` |
+| reason | `[reason]` |
+| due_date | `[YYYY-MM-DD]` |
 | status | `pending` |
 | title | `<Interceptly task title>` |
 | source | `create-followup-task` |
 
 ### Step 7 — Return
 
-`{created: true, due_date: "<YYYY-MM-DD>", task_id: "<id>"}`
+`{created: true, due_date: "[YYYY-MM-DD]", task_id: "[id]"}`
 
 ## Special case — book-meeting task
 

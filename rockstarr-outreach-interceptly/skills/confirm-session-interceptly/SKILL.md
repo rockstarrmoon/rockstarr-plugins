@@ -1,6 +1,6 @@
 ---
 name: confirm-session-interceptly
-description: "This skill should be used as the first step of every Interceptly pass (outreach campaign configuration, rockstarr-reply's daily inbox + tasks loop), again after every switch-account, or when the user says \"confirm the Interceptly session\", \"check we're signed in as the right account\", or \"verify the Interceptly session\". Opens https://dash.interceptly.ai/ via Chrome MCP, reads the active account in the left sidebar, visits the configured interceptly_profile_url + linkedin_profile_url for the expected account, and verifies both match. Mismatch or logged-out aborts the entire pass for that account with a loud _errors.md entry. Wrong-account sending is the top reputational risk in this variant — this check is non-negotiable."
+description: "This skill should be used as the first step of every Interceptly pass, after every switch-account, or when the user says \"confirm the Interceptly session\" or \"verify the Interceptly session\". Opens dash.interceptly.ai via Chrome MCP, reads the active account in the left sidebar, visits the configured interceptly_profile_url + linkedin_profile_url for the expected account, and verifies both match. Mismatch or logged-out aborts the pass for that account with a loud _errors.md entry. Wrong-account sending is the top reputational risk — non-negotiable."
 ---
 
 # confirm-session-interceptly
@@ -90,8 +90,8 @@ On pass, append one row to the `Session` sheet of
 
 | column | value |
 |---|---|
-| ts | `<ISO>` |
-| account_label | `<expected_account_label>` |
+| ts | `[ISO]` |
+| account_label | `[expected_account_label]` |
 | caller | `<plugin or skill that invoked confirm, e.g., 'rockstarr-outreach-interceptly:process-inbox'>` |
 | result | `pass` |
 | reason | (blank) |

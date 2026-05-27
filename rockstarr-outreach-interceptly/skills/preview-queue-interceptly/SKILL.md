@@ -57,7 +57,7 @@ For each account, collect:
 
 ### Step 2 — Format the preview
 
-Write `/02_inputs/outreach/queue-<YYYY-MM-DD>.md`:
+Write `/02_inputs/outreach/queue-[YYYY-MM-DD].md`:
 
 ```markdown
 ---
@@ -103,9 +103,9 @@ accounts.
 
 Send a one-line summary to the user:
 
-> Preview written to `queue-<YYYY-MM-DD>.md`. Today: <total
+> Preview written to `queue-[YYYY-MM-DD].md`. Today: <total
 > unreads> unreads, <total overdue> overdue, <total due-today>
-> due-today across <N> accounts. Flagged: <N>.
+> due-today across [N] accounts. Flagged: [N].
 
 ### Step 4 — Togglability
 
@@ -115,7 +115,7 @@ who find the preview file noise instead of signal.
 
 ## Outputs
 
-- `/02_inputs/outreach/queue-<YYYY-MM-DD>.md` (if enabled).
+- `/02_inputs/outreach/queue-[YYYY-MM-DD].md` (if enabled).
 
 ## Failure modes
 

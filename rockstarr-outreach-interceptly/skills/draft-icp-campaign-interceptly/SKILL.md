@@ -1,6 +1,6 @@
 ---
 name: draft-icp-campaign-interceptly
-description: "This skill should be used when the user asks to \"draft a campaign\", \"write an outreach campaign\", \"draft the Interceptly campaign\", \"turn this ICP into a campaign\", or names a campaign slug with an ICP spec at 02_inputs/outreach/icps/. Reads the baseline ICP from 00_intake/client-profile.md and the qualification rules from 00_intake/icp-qualifications.md (produced by rockstarr-reply), walks the user through a per-campaign clarification pass (tightens rules for this campaign only — never writes back to icp-qualifications.md), then produces a campaign spec in 03_drafts/outreach/ with filter summary, 3-step Interceptly sequence (connect note + 2 post-accept messages), cadence, exit conditions, and optional per-campaign ICP overrides. Every piece of message copy runs through stop-slop before the draft saves. Shared skill; canonical source will migrate to rockstarr-infra/skills/_shared/ when that tree exists."
+description: "This skill should be used when the user asks to \"draft a campaign\", \"write an outreach campaign\", or \"turn this ICP into an Interceptly campaign\". Reads baseline ICP from client-profile.md + rules from icp-qualifications.md, runs a per-campaign clarification pass (scoped to this campaign only), produces a spec in 03_drafts/outreach/ with filter summary, 3-step Interceptly sequence (connect note + 2 post-accept), cadence, exit conditions, optional per-campaign ICP overrides. Message copy runs through stop-slop before save."
 ---
 
 # draft-icp-campaign-interceptly
@@ -18,9 +18,9 @@ campaign spec. The spec routes through `rockstarr-infra:approve`.
 ## When to run
 
 - User says "draft a campaign", names a slug that has
-  `02_inputs/outreach/icps/<slug>.md`, or supplies an ICP inline
+  `02_inputs/outreach/icps/[slug].md`, or supplies an ICP inline
   and asks for a campaign.
-- A new `icps/<slug>.md` file appears and the user wants the
+- A new `icps/[slug].md` file appears and the user wants the
   campaign drafted.
 
 ## Preconditions
@@ -54,7 +54,7 @@ Read, in this order:
 2. `00_intake/icp-qualifications.md` — the client's own
    target / not-target / ambiguous rules (owned by `rockstarr-reply`
    but read cross-plugin here). Baseline for this campaign.
-3. `02_inputs/outreach/icps/<slug>.md` — IF it already exists.
+3. `02_inputs/outreach/icps/[slug].md` — IF it already exists.
    Per-campaign ICP + any prior tightening overrides.
 4. `00_intake/style-guide.md` — read in full. Pay attention to:
    - Brand Personality + Do / Do Not behaviors
@@ -85,7 +85,7 @@ Two phases. Do not collapse them.
 
 ### Step 1.1 — Handle prior ICP file
 
-If `02_inputs/outreach/icps/<slug>.md` already exists, use
+If `02_inputs/outreach/icps/[slug].md` already exists, use
 `AskUserQuestion`:
 
 - `Reuse as-is` — jump to Phase 2.
@@ -126,7 +126,7 @@ Interceptly campaign per managed account, sharing the same spec.
 
 ### Step 1.4 — Write the per-campaign ICP file
 
-Write `/rockstarr-ai/02_inputs/outreach/icps/<slug>.md`:
+Write `/rockstarr-ai/02_inputs/outreach/icps/[slug].md`:
 
 ```markdown
 ---
@@ -205,11 +205,11 @@ before — the order is voice first, AI-tells-removed last.
 
 If Step 1.2 added overrides, reference them in the spec so the
 approver can see the narrowing at a glance. Do not restate the
-full baseline — point at `icps/<slug>.md`.
+full baseline — point at `icps/[slug].md`.
 
 ### Step 2.5 — Write the draft
 
-Write `/rockstarr-ai/03_drafts/outreach/campaign-<slug>.md`:
+Write `/rockstarr-ai/03_drafts/outreach/campaign-[slug].md`:
 
 ```markdown
 ---
@@ -259,7 +259,7 @@ schema_version: 1
 Tell the user the draft is written. To launch, they need to:
 
 1. Run `rockstarr-infra:approve` on this file. It moves the file
-   to `/04_approved/outreach/campaign-<slug>.md`.
+   to `/04_approved/outreach/campaign-[slug].md`.
 2. Run `launch-campaign-interceptly` to configure the campaign in
    Interceptly's UI. The bot will stop at CONFIGURED, NOT STARTED;
    the human operator presses Start.
@@ -268,8 +268,8 @@ Tell the user the draft is written. To launch, they need to:
 
 ## Outputs
 
-- `/rockstarr-ai/02_inputs/outreach/icps/<slug>.md`
-- `/rockstarr-ai/03_drafts/outreach/campaign-<slug>.md`
+- `/rockstarr-ai/02_inputs/outreach/icps/[slug].md`
+- `/rockstarr-ai/03_drafts/outreach/campaign-[slug].md`
 
 ## Failure modes
 

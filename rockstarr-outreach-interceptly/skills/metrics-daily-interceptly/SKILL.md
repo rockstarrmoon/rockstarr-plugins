@@ -40,7 +40,7 @@ today's activity:
 
 - **unreads_processed** — count of threads whose most recent
   inbound was read and qualified today (Qualifications sheet
-  rows where `account_label = <account>` AND `ts` is today).
+  rows where `account_label = [account]` AND `ts` is today).
 - **sends** — count of Messages rows for this account today.
 - **labels_applied** — count of Labels rows for this account
   today, broken down by label:
@@ -71,7 +71,7 @@ Append one row per account to the `Metrics (Daily)` sheet:
 | column | value |
 |---|---|
 | date | `YYYY-MM-DD` |
-| account_label | `<account>` |
+| account_label | `[account]` |
 | unreads_processed | N |
 | sends | N |
 | labels_interested | N |
@@ -94,7 +94,7 @@ Append one row per account to the `Metrics (Daily)` sheet:
 
 ### Step 3 — Append per-account summary to published log
 
-Append to `/05_published/outreach/<YYYY-MM-DD>.md`:
+Append to `/05_published/outreach/[YYYY-MM-DD].md`:
 
 ```markdown
 ## End-of-day summary — <YYYY-MM-DD>
@@ -141,9 +141,9 @@ block at the top of the daily log:
 
 A brief summary the caller can show the user:
 
-> Daily metrics rolled up. Across <N> accounts: <total sends>
+> Daily metrics rolled up. Across [N] accounts: <total sends>
 > sends, <total bookings> bookings, <total flags> flags. Full
-> summary at `/05_published/outreach/<YYYY-MM-DD>.md`.
+> summary at `/05_published/outreach/[YYYY-MM-DD].md`.
 
 ## Failure modes
 

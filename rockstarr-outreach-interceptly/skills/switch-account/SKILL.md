@@ -21,7 +21,7 @@ hop to the next for an `all_accounts`-scoped campaign.
 
 - Between accounts in a daily rotation, after the caller finished
   its per-account work on the current account.
-- On demand when the user says "switch to `<account_label>`" —
+- On demand when the user says "switch to `[account_label]`" —
   e.g., they want to process a specific account out of rotation.
 - After `launch-campaign-interceptly` configures one account and
   needs to configure another (for `all_accounts`-scoped
@@ -73,11 +73,11 @@ non-negotiable check.
 
 Return a short summary:
 
-> Switched to `<target_account_label>`. Session confirmed.
+> Switched to `[target_account_label]`. Session confirmed.
 
 Or on failure:
 
-> Failed to switch to `<target_account_label>`:
+> Failed to switch to `[target_account_label]`:
 > `<confirm failure reason>`. Caller should abort or skip
 > this account.
 

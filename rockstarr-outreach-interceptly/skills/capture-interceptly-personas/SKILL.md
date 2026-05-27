@@ -1,6 +1,6 @@
 ---
 name: capture-interceptly-personas
-description: "This skill should be used at install time after discover-interceptly-accounts finishes, or whenever the user says \"capture Interceptly personas\", \"record the signatures for each managed account\", \"update the persona for a managed account\", or \"refresh interceptly-accounts.md\". Interviews the client per managed account on account_label, Interceptly profile URL, LinkedIn profile URL, signature block, and persona notes (subject-matter lens, what this person is known for). Writes /00_intake/interceptly-accounts.md so campaign sequences can be written under the right persona, so rockstarr-reply can draft replies under the right signer, and so confirm-session-interceptly can verify the active LinkedIn account."
+description: "This skill should be used at install time after discover-interceptly-accounts finishes, or when the user says \"capture Interceptly personas\", \"record the signatures\", or \"refresh interceptly-accounts.md\". Per managed account, interviews the client on account_label, Interceptly profile URL, LinkedIn profile URL, signature block, persona notes (subject-matter lens). Writes /00_intake/interceptly-accounts.md so campaign sequences use the right persona, rockstarr-reply drafts under the right signer, and confirm-session-interceptly can verify the active LinkedIn account."
 ---
 
 # capture-interceptly-personas
@@ -54,12 +54,12 @@ finish one account before starting the next so the client's answers
 stay grouped in their head.
 
 Open with a one-line summary: "We're capturing the persona for
-`<account_label>` (`<workspace>`). Five questions."
+`[account_label]` (`[workspace]`). Five questions."
 
 ### Question 1 — Interceptly profile URL
 
 Free-text via `AskUserQuestion` "Other" path:
-"What is the Interceptly profile URL for `<account_label>`? (The
+"What is the Interceptly profile URL for `[account_label]`? (The
 URL you land on after clicking the account in SWITCH ACCOUNT.)"
 
 Validate it starts with `https://dash.interceptly.ai/`.

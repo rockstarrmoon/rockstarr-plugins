@@ -1,6 +1,6 @@
 ---
 name: mark-booked-interceptly
-description: "This skill should be used whenever a lead has booked a meeting — whether the bot booked via book-meeting-interceptly, or the client booked manually by phone, email, calendar, or any other path. Trigger phrases: \"mark this lead as booked\", \"Jane booked a meeting\", \"I booked this lead manually\", \"log the booking\". This is the single source of truth for booking state in the Interceptly variant: it flips the Leads row last-label=Booked, mirrors the Booked label into Interceptly via apply-label, cancels pending Interceptly follow-up tasks for that lead, and writes a Replies row with label=Booked. Both the automated and manual booking paths converge here."
+description: "This skill should be used whenever a lead has booked a meeting — whether via book-meeting-interceptly, or manually by phone/email/calendar. Trigger phrases: \"mark this lead as booked\", \"Jane booked a meeting\", \"I booked this lead manually\", \"log the booking\". Single source of truth for booking state in the Interceptly variant: flips the Leads row last-label=Booked, mirrors the Booked label into Interceptly via apply-label, cancels pending Interceptly follow-up tasks for that lead, and writes a Replies row with label=Booked. Both automated and manual booking paths converge here."
 ---
 
 # mark-booked-interceptly
@@ -20,7 +20,7 @@ so state transitions stay consistent.
 ## When to run
 
 - `book-meeting-interceptly` calls it on successful form submission.
-- Client calls it directly from Cowork: "I booked <lead>
+- Client calls it directly from Cowork: "I booked [lead]
   manually for Friday at 2."
 - Client calls it when Google Calendar or the booking link shows
   an event they recognize belongs to a campaign lead.
@@ -50,7 +50,7 @@ so state transitions stay consistent.
 ### Step 1 — Find the Leads row
 
 If `last_label = Booked` already, refuse with a clear message:
-"<Lead> is already marked booked on `<date_booked>`. No action
+"[Lead] is already marked booked on `[date_booked]`. No action
 taken." Do not double-book history.
 
 ### Step 2 — Flip Leads state
@@ -93,16 +93,16 @@ if the thread is still navigable. If not, leave them for
 - `lead_url`
 - `thread_id` (from the Leads row if known)
 - `campaign_slug` (from the Leads row)
-- `raw_text = "[BOOKED — source=<source>] <notes or ''>"`
+- `raw_text = "[BOOKED — source=[source]] <notes or ''>"`
 - `classification = booked`
 - `handoff_state = closed`
 
 ### Step 6 — Log
 
-Append to `/05_published/outreach/<today>.md`:
+Append to `/05_published/outreach/[today].md`:
 
-> `mark-booked-interceptly — <lead_url> (<campaign_slug>) booked
-> <meeting_datetime> via <source>`
+> `mark-booked-interceptly — [lead_url] ([campaign_slug]) booked
+> [meeting_datetime] via [source]`
 
 ### Step 7 — Return
 

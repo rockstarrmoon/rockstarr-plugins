@@ -14,7 +14,7 @@ Campaigns row status as its cancel signal.
 
 ## When to run
 
-- User says "pause <slug>", "stop <slug>", "kill <slug>", or
+- User says "pause [slug]", "stop [slug]", "kill [slug]", or
   points at a running campaign and asks for it to stop.
 - Rare: an upstream skill escalates (e.g., Interceptly reports a
   TOS warning for a campaign).
@@ -74,10 +74,10 @@ reach into those tables.
 
 ### Step 5 — Log
 
-Append to `/05_published/outreach/<today>.md`:
+Append to `/05_published/outreach/[today].md`:
 
-> `stop-campaign-interceptly — <slug> <mode>d under
-> <account_label>. Interceptly state + Campaigns row updated.
+> `stop-campaign-interceptly — [slug] [mode]d under
+> [account_label]. Interceptly state + Campaigns row updated.
 > rockstarr-reply will cancel dependent tasks on its next pass.`
 
 ### Step 6 — Return a short summary

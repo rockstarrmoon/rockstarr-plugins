@@ -1,6 +1,6 @@
 ---
 name: discover-interceptly-accounts
-description: "This skill should be used at install time when the user says \"discover the Interceptly accounts\", \"list my Interceptly accounts\", \"set up which accounts the bot manages\", or \"the client just added a new Interceptly account\". It opens https://dash.interceptly.ai/ via Chrome MCP, walks the SWITCH ACCOUNT popup to enumerate every account the client's Interceptly workspace exposes, and asks the client which subset the bot should manage — plus the rotation order. The chosen list is written to stack.md.outreach_accounts[]. It also enumerates the workspace's custom Labels so rockstarr-reply's labeling + task skills know what exists. Re-runnable on demand when the roster changes."
+description: "This skill should be used at install time when the user says \"discover the Interceptly accounts\", \"list my Interceptly accounts\", or \"set up which accounts the bot manages\". Opens dash.interceptly.ai via Chrome MCP, walks the SWITCH ACCOUNT popup to enumerate every account, asks the client which subset the bot manages and in what rotation order. Writes to stack.md.outreach_accounts[]. Also enumerates the workspace's custom Labels so rockstarr-reply's labeling + task skills know what exists. Re-runnable when the roster changes."
 ---
 
 # discover-interceptly-accounts
@@ -82,7 +82,7 @@ Call out which of the defaults are present (`INTERESTED`, `Booked`,
 ### Step 5 — Present choices to the client
 
 Use `AskUserQuestion` with one question per account enumerated:
-"Should the bot manage `<account_label>` (`<workspace>`)?" with
+"Should the bot manage `[account_label]` (`[workspace]`)?" with
 options `Manage` / `Skip`. If there are more than four, batch —
 do not exceed four questions in one `AskUserQuestion` call.
 

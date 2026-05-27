@@ -1,6 +1,6 @@
 ---
 name: daily-loop
-description: "This skill should be used when the user says \"run today's outreach loop\", \"run the Interceptly daily loop\", \"do today's outreach run\", or when a scheduled task in rockstarr-infra fires the daily Interceptly run. Orchestrates the full per-account pass for every managed Interceptly account: confirm-session-interceptly → preview-queue-interceptly (optional) → process-inbox → process-my-tasks → switch-account → repeat. Has two modes. In foreground mode (default, operator in chat) it threads operator approvals through inline as today. In background mode (used by the scheduled run) it accumulates staged_paths from every account and at the end fires rockstarr-infra:notify-reply-ready once with the global accumulator if non-empty. Refuses to run if confirm-session-interceptly fails on any account — that account is skipped, and the loop continues with the next account."
+description: "This skill should be used when the user says \"run today's outreach loop\", \"run the Interceptly daily loop\", or when a scheduled task fires the daily Interceptly run. Orchestrates per-account passes: confirm-session-interceptly then preview-queue then process-inbox then process-my-tasks then switch-account then repeat. Two modes: foreground threads approvals inline; background accumulates staged_paths across accounts and fires notify-reply-ready once at end-of-run. If confirm-session fails on an account, that account is skipped."
 ---
 
 # daily-loop
@@ -95,7 +95,7 @@ For each account in the resolved list:
    partial run is more useful than nothing.
 3. **`preview-queue-interceptly`** if `stack.md.outreach_daily_preview =
    true` (default). Writes `02_inputs/outreach/queue-YYYY-MM-DD-
-   <account>.md`. Background runs still write the preview — it
+   [account].md`. Background runs still write the preview — it
    is a useful audit record even when no operator reads it
    in real time.
 4. **`process-inbox`** with the resolved `mode`. Append the
@@ -156,14 +156,14 @@ campaign. Background-mode runs typically show low send counts
 
 Return a short summary to the caller / operator chat:
 
-> Daily loop complete. Mode: <mode>. Accounts processed:
-> <N>/<M>. Drafts staged for approval: <K>. Sends: <S>.
-> Bookings: <B>. Errors: <E>. Notify email sent: <yes/no/—>.
+> Daily loop complete. Mode: [mode]. Accounts processed:
+> [N]/[M]. Drafts staged for approval: [K]. Sends: [S].
+> Bookings: [B]. Errors: [E]. Notify email sent: <yes/no/—>.
 
 If the notify email was sent, include the `message_id`. If any
 account was skipped, list it with the failure reason so the
 operator can rerun that account specifically with
-`accounts_filter = [<account_label>]`.
+`accounts_filter = [[account_label]]`.
 
 ## Constraints
 
@@ -186,7 +186,7 @@ operator can rerun that account specifically with
 ## Failure modes
 
 - **Every account fails confirm-session.** No drafts staged, no
-  sends. Return early with a blunt summary: "All <N> accounts
+  sends. Return early with a blunt summary: "All [N] accounts
   failed session confirmation. Inspect `_errors.md` and rerun
   after fixing the underlying logins."
 - **notify-reply-ready returns an error** (mailer egress block,

@@ -65,7 +65,7 @@ From the filesystem:
 
 ### Step 3 — Render the report
 
-Write `/06_reports/weekly/outreach-<YYYY-WW>.md`:
+Write `/06_reports/weekly/outreach-[YYYY-WW].md`:
 
 ```markdown
 ---
@@ -172,7 +172,7 @@ If `any_day_partial` was true for any account, add at the bottom:
 
 ### Step 4 — Return
 
-`{report_path: "/06_reports/weekly/outreach-<YYYY-WW>.md"}`
+`{report_path: "/06_reports/weekly/outreach-[YYYY-WW].md"}`
 plus a short chat summary: headline numbers + the "what to
 notice" bullets.
 

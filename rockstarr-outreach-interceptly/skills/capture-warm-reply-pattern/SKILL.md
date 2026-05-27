@@ -1,6 +1,6 @@
 ---
 name: capture-warm-reply-pattern
-description: "This skill should be used at install time after capture-icp-qualifications, or when the user says \"capture my warm-reply pattern\", \"interview me on how I reply to warm leads\", \"my reply style changed\", or \"update the warm-reply subsection of style-guide.md\". Interviews the client on their go-to move when a curious / warm ICP reply lands — structure, length, opening, closing, what to avoid — and appends the pattern as a subsection under style-guide.md's Channel Adaptation → LinkedIn replies section. The bot has no hardcoded reply pattern; rockstarr-reply:draft-reply reads this subsection on every warm-ICP draft."
+description: "This skill should be used at install time after capture-icp-qualifications, or when the user says \"capture my warm-reply pattern\", \"interview me on how I reply to warm leads\", or \"update the warm-reply subsection of style-guide.md\". Interviews the client on their go-to move when a curious/warm ICP reply lands — structure, length, opening, closing, what to avoid — and appends the pattern as a subsection under style-guide.md's Channel Adaptation then LinkedIn replies. The bot has no hardcoded reply pattern; rockstarr-reply:draft-reply reads this subsection on every warm-ICP draft."
 ---
 
 # capture-warm-reply-pattern

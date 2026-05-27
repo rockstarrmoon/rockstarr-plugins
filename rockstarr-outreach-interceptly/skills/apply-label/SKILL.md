@@ -16,7 +16,7 @@ per pipeline run.
   picks "let it hang" — label-only, no send.
 - From `qualify-lead` → `process-inbox` → non-ICP decline path,
   label-only (no send, no task).
-- On demand when the user says "label `<lead>` as `<label>`" —
+- On demand when the user says "label `[lead]` as `[label]`" —
   validates the label is in the workspace's label list and the
   thread is visible.
 
@@ -56,8 +56,8 @@ or page title changes to Campaigns, recover:
 
 The Labels panel is a list of checkboxes. Use
 `label.click()` (matching the visible label text) to toggle
-the target label on. Prefer clicking the `<label>` element
-over the `<input>` — Interceptly's onClick handler is on the
+the target label on. Prefer clicking the `[label]` element
+over the `[input]` — Interceptly's onClick handler is on the
 label, and the preserved Rockstarr Chrome MCP pattern does the
 same.
 
@@ -93,17 +93,17 @@ Append to the `Labels` sheet of `outreach-mirror.xlsx`:
 
 | column | value |
 |---|---|
-| ts | `<ISO>` |
-| thread_id | `<id>` |
-| lead_url | `<URL>` |
+| ts | `[ISO]` |
+| thread_id | `[id]` |
+| lead_url | `[URL]` |
 | account_label | `<active managed account>` |
-| label_applied | `<label>` |
+| label_applied | `[label]` |
 | label_removed | `<conflicting label removed, if any>` |
 | reason | `<send / let-it-hang / non-ICP-decline / booked / manual>` |
 
 ### Step 6 — Return
 
-`{labeled: true, label: "<label>", conflicts_removed: ["<...>"]}`
+`{labeled: true, label: "[label]", conflicts_removed: ["<...>"]}`
 
 ## Label taxonomy and default mapping
 

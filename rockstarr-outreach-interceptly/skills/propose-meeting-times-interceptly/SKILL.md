@@ -1,6 +1,6 @@
 ---
 name: propose-meeting-times-interceptly
-description: "This skill should be used when rockstarr-reply:draft-reply decides a thread is Hot and needs meeting times, or when the user says \"propose meeting times\", \"find two or three slots for a lead\", or \"pull availability\". Reads the client's availability source — either the booking-link page (Calendly / GrowthAmp / similar) via Chrome MCP, or Google Calendar via the shared calendar helper — and returns 2-3 proposed time slots in the next few business days. Optionally biases slots by lead-provided context ('Tuesdays after 3pm'). Shared skill; canonical source will migrate to rockstarr-infra/skills/_shared/ when both outreach variants and reply ship."
+description: "This skill should be used when rockstarr-reply:draft-reply decides a thread is Hot and needs meeting times, or when the user says \"propose meeting times\", \"find two or three slots for a lead\", or \"pull availability\". Reads the client's availability source — booking-link page (Calendly / GrowthAmp / similar) via Chrome MCP, or Google Calendar via the shared helper — and returns 2-3 proposed time slots in the next few business days. Optionally biases by lead-provided context ('Tuesdays after 3pm'). Never hands the booking link to the lead."
 ---
 
 # propose-meeting-times-interceptly
@@ -22,7 +22,7 @@ led) or `mark-booked-interceptly` (client-led) records it.
 - Called by `rockstarr-reply:draft-reply` when the thread is Hot
   (verdict=target + bucket=hot, or any bucket with
   `sub_type=meeting_proposed`).
-- On demand when the user says "propose 2-3 times for `<lead>`"
+- On demand when the user says "propose 2-3 times for `[lead]`"
   — useful for manual re-qualification of a draft.
 
 ## Preconditions
