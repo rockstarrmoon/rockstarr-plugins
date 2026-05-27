@@ -1,6 +1,6 @@
 ---
 name: capture-call-framework
-description: "This skill should be used at install time after capture-pitch and capture-deliverability-config finish, or any time the user says \"capture the call framework\", \"set up the sales-call framework\", \"refresh ops-call-framework.md\", \"the call structure changed\", \"add a new sales-call phase\". Interviews the operator on the per-client sales-call framework: phase count and phase names, pricing card, primary pain hooks, disqualify language, deal-breaker filters. Writes the result to /rockstarr-ai/00_intake/ops-call-framework.md. The two prep skills (prep-call-1 for discovery and prep-call-2 for close) refuse to run without this file — there is NO baked-in framework in this plugin. Phase counts, phase names, pricing card, pain hooks, and disqualify language all come from this file."
+description: "This skill should be used at install time after capture-pitch + capture-deliverability-config, or when the user says \"capture the call framework\", \"set up the sales-call framework\", \"refresh ops-call-framework.md\", or \"the call structure changed\". Interviews the operator on the per-client sales-call framework: phase count + names, pricing card, primary pain hooks, disqualify language, deal-breaker filters. Writes to /rockstarr-ai/00_intake/ops-call-framework.md. prep-call-1 and prep-call-2 refuse to run without it — there is NO baked-in framework in this plugin."
 ---
 
 # capture-call-framework
@@ -139,7 +139,7 @@ This shows up in both prep docs as a pre-call check.
 ### Q8 — Common objection handlers
 
 Free text per objection (asked once per objection captured in
-`pitch.md` Q7). "When a prospect says <objection>, how does
+`pitch.md` Q7). "When a prospect says [objection], how does
 the operator typically respond?"
 
 Captured verbatim. The prep docs render these handlers in the

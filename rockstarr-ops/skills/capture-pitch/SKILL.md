@@ -1,6 +1,6 @@
 ---
 name: capture-pitch
-description: "This skill should be used at install time after capture-stack runs and the operator answers the ops-related questions, or any time the user says \"capture the pitch\", \"update the pitch\", \"refresh pitch.md\", \"the offer changed\", \"the pricing changed\", \"the positioning changed\". Interviews the operator on the current offer, current pricing, current positioning, who-it-is-for and who-it-is-not lists, and any landing-page phrases that must NOT appear in drafts. Writes the result to /rockstarr-ai/00_intake/pitch.md. This file is the single source of truth for current pricing in this Growth OS install — old call transcripts may quote stale pricing, and every prep doc, audit synthesis, recap-note draft, and reengagement message in rockstarr-ops trusts pitch.md over the transcript on conflict. Re-runnable any time the offer or pricing changes."
+description: "This skill should be used at install time after capture-stack, or when the user says \"capture the pitch\", \"update the pitch\", \"the offer changed\", or \"the pricing changed\". Interviews the operator on current offer, pricing, positioning, who-it-is-for / who-it-is-not lists, and any landing-page phrases that must NOT appear in drafts. Writes /rockstarr-ai/00_intake/pitch.md — the single source of truth for current pricing. Every prep doc, audit synthesis, recap-note, and reengagement message in rockstarr-ops trusts pitch.md over transcripts on conflict. Re-runnable."
 ---
 
 # capture-pitch

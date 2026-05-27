@@ -1,6 +1,6 @@
 ---
 name: process-call-transcript
-description: "This skill should be used when the user says \"process the call recap for [task-id]\", \"post-call follow-up for [name]\", \"process the transcript for the [name] call\", \"do the post-call write-up for [name]\", \"run the post-call queue\", or when a new task with the configured ops_post_call_queue_tag lands in ops_task_system (event-driven webhook trigger when supported, or scheduled queue walk otherwise). Walks the post-call queue one task at a time. Per task: reads the transcript via ops_meeting_recorder, extracts the per-client field set, hands a structured CRM update bundle to the active rockstarr-ops-bot-crm variant for execution (or surfaces a manual punch list when no CRM ops bot is installed), hands a recap-note draft request to rockstarr-reply with intent_hint=post-call-recap, comments back on the queue task using the configured comment format. Each task gets a per-CRM-write gate before its update bundle ships — no batch processing. The recap note also flows through rockstarr-reply's send-it gate when the operator wants it sent as a follow-up email vs. only pasted into the CRM."
+description: "This skill should be used when the user says \"process the call recap for [task-id]\", \"post-call follow-up for [name]\", or \"run the post-call queue\". Walks the queue one task at a time. Per task: reads the transcript via ops_meeting_recorder, extracts the per-client field set, hands a CRM update bundle to rockstarr-ops-bot-crm (or a manual punch list when no CRM ops bot is installed), hands a recap-note draft to rockstarr-reply with intent_hint=post-call-recap, comments back. Per-task CRM-write gate — no batch processing."
 ---
 
 # process-call-transcript
@@ -36,7 +36,7 @@ the comment) has cost misfires in the past.
   `ops_post_call_comment_format` set.
 - `rockstarr-reply` is installed (HARD — recap-note drafting
   lives there).
-- The active `rockstarr-ops-bot-<crm>` is installed (SOFT — when
+- The active `rockstarr-ops-bot-[crm]` is installed (SOFT — when
   missing, CRM bundles become manual punch lists).
 
 ## Inputs
@@ -130,7 +130,7 @@ contact_id: {
 }
 ```
 
-The active `rockstarr-ops-bot-<crm>` knows how to handle both
+The active `rockstarr-ops-bot-[crm]` knows how to handle both
 shapes (existing-contact-update vs. new-contact-create).
 
 ### Step 4 — Build the recap-note draft request
@@ -170,11 +170,11 @@ same artifact.
 
 Surface the bundle to the operator before execution:
 
-> Recap for **<lead_name> @ <lead_company>** ready.
+> Recap for **[lead_name] @ [lead_company]** ready.
 >
 > - CRM updates: <field count> fields, <new contact OR
->   existing contact ID> + status transition to <X>.
-> - Note: pasting <N> sections + <M> links.
+>   existing contact ID> + status transition to [X].
+> - Note: pasting [N] sections + [M] links.
 > - Recap email draft: see `present-for-approval` flow next.
 >
 > Reply `approve` to write to CRM, `edit fields` to tune
@@ -187,19 +187,19 @@ drops the task — no CRM write, no recap, comment back as
 "skipped by operator".
 
 On `approve`, the bundle is dispatched to the active
-`rockstarr-ops-bot-<crm>`'s write-skill. The CRM ops bot
+`rockstarr-ops-bot-[crm]`'s write-skill. The CRM ops bot
 returns `{ contact_id, success: true | false, errors: [...] }`.
 
 ### Step 6 — Manual punch list when no CRM ops bot
 
-When no `rockstarr-ops-bot-<crm>` is installed, the bundle
+When no `rockstarr-ops-bot-[crm]` is installed, the bundle
 becomes a manual punch list rendered in chat:
 
 > No CRM ops bot installed. Paste these into the CRM record
-> for **<lead_name>**:
+> for **[lead_name]**:
 >
-> - <field_name>: <value>
-> - <field_name>: <value>
+> - [field_name]: [value]
+> - [field_name]: [value]
 >
 > Note to add:
 > ```
@@ -260,7 +260,7 @@ final status.
 ### Step 10 — Log the processing run
 
 Write a row to
-`/05_published/ops/post-calls-<YYYY-MM>.md`:
+`/05_published/ops/post-calls-[YYYY-MM].md`:
 
 ```markdown
 ## <YYYY-MM-DD> — <lead_name> @ <lead_company>
@@ -284,7 +284,7 @@ Also append a row to the PostCalls sheet of
 - One email draft (or sent email) per task in the operator's
   email platform.
 - One comment + one status transition on the queue task.
-- One row in `/05_published/ops/post-calls-<YYYY-MM>.md`.
+- One row in `/05_published/ops/post-calls-[YYYY-MM].md`.
 - One row in the PostCalls sheet of `ops-mirror.xlsx`.
 
 ## Approvals
@@ -306,12 +306,12 @@ Also append a row to the PostCalls sheet of
   shows "processing") and writes `_errors.md` + skips the
   task. The next queue walk picks it up.
 - **Linked contact missing on the task.** Surface in chat:
-  "Task `<title>` has no linked contact. Add the contact
+  "Task `[title]` has no linked contact. Add the contact
   link or paste an email + I'll resolve from there." The
   operator updates the task; the bot retries.
 - **CRM write fails** (validation error, required field
   missing). The bundle returns `success: false` with errors.
-  Surface to the operator: "CRM write rejected: <errors>.
+  Surface to the operator: "CRM write rejected: [errors].
   Tune the bundle and re-approve, or skip." Do NOT silently
   drop.
 - **Verbatim quote contains PII** (someone the lead named
@@ -334,7 +334,7 @@ Also append a row to the PostCalls sheet of
 - Does NOT batch-process the queue. Each task is its own
   flow.
 - Does NOT write to the CRM directly. Every CRM mutation
-  routes through the active `rockstarr-ops-bot-<crm>`.
+  routes through the active `rockstarr-ops-bot-[crm]`.
   Routing around the CRM ops bot is a P0 audit-trail break.
 - Does NOT skip the recap email when the operator says `skip
   email` AND the bundle would have been a CRM-only update.

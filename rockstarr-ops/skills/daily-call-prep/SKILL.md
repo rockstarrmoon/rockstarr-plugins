@@ -1,6 +1,6 @@
 ---
 name: daily-call-prep
-description: "This skill should be used when the scheduled daily run fires at ops_daily_run_time (default 06:00 local), or when the user says \"run today's call prep\", \"morning prep\", \"do today's prep sweep\", \"prep my day\", \"daily ops sweep\". Orchestrator that classifies every event on today's calendar, sequences the per-event prep skills (prep-call-1 for discovery, prep-call-2 for close, build-client-agenda for client catch-ups), lists internal blocks under 'Other', and posts one mobile-readable summary to chat with computer:// links to every prep / agenda doc. Refuses to run until pitch.md, ops-call-framework.md, and (when ops_deliverability_tool is not none) deliverability-config.md all exist. Archives prep / agenda docs + sidecars to /05_published/ops/ at end-of-day."
+description: "This skill should be used when the scheduled daily run fires (default 06:00 local), or when the user says \"run today's call prep\", \"morning prep\", or \"daily ops sweep\". Orchestrator that classifies every event on today's calendar, dispatches per-event prep skills (prep-call-1, prep-call-2, build-client-agenda), and posts one mobile-readable summary to chat with computer:// links to every prep/agenda doc. Refuses until pitch.md, ops-call-framework.md, and (when ops_deliverability_tool is not none) deliverability-config.md all exist. Archives docs to /05_published/ops/ at end-of-day."
 ---
 
 # daily-call-prep
@@ -189,7 +189,7 @@ summary to email via `rockstarr-infra:send-notification` with
 from `notify-reply-ready`'s urgent path):
 
 - To: the operator's `ROCKSTARR_NOTIFY_TO`.
-- Subject: `[ops] Daily prep — <date> — <event_count> events`.
+- Subject: `[ops] Daily prep — [date] — [event_count] events`.
 - Body: rendered summary + the markdown.
 
 When `notify-reply-ready` (the urgent reply path) fires for a
@@ -200,7 +200,7 @@ operator's inbox without overlap.
 ### Step 8 — Persist the digest
 
 Write the full digest as markdown to
-`/rockstarr-ai/05_published/ops/daily-summary-<date>.md`. This
+`/rockstarr-ai/05_published/ops/daily-summary-[date].md`. This
 is what `ops-weekly-report` reads for the weekly rollup.
 
 > **Digest template convention.** Real `---` in the actual
@@ -258,7 +258,7 @@ archived prep / agenda doc.
   catch-up event (produced by the sub-skills).
 - One chat post (foreground) OR one email (background) with
   the morning summary.
-- One `daily-summary-<date>.md` digest in
+- One `daily-summary-[date].md` digest in
   `/rockstarr-ai/05_published/ops/`.
 - One scheduled end-of-day archive task per run.
 
@@ -287,7 +287,7 @@ manually.
   a stale recorder hit was matched). The operator catches it
   visually in the summary and asks the orchestrator to
   re-run with a hint ("re-run today's prep, classify
-  <name> as Call 1"). Re-runs with hints overwrite the prior
+  [name] as Call 1"). Re-runs with hints overwrite the prior
   doc + sidecar.
 - **Multiple events at the same time** (back-to-back, or
   overlapping). The orchestrator handles each independently;

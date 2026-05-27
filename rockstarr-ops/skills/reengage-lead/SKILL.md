@@ -1,6 +1,6 @@
 ---
 name: reengage-lead
-description: "This skill should be used when the user says \"reengage [name]\", \"[name] went dark — try again\", \"cold lead reengagement for [name]\", \"reengage this lead\", \"send a curiosity nudge to [name]\", or when audit-lead Play 3 hands off the workflow. Dead-lead revival. Hard scope: prior recorded call (non-overridable) plus LinkedIn ghosting (non-overridable) plus recent newsletter or sequence engagement signal (overridable with explicit \"reengage anyway\" — the bot flags the missing signal but proceeds). Pulls history plus engagement plus a verbatim pain quote from the recorder, hands the draft to rockstarr-reply with intent_hint=reengagement, sends via the active rockstarr-outreach-* variant with a 5-business-day follow-up timer. No batch-send anywhere; the operator picks one lead at a time."
+description: "This skill should be used when the user says \"reengage [name]\", \"[name] went dark — try again\", or when audit-lead Play 3 hands off. Dead-lead revival. Hard scope: prior recorded call + LinkedIn ghosting (both non-overridable) + recent newsletter/sequence engagement signal (overridable with explicit \"reengage anyway\"). Pulls history + engagement + a verbatim pain quote from the recorder, hands the draft to rockstarr-reply with intent_hint=reengagement, sends via the active rockstarr-outreach-* variant with a 5-business-day follow-up. No batch-send — one lead at a time."
 ---
 
 # reengage-lead
@@ -57,7 +57,7 @@ The scope check has three gates:
 `ops_meeting_recorder` for any prior call with this lead. If
 no prior recorded call exists, refuse with:
 
-> No prior recorded call for `<lead_name>`. Reengagement
+> No prior recorded call for `[lead_name]`. Reengagement
 > requires a prior conversation. Use `cold_bump` instead (run
 > through the active outreach variant).
 
@@ -69,7 +69,7 @@ gone dark on LinkedIn — i.e., the operator's last DM in the
 LinkedIn outreach thread is unresponded for 14+ days. If the
 lead has replied in the last 14 days, refuse with:
 
-> `<lead_name>` has replied on LinkedIn within the last 14 days.
+> `[lead_name]` has replied on LinkedIn within the last 14 days.
 > Reengagement is for fully-dark leads. Reply to their last
 > DM directly via the outreach plugin's `present-for-approval`.
 
@@ -88,7 +88,7 @@ If neither exists, this gate FAILS by default. The operator
 can override with explicit `reengage_anyway=true`. Override
 behavior:
 
-> No engagement signal in the last 30 days for `<lead_name>`.
+> No engagement signal in the last 30 days for `[lead_name]`.
 > Reengaging dark leads with no orbit signal wastes trust.
 > Confirm `reengage anyway` to proceed.
 
@@ -195,7 +195,7 @@ After a successful send, the active outreach variant's
 ### Step 9 — Log the reengagement
 
 Write a row to
-`/05_published/ops/reengagements-<YYYY-MM>.md`:
+`/05_published/ops/reengagements-[YYYY-MM].md`:
 
 ```markdown
 ## <YYYY-MM-DD> — <lead_name> @ <lead_company>
@@ -218,11 +218,11 @@ roll up reply rate.
 ## Outputs
 
 - A staged reply draft in
-  `/03_drafts/ops/replies/<channel>/<thread-id>.md`
+  `/03_drafts/ops/replies/[channel]/[thread-id].md`
   (via `rockstarr-reply`).
 - An approved + sent LinkedIn DM (or email draft on degrade).
 - A label + follow-up task in the active outreach variant.
-- A row in `/05_published/ops/reengagements-<YYYY-MM>.md`.
+- A row in `/05_published/ops/reengagements-[YYYY-MM].md`.
 - A row in the Reengagements sheet of `ops-mirror.xlsx`.
 
 ## Approvals

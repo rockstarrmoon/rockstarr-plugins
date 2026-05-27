@@ -37,7 +37,7 @@ diff week-over-week for trend investigation.
 
 Source: `/rockstarr-ai/02_inputs/ops/ops-mirror.xlsx`.
 Destination:
-`/rockstarr-ai/06_reports/data/ops-mirror-backup-<target_week>.xlsx`.
+`/rockstarr-ai/06_reports/data/ops-mirror-backup-[target_week].xlsx`.
 
 ### Step 2 — Copy
 
@@ -64,14 +64,14 @@ Destination size: <bytes>
 When run on demand, render in chat:
 
 > Backed up `ops-mirror.xlsx` →
-> [`ops-mirror-backup-<YYYY-WW>.xlsx`](computer://<path>).
+> [`ops-mirror-backup-[YYYY-WW].xlsx`](computer://[path]).
 
 Background runs do not chat-post — the backup-log.md row is
 the durable record.
 
 ## Outputs
 
-- `/rockstarr-ai/06_reports/data/ops-mirror-backup-<YYYY-WW>.xlsx`.
+- `/rockstarr-ai/06_reports/data/ops-mirror-backup-[YYYY-WW].xlsx`.
 - One row appended to
   `/rockstarr-ai/06_reports/data/_backup-log.md`.
 

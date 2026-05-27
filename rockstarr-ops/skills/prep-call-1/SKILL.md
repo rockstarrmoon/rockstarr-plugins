@@ -1,12 +1,12 @@
 ---
 name: prep-call-1
-description: "This skill should be used when the daily-call-prep orchestrator classifies a calendar event as a Call 1 (discovery) AND the prospect has no prior recorded call AND no substantive prior thread, or when the user names a single prospect with phrases like \"prep the discovery for [name]\", \"call 1 prep for [name]\", \"discovery prep for [name]\", \"first call prep for [name]\". Produces a docx prep doc to /03_drafts/ops/sales-prep/Call1_Prep_[name]_[date].docx with intel snapshot from LinkedIn + the prospect's company website + the outreach thread + the booking-source context, ICP verdict (go / caution / disqualify), primary pain hook selection, the angle, phase-by-phase script with personalized opener + tuned discovery questions + pitch + price + close + objection handlers + clean off-ramp. Phase scaffold comes from per-client ops-call-framework.md (no baked-in framework). Pitch and price come from pitch.md (single source of truth — old transcripts are NOT trusted on conflict). The doc is operator-facing — bypasses stop-slop. Quotes are verbatim from the source thread; the bot does NOT invent quotes."
+description: "This skill should be used when daily-call-prep classifies a calendar event as Call 1 (discovery), or when the user says \"prep the discovery for [name]\", \"call 1 prep for [name]\", or \"first call prep for [name]\". Produces Call1_Prep_[name]_[date].docx with intel snapshot (LinkedIn + company site + outreach thread + booking source), ICP verdict (go/caution/disqualify), primary pain hook, angle, and phase script (opener, discovery, pitch, price, close, objections, off-ramp). Phase scaffold from ops-call-framework.md; pitch/price from pitch.md. Operator-facing — bypasses stop-slop."
 ---
 
 # prep-call-1
 
 Per-prospect Call 1 (discovery) prep doc. Produces a docx file at
-`/03_drafts/ops/sales-prep/Call1_Prep_<name>_<YYYY-MM-DD>.docx`
+`/03_drafts/ops/sales-prep/Call1_Prep_[name]_[YYYY-MM-DD].docx`
 that the operator reads before the call.
 
 The doc is **operator-facing** — it bypasses stop-slop (stop-slop
@@ -57,11 +57,11 @@ From the caller (orchestrator or operator):
 ### Step 1 — Resolve the prospect
 
 If `lead_linkedin_url` is missing, search LinkedIn via Chrome
-MCP for `<lead_name> <lead_company>`. Confirm the match by
+MCP for `[lead_name] [lead_company]`. Confirm the match by
 reading the headline and a snippet of recent activity.
 
 If no clear match, the bot does NOT guess. Surface the
-ambiguity in chat: "Couldn't resolve <name> on LinkedIn — name
+ambiguity in chat: "Couldn't resolve [name] on LinkedIn — name
 the URL or skip this prep." Skip means writing the prep doc
 with an "Intel: NOT RESOLVED" header.
 
@@ -148,7 +148,7 @@ For each phase named in `ops-call-framework.md`:
   - Close + objection handling (final phase) using the
     framework's verbatim handlers.
 - Render any prospect-specific notes inline as italicized
-  asides ("Mention <signal> here — they posted about it 3
+  asides ("Mention [signal] here — they posted about it 3
   days ago").
 
 **Conflict rule.** If the framework's pricing card differs
@@ -167,14 +167,14 @@ in case the call surfaces the disqualifier in real time.
 
 ### Step 7 — Write the docx
 
-Write `/03_drafts/ops/sales-prep/Call1_Prep_<lead_name>_<YYYY-MM-DD>.docx`.
+Write `/03_drafts/ops/sales-prep/Call1_Prep_[lead_name]_[YYYY-MM-DD].docx`.
 
 Use the docx skill's helpers — every Rockstarr docx writer
 goes through there for consistent fonts, headings, and TOC.
 
 The docx structure:
 
-1. **Cover** — `Call 1 Prep — <lead_name>` header. ICP verdict
+1. **Cover** — `Call 1 Prep — [lead_name]` header. ICP verdict
    chip. `event_start` time. Operator name.
 2. **Intel snapshot** — four sub-sections (LinkedIn, website,
    outreach thread, booking-source). Verbatim quotes
@@ -230,7 +230,7 @@ intel_resolved: true | false
 
 ## Outputs
 
-- `/rockstarr-ai/03_drafts/ops/sales-prep/Call1_Prep_<name>_<date>.docx`.
+- `/rockstarr-ai/03_drafts/ops/sales-prep/Call1_Prep_[name]_[date].docx`.
 - A markdown sidecar at the same path with `.md` extension,
   for the orchestrator's chat-summary read.
 
@@ -277,7 +277,7 @@ approval gate is needed.
 - Does NOT run stop-slop. Operator-facing docs bypass stop-slop
   by design.
 - Does NOT update the CRM. CRM writes route through the
-  active `rockstarr-ops-bot-<crm>` and are owned by
+  active `rockstarr-ops-bot-[crm]` and are owned by
   `process-call-transcript` after the call, not before.
 - Does NOT post to chat. The orchestrator (or the operator's
   trigger) handles the chat-summary side; this skill only

@@ -1,12 +1,12 @@
 ---
 name: build-client-agenda
-description: "This skill should be used when the daily-call-prep orchestrator classifies a calendar event as a recurring client catch-up, or when the user names a single client with phrases like \"build the agenda for [client]\", \"agenda for [client]\", \"catch-up agenda for [client]\", \"prep the [client] meeting\". Produces a docx agenda doc to /03_drafts/ops/agendas/ClientAgenda_[client]_[date].docx with action items pulled from the most recent recorded call (split into 'you owe them' vs 'they owe you' columns, with overdue items flagged), out-for-review tasks from ops_task_system (with stale items 5 or more business days old flagged), coming-up-for-production tasks in the next 14 days grouped by week, open questions blocking production, and 3-5 quick-reference bullets. Operator-facing — bypasses stop-slop. Quotes from the recorder are verbatim."
+description: "This skill should be used when daily-call-prep classifies a calendar event as a recurring client catch-up, or when the user says \"build the agenda for [client]\" or \"catch-up agenda for [client]\". Produces ClientAgenda_[client]_[date].docx: action items from the most recent recorded call (split 'you owe them' vs 'they owe you', overdue flagged), out-for-review tasks (5+ business-day stale flagged), coming-up-for-production in next 14 days, open questions, 3-5 quick-reference bullets. Operator-facing — bypasses stop-slop."
 ---
 
 # build-client-agenda
 
 Per-client recurring catch-up agenda. Produces a docx file at
-`/03_drafts/ops/agendas/ClientAgenda_<client>_<YYYY-MM-DD>.docx`
+`/03_drafts/ops/agendas/ClientAgenda_[client]_[YYYY-MM-DD].docx`
 that the operator reads at the top of the catch-up call.
 
 The doc is **operator-facing** — bypasses stop-slop. The agenda
@@ -57,7 +57,7 @@ Match `client_name` against `ops_client_roster_source`:
   Asana `Clients` portfolio) and match by name.
 
 If multiple matches, surface in chat: "Multiple clients match
-`<name>` — pick one." If no match, surface "Client `<name>` not
+`[name]` — pick one." If no match, surface "Client `[name]` not
 in roster — add via `capture-stack` or
 `00_intake/client-roster.md`." Do not guess.
 
@@ -153,11 +153,11 @@ Render in the docx as a callout box on cover-page-1.
 
 ### Step 7 — Write the docx
 
-Write `/03_drafts/ops/agendas/ClientAgenda_<client>_<YYYY-MM-DD>.docx`.
+Write `/03_drafts/ops/agendas/ClientAgenda_[client]_[YYYY-MM-DD].docx`.
 
 The docx structure:
 
-1. **Cover** — `Catch-up Agenda — <client>` header. Quick-
+1. **Cover** — `Catch-up Agenda — [client]` header. Quick-
    reference callout (Step 6 bullets). Event start time.
 2. **Action items from last call** — two columns (Step 2).
    Overdue flagged.
@@ -198,7 +198,7 @@ docx_path: <path to the docx>
 
 ## Outputs
 
-- `/rockstarr-ai/03_drafts/ops/agendas/ClientAgenda_<client>_<date>.docx`.
+- `/rockstarr-ai/03_drafts/ops/agendas/ClientAgenda_[client]_[date].docx`.
 - Markdown sidecar at the same path with `.md` extension.
 
 ## Approvals

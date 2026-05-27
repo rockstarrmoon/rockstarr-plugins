@@ -1,13 +1,13 @@
 ---
 name: ops-weekly-report
-description: "This skill should be used every Friday end-of-day, or when the user says \"run the ops weekly report\", \"close out the ops week\", \"generate the ops weekly\", \"render this week's ops report\", \"weekly ops rollup\". Aggregates the week's data from /05_published/ops/ and the ops-mirror.xlsx workbook into one human-readable markdown report at /06_reports/weekly/ops-[YYYY-WW].md. Sections: sales calls prepped (count + breakdown by Call 1 vs Call 2 vs catch-up), audits run (count + play-selection breakdown + override rate), reengagements sent + replied (with reply-rate), post-call processings completed (count + CRM-write success rate), deliverability scores trend (with low-score callouts), and a stale-review-items section that surfaces items 5+ business days out across ALL clients in one place — so nothing rots in a single client's view."
+description: "This skill should be used every Friday end-of-day, or when the user says \"run the ops weekly report\", \"close out the ops week\", or \"weekly ops rollup\". Aggregates the week's data from /05_published/ops/ + ops-mirror.xlsx into /06_reports/weekly/ops-[YYYY-WW].md. Sections: sales calls prepped, audits run (play breakdown + override rate), reengagements sent + replied, post-call processings (CRM-write success rate), deliverability trend with low-score callouts, and a stale-review-items section across ALL clients in one place."
 ---
 
 # ops-weekly-report
 
 Friday end-of-day rollup. Reads the week's outputs across every
 ops skill, produces one human-readable markdown report at
-`/06_reports/weekly/ops-<YYYY-WW>.md`.
+`/06_reports/weekly/ops-[YYYY-WW].md`.
 
 This skill writes ONE artifact: the report. It does not draft
 prose, send messages, or update any CRM record. The report is
@@ -46,7 +46,7 @@ window.
 
 ### Step 2 — Aggregate sales-call prep
 
-Read every `daily-summary-<date>.md` in `/05_published/ops/`
+Read every `daily-summary-[date].md` in `/05_published/ops/`
 inside the week boundaries. Count:
 
 - `sales_call_1_count` summed across days.
@@ -61,7 +61,7 @@ across all client-agenda entries.
 
 ### Step 3 — Aggregate audits
 
-Read every `audits-<YYYY-MM>.md` row inside the week. Count:
+Read every `audits-[YYYY-MM].md` row inside the week. Count:
 
 - Total audits run.
 - Recommended-play breakdown (Plays 1-6).
@@ -71,7 +71,7 @@ Read every `audits-<YYYY-MM>.md` row inside the week. Count:
 
 ### Step 4 — Aggregate reengagements
 
-Read every `reengagements-<YYYY-MM>.md` row inside the week.
+Read every `reengagements-[YYYY-MM].md` row inside the week.
 Count:
 
 - Reengagements sent.
@@ -83,7 +83,7 @@ Count:
 
 ### Step 5 — Aggregate post-call processings
 
-Read every `post-calls-<YYYY-MM>.md` row inside the week.
+Read every `post-calls-[YYYY-MM].md` row inside the week.
 Count:
 
 - Total processings completed.
@@ -93,7 +93,7 @@ Count:
 
 ### Step 6 — Aggregate deliverability runs
 
-Read every `deliverability-<YYYY-MM>.md` row inside the week
+Read every `deliverability-[YYYY-MM].md` row inside the week
 plus the most recent 8 weeks for a trendline. Capture:
 
 - Score per run.
@@ -132,7 +132,7 @@ discrepancies keeps it honest.
 
 ### Step 9 — Render the report
 
-Write to `/06_reports/weekly/ops-<YYYY-WW>.md`. Overwrite if
+Write to `/06_reports/weekly/ops-[YYYY-WW].md`. Overwrite if
 the file exists for this week (re-runs replace).
 
 > **Template convention.** Real `---` in the actual file, not
@@ -252,19 +252,19 @@ flag — typically synthesized from the trends above.>
 When run on demand (foreground), render the report path in
 chat with a `computer://` link:
 
-> Weekly ops report ready: [`ops-<YYYY-WW>.md`](computer://<path>).
+> Weekly ops report ready: [`ops-[YYYY-WW].md`](computer://[path]).
 
 When run on the schedule (background), route via
 `rockstarr-infra:send-notification` with
 `notify_type=weekly-summary`:
 
 - To: `ROCKSTARR_NOTIFY_TO`.
-- Subject: `[ops] Weekly report — <YYYY-WW>`.
+- Subject: `[ops] Weekly report — [YYYY-WW]`.
 - Body: report rendered + the markdown.
 
 ## Outputs
 
-- `/rockstarr-ai/06_reports/weekly/ops-<YYYY-WW>.md`.
+- `/rockstarr-ai/06_reports/weekly/ops-[YYYY-WW].md`.
 - A chat post (foreground) or email (background) with a
   pointer to the report.
 

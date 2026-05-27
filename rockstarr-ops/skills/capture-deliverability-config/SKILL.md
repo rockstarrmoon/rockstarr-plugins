@@ -1,6 +1,6 @@
 ---
 name: capture-deliverability-config
-description: "This skill should be used at install time after capture-pitch when ops_deliverability_tool is not set to none, or any time the user says \"capture deliverability config\", \"set up deliverability\", \"refresh deliverability-config.md\", \"the deliverability tool changed\", \"the test segment changed\", \"the tracker URL changed\". Interviews the operator on the per-client deliverability tool configuration: sender address, tracker spreadsheet URL, test seed-inbox segment, template clone source, recurring deliverability task URL, comment format. Writes the result to /rockstarr-ai/00_intake/deliverability-config.md. Skipped entirely when stack.md says ops_deliverability_tool=none. The captured URL pattern (tool-specific) is what lets run-deliverability-test construct the report URL deterministically without reloading the tool's home page after the test code is captured — the single biggest gotcha across MailReach, GMass, and every other tool of this category."
+description: "This skill should be used at install time after capture-pitch when ops_deliverability_tool is not none, or when the user says \"capture deliverability config\", \"set up deliverability\", or \"refresh deliverability-config.md\". Interviews the operator on the deliverability tool config: sender address, tracker URL, test seed-inbox segment, template clone source, recurring task URL, comment format. Writes /rockstarr-ai/00_intake/deliverability-config.md. Skipped when ops_deliverability_tool=none. The captured URL pattern is what lets run-deliverability-test build the report URL deterministically without reloading."
 ---
 
 # capture-deliverability-config
@@ -63,7 +63,7 @@ Free text. "What email address sends the deliverability test?"
 
 This is the address the test runs FROM, not the seed inbox set.
 Often the operator's primary outbound sender (e.g.,
-`hello@<client-domain>`).
+`hello@[client-domain]`).
 
 ### Q2 — Tracker URL
 
@@ -136,7 +136,7 @@ weekly report?" Default `8.0`.
 
 This question is what makes the bot tool-agnostic. The deliv
 tool generates a fresh test code on every page-load of its home
-page, and the report URL is `<base>/<code>`. The bot constructs
+page, and the report URL is `[base]/[code]`. The bot constructs
 the URL deterministically from the code captured on the first
 page-load and never reloads the home page after that.
 

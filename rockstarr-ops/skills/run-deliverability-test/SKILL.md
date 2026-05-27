@@ -1,6 +1,6 @@
 ---
 name: run-deliverability-test
-description: "This skill should be used when the recurring scheduled run fires at the cadence captured in deliverability-config.md (typically weekly), when a task with the configured ops_post_call_queue_tag for deliverability lands in the task system, or when the user says \"run the deliverability test\", \"run the spam-test\", \"check the spam score\", \"do the mail test\", \"run mailreach\", \"run the deliverability check\". Executes the recurring spam-score test against whichever deliverability tool the client uses (MailReach, GMass, future tools). Nine steps: clone the latest configured send template, paste the test code, send to the configured seed-inbox segment, retrieve the score from the deterministically-constructed report URL, log to the configured tracker, clean up the clone, and comment back on the queue task. The single biggest gotcha is code rotation — the test code regenerates on every page-load of the tool's home page; the bot constructs the report URL deterministically from the code captured on first page-load and never reloads the home page after capture. Tool-agnostic by design: every tool-specific URL pattern, sender, tracker, segment, and clone source comes from deliverability-config.md."
+description: "This skill should be used when the recurring scheduled run fires, when a queue-tagged deliverability task lands, or when the user says \"run the deliverability test\", \"check the spam score\", or \"run mailreach\". Executes the spam-score test against the configured tool (MailReach / GMass / etc.): clones the latest send template, pastes the test code, sends to the seed-inbox segment, retrieves the score from the deterministically-built report URL, logs to the tracker, comments back on the queue task. Gotcha: test code rotates on every page-load — capture once, never reload. Tool-agnostic; every URL pattern, sender, tracker, segment, and clone source comes from deliverability-config.md."
 ---
 
 # run-deliverability-test
@@ -78,9 +78,9 @@ implies the home-page location.
 Read the test code from the page DOM. The exact selector is
 tool-specific; common patterns:
 
-- MailReach: a `<code>` block in the new-test panel, or the
+- MailReach: a `[code]` block in the new-test panel, or the
   `data-test-code` attribute on the test-instructions row.
-- GMass: an `id`-bearing input or `<code>` block in the test
+- GMass: an `id`-bearing input or `[code]` block in the test
   setup section.
 
 Capture the code as a string. This is the single value that
@@ -154,7 +154,7 @@ you'd be looking at the wrong report.
 
 Read the score from the report page. Common selectors:
 
-- MailReach: a numeric `<span>` near the heading "Spam Score"
+- MailReach: a numeric `[span]` near the heading "Spam Score"
   or "Deliverability Score".
 - GMass: the "Inbox Test Result" panel.
 
@@ -189,7 +189,7 @@ post a comment using `comment_format` from
 `deliverability-config.md` Q6, with placeholders filled
 verbatim. When `task_url` is blank, skip this sub-step and
 write a one-line note to
-`/rockstarr-ai/05_published/ops/deliverability-<YYYY-MM>.md`
+`/rockstarr-ai/05_published/ops/deliverability-[YYYY-MM].md`
 instead.
 
 **LOW SCORE prefix.** When `score < low_score_threshold`,
@@ -203,7 +203,7 @@ the top of the deliverability section.
 - One comment appended to the queue task at `task_url` (when
   set), formatted via `comment_format`.
 - One row appended to
-  `/rockstarr-ai/05_published/ops/deliverability-<YYYY-MM>.md`
+  `/rockstarr-ai/05_published/ops/deliverability-[YYYY-MM].md`
   (one file per month, append-only).
 - One row appended to the Deliverability sheet of
   `/rockstarr-ai/02_inputs/ops/ops-mirror.xlsx` (so
@@ -251,13 +251,13 @@ visually via the `LOW SCORE` prefix and the weekly report.
 
 - **Clone source not found** (the named campaign was renamed or
   archived). Abort, write `_errors.md`, surface in chat:
-  "Clone source `<name>` not found in <tool>. Run
+  "Clone source `[name]` not found in [tool]. Run
   `capture-deliverability-config` to update Q4."
 
 - **Browser session not authenticated.** The first DOM read
   bounces to the tool's login page. Abort, surface the
   authentication failure to the operator: "Reauthenticate
-  <tool> in Chrome and re-run `run-deliverability-test`."
+  [tool] in Chrome and re-run `run-deliverability-test`."
 
 ## What this skill does NOT do
 

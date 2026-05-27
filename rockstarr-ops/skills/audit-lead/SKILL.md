@@ -1,6 +1,6 @@
 ---
 name: audit-lead
-description: "This skill should be used when the user says \"audit [name]\", \"what's going on with [name]\", \"where are we with the [company] deal\", \"audit this lead\", \"do an old-lead audit\", or pastes a queue-task URL pointing at an audit task. Walks four sources in fixed order (recorder, then CRM, then email, then outreach), writes a 5-part synthesis to /02_inputs/ops/audit-[lead-slug].md, recommends ONE play out of six (operator can override with a one-word reply), then dispatches: drafts via rockstarr-reply with intent_hint=audit-fulfill / audit-reframe / audit-clean-break / audit-third-party for plays 1, 2, 5, 4 respectively, hands to reengage-lead for play 3, creates a calendar reminder via ops_calendar for play 6 (no draft). The four-source order is fixed and matters — reading later signal in light of what the lead said when warm prevents mis-framing the synthesis. Quotes are verbatim from the recorder; the bot does NOT invent quotes."
+description: "This skill should be used when the user says \"audit [name]\", \"what's going on with [name]\", \"where are we with the [company] deal\", or \"do an old-lead audit\". Walks four sources in fixed order (recorder then CRM then email then outreach), writes a 5-part synthesis to /02_inputs/ops/audit-[lead-slug].md, recommends ONE of six plays (operator can override), then dispatches via rockstarr-reply (plays 1/2/4/5), reengage-lead (play 3), or ops_calendar (play 6). Four-source order is fixed — inversion mis-frames the synthesis. Recorder quotes verbatim; never invented."
 ---
 
 # audit-lead
@@ -29,7 +29,7 @@ synthesis. This was hard-won from real use; do not reorder.
 - `00_intake/pitch.md`, `00_intake/icp-qualifications.md`,
   `00_intake/style-guide.md` exist.
 - `stack.md` has the four sources captured: `ops_meeting_recorder`,
-  CRM (via the active `rockstarr-ops-bot-<crm>`),
+  CRM (via the active `rockstarr-ops-bot-[crm]`),
   `ops_email_platform`, `ops_email_outreach_tool`. Any of which
   can be `none` — the corresponding source is skipped if so.
 - `rockstarr-reply` is installed (HARD dependency for plays 1,
@@ -65,7 +65,7 @@ match key per source:
   thread with the lead's LinkedIn URL.
 
 If no match in any source, the lead doesn't exist for the bot
-— surface "No history found for `<name>`. Confirm spelling and
+— surface "No history found for `[name]`. Confirm spelling and
 re-try." and exit.
 
 ### Step 2 — Walk source 1: recorder
@@ -94,7 +94,7 @@ retention window expired), the audit continues with sources
 
 ### Step 3 — Walk source 2: CRM
 
-Read CRM record via the active `rockstarr-ops-bot-<crm>` (or
+Read CRM record via the active `rockstarr-ops-bot-[crm]` (or
 manual lookup if no CRM ops bot is installed). Capture:
 
 - Stage / status — current pipeline stage.
@@ -138,8 +138,8 @@ Capture:
 
 ### Step 6 — Write the 5-part synthesis
 
-Write `/02_inputs/ops/audit-<lead-slug>.md`. The lead-slug is
-`<lead_name>-<lead_company>` lowercased, hyphenated.
+Write `/02_inputs/ops/audit-[lead-slug].md`. The lead-slug is
+`[lead_name]-[lead_company]` lowercased, hyphenated.
 
 > **Template convention.** Real `---` in the actual file, not
 > `# ---`.
@@ -272,9 +272,9 @@ and the synthesis renders the recommendation reason in chat.
 
 Surface the recommendation in chat with a clear one-line ask:
 
-> Recommended: **Play <N> — <label>**.
+> Recommended: **Play [N] — [label]**.
 > <one-sentence reason>.
-> Reply with `play <N>` to override or `go` to proceed.
+> Reply with `play [N]` to override or `go` to proceed.
 
 The operator can override with one word: `play 4`, `play 5`,
 `go`. Anything else is treated as a question / discussion and
@@ -326,7 +326,7 @@ the operator and proposes a different play.
 
 For Play 6, dispatch creates a calendar event in `ops_calendar`:
 
-- Title: `Re-touch <lead_name> @ <lead_company>`.
+- Title: `Re-touch [lead_name] @ [lead_company]`.
 - Date: per the synthesis's named timing constraint (e.g., "in
   3 months when funding closes"). Default to 30 days out if no
   specific date.
@@ -335,7 +335,7 @@ For Play 6, dispatch creates a calendar event in `ops_calendar`:
 ### Step 10 — Log to the publish stream
 
 Write a row to
-`/05_published/ops/audits-<YYYY-MM>.md` capturing the audit
+`/05_published/ops/audits-[YYYY-MM].md` capturing the audit
 record:
 
 ```markdown
@@ -352,11 +352,11 @@ record:
 
 ## Outputs
 
-- `/02_inputs/ops/audit-<lead-slug>.md` — synthesis.
-- `/03_drafts/ops/replies/<channel>/<thread-id>.md` — staged
+- `/02_inputs/ops/audit-[lead-slug].md` — synthesis.
+- `/03_drafts/ops/replies/[channel]/[thread-id].md` — staged
   draft (when applicable; via `rockstarr-reply`).
 - A calendar event in `ops_calendar` (Play 6 only).
-- A row in `/05_published/ops/audits-<YYYY-MM>.md`.
+- A row in `/05_published/ops/audits-[YYYY-MM].md`.
 - A row in the Audits sheet of
   `/02_inputs/ops/ops-mirror.xlsx`.
 
@@ -381,7 +381,7 @@ reminder is the dispatch.
   source flagged. Most audits work fine on 3 of 4 sources;
   recorder-unavailable is the most common gap.
 - **Lead has multiple records in the CRM** (duplicates).
-  Surface in chat: "Multiple CRM contacts match `<name>` —
+  Surface in chat: "Multiple CRM contacts match `[name]` —
   pick one." Do not guess. After resolving, re-run the audit.
 - **Synthesis has no clear winner** (state could be lukewarm
   OR cold, real bottleneck unclear). Render the synthesis as

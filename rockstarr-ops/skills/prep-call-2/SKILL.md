@@ -1,12 +1,12 @@
 ---
 name: prep-call-2
-description: "This skill should be used when the daily-call-prep orchestrator classifies a calendar event as a Call 2 (close) AND the prospect has a prior recorded call OR a substantive prior thread, or when the user names a single prospect with phrases like \"prep the close for [name]\", \"call 2 prep for [name]\", \"close prep for [name]\", \"second call prep for [name]\". Produces a docx prep doc to /03_drafts/ops/sales-prep/Call2_Prep_[name]_[date].docx with intel recap from ops_meeting_recorder (verbatim quote extraction via the recorder's search/copilot for pain points + voiced objections + commitments owed) plus ops_email_outreach_tool (LinkedIn-only thread), the angle, phase-by-phase script with mirror lines in the prospect's exact words, pitch tuned to skip rejected pain framings, price + close + objection handlers sized to this prospect. Phase scaffold from per-client ops-call-framework.md. Pitch and price from pitch.md (single source of truth — old transcripts NOT trusted on conflict). Operator-facing — bypasses stop-slop. Quotes from the recorder are verbatim; the bot does NOT invent quotes."
+description: "This skill should be used when daily-call-prep classifies a calendar event as Call 2 (close), or when the user says \"prep the close for [name]\", \"call 2 prep for [name]\", or \"second call prep for [name]\". Produces Call2_Prep_[name]_[date].docx with intel recap (verbatim quotes from ops_meeting_recorder + LinkedIn thread), the angle, phase script with mirror lines, pitch tuned to skip rejected framings, price + close + objection handlers. Phase scaffold from ops-call-framework.md; pitch/price from pitch.md (trusted on conflict). Operator-facing — bypasses stop-slop."
 ---
 
 # prep-call-2
 
 Per-prospect Call 2 (close) prep doc. Produces a docx file at
-`/03_drafts/ops/sales-prep/Call2_Prep_<name>_<YYYY-MM-DD>.docx`.
+`/03_drafts/ops/sales-prep/Call2_Prep_[name]_[YYYY-MM-DD].docx`.
 
 The big difference between this skill and `prep-call-1`: this
 skill has a recorder transcript and a substantive prior thread
@@ -170,11 +170,11 @@ having delivered on them; the callout is the cross-check.
 
 ### Step 9 — Write the docx
 
-Write `/03_drafts/ops/sales-prep/Call2_Prep_<lead_name>_<YYYY-MM-DD>.docx`.
+Write `/03_drafts/ops/sales-prep/Call2_Prep_[lead_name]_[YYYY-MM-DD].docx`.
 
 The docx structure:
 
-1. **Cover** — `Call 2 Prep — <lead_name>` header.
+1. **Cover** — `Call 2 Prep — [lead_name]` header.
    Commitment-recap callout (operator-owed only). Event start
    time. Operator name.
 2. **Intel recap** — pain points + voiced objections +
@@ -221,7 +221,7 @@ prospect_owed_commitments: <integer count>
 
 ## Outputs
 
-- `/rockstarr-ai/03_drafts/ops/sales-prep/Call2_Prep_<name>_<date>.docx`.
+- `/rockstarr-ai/03_drafts/ops/sales-prep/Call2_Prep_[name]_[date].docx`.
 - Markdown sidecar at the same path with `.md` extension.
 
 ## Approvals
@@ -251,7 +251,7 @@ Same as `prep-call-1` — operator-facing, no `send` step.
   the orchestrator catches in its sweep summary.
 - **Recorder search returned multiple prior calls and the
   most-recent one is wrong.** Surface in chat: "Multiple prior
-  calls found for <name> — confirm the right one before
+  calls found for [name] — confirm the right one before
   proceeding." Ask the operator which call to use.
 
 ## What this skill does NOT do
