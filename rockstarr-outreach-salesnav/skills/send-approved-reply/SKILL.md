@@ -21,8 +21,8 @@ task this bot created.
 - A recent `confirm-session` pass (within 30 min). If stale, run
   `confirm-session` first. Event-driven sends are not exempt.
 - The approved reply body exists as output of `rockstarr-reply`
-  (either in `03_drafts/outreach/replies/<thread>.md` moved to
-  `04_approved/outreach/replies/<thread>.md`, or passed inline by
+  (either in `03_drafts/outreach/replies/[thread].md` moved to
+  `04_approved/outreach/replies/[thread].md`, or passed inline by
   the caller).
 - The target `review-reply` Tasks row is still pending (not cancelled
   by a newer reply).
@@ -66,8 +66,8 @@ task this bot created.
 7. **Update Leads.** If state is `replied`, leave it; the follow-up
    thread is still an open conversation.
 8. **Save the workbook.**
-9. **Log.** Append to `/05_published/outreach/<today>.md`:
-   `send-approved-reply — sent reply to <lead_url> (<campaign_slug>), 2-day follow-up queued for <due_date>`.
+9. **Log.** Append to `/05_published/outreach/[today].md`:
+   `send-approved-reply — sent reply to [lead_url] ([campaign_slug]), 2-day follow-up queued for [due_date]`.
 
 ## Output
 

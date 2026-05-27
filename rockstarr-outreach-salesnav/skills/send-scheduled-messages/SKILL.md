@@ -1,6 +1,6 @@
 ---
 name: send-scheduled-messages
-description: "This skill should be used in the daily outreach loop after generate-message-tasks, or when the user says \"send today's scheduled Sales Nav messages\", \"execute the messages due today\", or \"run the sequence sends\". It executes every message-step-N task and follow-up task due today by resolving {first_name} and {company} placeholders against the Leads row (with shape-aware parse-failure fallbacks: bare-name comma-led drops the prefix and capitalizes; greeting-led substitutes 'there'), sending the resolved body via Sales Nav messaging through Chrome MCP using the pure-JS one-shot click pattern, logging each send to the Messages sheet, and marking the task done. Paces sends at 60–90s per-message jitter plus a full page refresh after every 3 successful sends to clear Sales Nav SPA JS state. Refuses to run if confirm-session has not passed in this run. Aborts an individual send if any literal {...} placeholder remains after substitution."
+description: "This skill should be used in the daily outreach loop after generate-message-tasks, or when the user says \"send today's scheduled Sales Nav messages\" or \"run the sequence sends\". Executes every message-step-N and follow-up task due today: resolves [first_name]/[company] placeholders, sends via Sales Nav messaging through Chrome MCP using the pure-JS one-shot click pattern, logs to Messages. Paces at 60-90s jitter plus full page refresh after every 3 sends (clears SPA state). Refuses to run if confirm-session has not passed. Aborts an individual send if any literal `{...}` remains after substitution."
 ---
 
 # send-scheduled-messages
@@ -32,7 +32,7 @@ from the approved campaign file at send time (or drafted fresh via
 2. **For each task:**
    a. **Resolve body.**
       - `message-step-N`: read the approved campaign body at
-        `04_approved/outreach/campaign-<slug>.md`, extract the
+        `04_approved/outreach/campaign-[slug].md`, extract the
         matching step's copy, apply variable substitution per the
         rules in Step 2a-i below.
       - `follow-up`: call `rockstarr-reply:draft-reply` with the
@@ -163,11 +163,11 @@ from the approved campaign file at send time (or drafted fresh via
         fresh load reliably clears it.
 3. **Save the workbook.**
 4. **Log to publish-log.** Append a per-campaign summary line to
-   `/05_published/outreach/<today>.md` using the spec's M2/M3/M4
+   `/05_published/outreach/[today].md` using the spec's M2/M3/M4
    labels (see "Logging vocabulary" below):
-   `send-scheduled-messages — <N> sends across <M> campaigns
-   (<slug-a>: <a-M2>M2 / <a-M3>M3 / <a-M4>M4 / <a-fu>follow-up,
-   <slug-b>: ...)`.
+   `send-scheduled-messages — [N] sends across [M] campaigns
+   ([slug-a]: [a-M2]M2 / [a-M3]M3 / [a-M4]M4 / [a-fu]follow-up,
+   [slug-b]: ...)`.
 
 ## Logging vocabulary — match the spec, not the workbook
 
@@ -225,7 +225,7 @@ skill never sends connects).
   client can edit the approved campaign and re-register.
 - Do not pre-resolve `{first_name}` into a real name in the
   approved campaign file. Substitution is the send-side's job. A
-  hard-coded name in `04_approved/outreach/campaign-<slug>.md`
+  hard-coded name in `04_approved/outreach/campaign-[slug].md`
   means every lead gets the same name. If you find a hard-coded
   name in a campaign body, surface it to the client and have them
   re-draft + re-approve.

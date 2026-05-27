@@ -55,16 +55,16 @@ state `daily-connect` needs tomorrow.
    `DAILY LOOP ABORTED — confirm-session failure. No Metrics (Daily)
    row written.` Skip steps 1–3 entirely in that case.
 5. **Save.**
-6. **Append to publish-log.** `/05_published/outreach/<today>.md`
+6. **Append to publish-log.** `/05_published/outreach/[today].md`
    gets a trailing summary block:
    ```
-   # Daily metrics (<today>)
+   # Daily metrics ([today])
    | campaign         | connects | accepts | msgs | replies | bookings | opt-outs |
    |------------------|---------:|--------:|-----:|--------:|---------:|---------:|
-   | <slug-a>         |   7      |   2     |  5   |   1     |   0      |   0      |
-   | <slug-b>         |   6      |   1     |  3   |   0     |   0      |   0      |
+   | [slug-a]         |   7      |   2     |  5   |   1     |   0      |   0      |
+   | [slug-b]         |   6      |   1     |  3   |   0     |   0      |   0      |
    | **total**        |  13      |   3     |  8   |   1     |   0      |   0      |
-   weekly cap: <used>/100 — <remaining> remaining
+   weekly cap: [used]/100 — [remaining] remaining
    ```
 
 ## Output

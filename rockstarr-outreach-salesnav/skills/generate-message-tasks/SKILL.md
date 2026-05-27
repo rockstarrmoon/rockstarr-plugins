@@ -1,6 +1,6 @@
 ---
 name: generate-message-tasks
-description: "This skill should be used right after detect-accepts, or when the user says \"seed the sequence\", \"generate message tasks for newly accepted leads\", or \"schedule the follow-ups for this lead\". For each lead that just moved to state=accepted in a full-sequence campaign, it reads the approved campaign's 3-step sequence and writes message-step-1, message-step-2, and message-step-3 tasks into the Tasks sheet with due-dates at day-of-accept, accept+3, and accept+7 respectively. Refuses to seed message tasks for leads in connect-only campaigns — those campaigns have no post-accept sequence by design. Idempotent — re-running on the same lead does not duplicate tasks."
+description: "This skill should be used right after detect-accepts, or when the user says \"seed the sequence\", \"generate message tasks for newly accepted leads\", or \"schedule the follow-ups for this lead\". For each lead that just moved to state=accepted in a full-sequence campaign, reads the approved 3-step sequence and writes message-step-1/2/3 tasks with due-dates at day-of-accept, accept+3, accept+7. Refuses to seed for connect-only campaigns (no post-accept sequence by design). Idempotent."
 ---
 
 # generate-message-tasks
@@ -41,7 +41,7 @@ For each lead:
      gets us here, we fail safe.
    - If `full-sequence` (or absent — default for back-compat): proceed.
 2. **Read the approved campaign spec** at
-   `04_approved/outreach/campaign-<slug>.md`. Extract the bodies for
+   `04_approved/outreach/campaign-[slug].md`. Extract the bodies for
    Message 2 (day of accept), Message 3 (accept + 3), Message 4
    (accept + 7). Message 1 is the connect request and is
    intentionally BLANK — it does not map to a `message-step-N` task.

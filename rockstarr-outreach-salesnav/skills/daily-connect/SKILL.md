@@ -1,6 +1,6 @@
 ---
 name: daily-connect
-description: "This skill should be used as the final send-step of the daily outreach loop, or when the user says \"run today's connects\", \"send today's Sales Nav connection requests\", or \"execute the connect loop\". It computes the day's budget as min(20 + carry_forward_this_week, 100 − connections_sent_this_week), picks the highest-priority un-contacted leads across all active campaigns (full-sequence + connect-only, round-robin by campaign), and for each lead navigates directly to the lead's Sales Nav profile URL (the canonical lead_profile_overflow path; the visit itself registers the profile view that drops the lead off tomorrow's already-viewed-filtered saved search) and uses the lead-page overflow menu to send a BLANK connect request through Chrome MCP. Pacing is 60–90s per-lead jitter plus a FULL page refresh after every 3 successful sends — Sales Nav SPA JS state accumulates and a refresh is the only thing that reliably clears it. Applies the four skip rules (Connect–Pending / 1st-degree / no-Connect-option / requires-email — the last is terminal because the lead's privacy setting blocks blank invites). Logs to Connections and marks connect tasks done. This is the ONLY skill allowed to send connection requests in this plugin."
+description: "This skill should be used as the final send-step of the daily outreach loop, or when the user says \"run today's connects\", \"send today's Sales Nav connections\", or \"execute the connect loop\". Computes the day's budget (20/day + 100/week cap math) and round-robins across active campaigns. For each lead, navigates to the lead's /sales/lead/[urn] profile page (the canonical lead_profile_overflow path) and sends a BLANK connect via the overflow menu through Chrome MCP. Pacing is 60-90s jitter plus a full page refresh after every 3 successful sends. Four skip rules: Connect-Pending, 1st-degree, no-Connect-option, requires-email (terminal). This is the ONLY skill allowed to send connection requests in this plugin."
 ---
 
 # daily-connect
@@ -67,7 +67,7 @@ Two paths exist for "open the row's overflow and click Connect":
 
 - **`lead_profile_overflow` (canonical, Chrome MCP).** Navigate the
   same tab directly to the lead's Sales Nav profile URL
-  (`/sales/lead/<urn>`, stored on the Leads row). The page loads
+  (`/sales/lead/[urn]`, stored on the Leads row). The page loads
   the lead's full record. The "..." overflow at the top of that
   page exposes Connect / View profile / Add to map. **This is the
   only path that reliably works inside Chrome MCP today.** The
@@ -145,7 +145,7 @@ For each lead selected:
    push `connections_sent_this_week` past 100, stop immediately. Do
    not send one more than the ceiling.
 2. **Navigate to the lead's profile URL.** Read `lead_url` from the
-   Leads row (it is a `/sales/lead/<urn>...` URL). Navigate the same
+   Leads row (it is a `/sales/lead/[urn]...` URL). Navigate the same
    tab there. Wait up to 15 seconds for the lead-page shell to
    render (title element, headline, the "..." overflow button
    present in the DOM). If the page does not render within 15
@@ -280,12 +280,12 @@ count.
 After the loop:
 
 1. Save the workbook via shared `xlsx`.
-2. Append to `/05_published/outreach/<today>.md`:
+2. Append to `/05_published/outreach/[today].md`:
    ```
-   daily-connect — sent <N>/<today_budget> connects
-     <slug-a>: <n_a> sent (<skipped_a> skipped)
-     <slug-b>: <n_b> sent
-   weekly cap: <used>/100 — <remaining> remaining
+   daily-connect — sent [N]/[today_budget] connects
+     [slug-a]: [n_a] sent ([skipped_a] skipped)
+     [slug-b]: [n_b] sent
+   weekly cap: [used]/100 — [remaining] remaining
    ```
 
 ## Output

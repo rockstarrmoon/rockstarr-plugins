@@ -1,6 +1,6 @@
 ---
 name: propose-meeting-times
-description: "This skill should be used when the user or another skill (typically rockstarr-reply's draft-reply) asks to \"propose meeting times\", \"find free slots for the lead\", \"pull availability\", or judges that a Sales Nav thread is ready for a meeting ask. It reads the client's availability source — either the booking-link page via Chrome MCP or Google Calendar via the shared calendar helper — and returns 2 to 3 proposed time slots in the next few business days. Optionally biases the slots by lead-provided context (e.g., \"Tuesdays after 3pm\"). Shared skill; ships inline in rockstarr-outreach-salesnav for V0.1 and will migrate to rockstarr-infra/skills/_shared/."
+description: "This skill should be used when the user or another skill (typically rockstarr-reply:draft-reply) asks to \"propose meeting times\", \"find free slots for the lead\", or \"pull availability\". Reads the client's availability source — booking-link page via Chrome MCP or Google Calendar via the shared helper — and returns 2-3 proposed time slots in the next few business days. Optionally biases by lead-provided context (e.g., \"Tuesdays after 3pm\"). Never hands the booking link to the lead; never books on its own."
 ---
 
 # propose-meeting-times

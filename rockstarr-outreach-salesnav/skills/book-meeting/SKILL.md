@@ -1,6 +1,6 @@
 ---
 name: book-meeting
-description: "This skill should be used when a book-meeting task fires in the daily loop, or when the user says \"book the meeting\", \"run the booking-link form\", or \"book this lead on the agreed time\". It runs only when stack.md.booking_mode is automated + availability_source is booking_link. It drives the booking-link page via Chrome MCP: selects the agreed time slot, fills the required fields (email, phone, whatever booking_link_required_fields lists), submits, and on success calls mark-booked. On failure (slot taken between proposal and submit, form changed, network error), it writes to _errors.md and creates a new review-reply task with the failure context so the client can recover."
+description: "This skill should be used when a book-meeting task fires in the daily loop, or when the user says \"book the meeting\", \"run the booking-link form\", or \"book this lead on the agreed time\". Only runs when stack.md.booking_mode is automated + availability_source is booking_link. Drives the booking-link page via Chrome MCP: selects the agreed slot, fills required fields, submits, and on success calls mark-booked. On failure (slot taken, form changed, network error), writes to _errors.md and creates a review-reply task with failure context so the client can recover."
 ---
 
 # book-meeting
@@ -45,7 +45,7 @@ collect the missing field.
 3. **Verify the slot is still available.** Read the page's confirm
    UI. If the slot shows as unavailable or the page surfaces a
    "slot no longer available" message:
-   - Log to `_errors.md`: `slot_taken <lead_url> <agreed_time>`
+   - Log to `_errors.md`: `slot_taken [lead_url] [agreed_time]`
    - Mark the `book-meeting` task `cancelled` with reason
      `slot_taken`.
    - Create a `review-reply` task for this lead with metadata
@@ -82,8 +82,8 @@ collect the missing field.
    from this skill.
 8. **Mark the `book-meeting` task done.** After `mark-booked`
    returns. `status = done`, `completed_at = now`.
-9. **Log.** Append to `/05_published/outreach/<today>.md`:
-   `book-meeting — booked <lead_url> for <agreed_time> via <booking_link_url>`.
+9. **Log.** Append to `/05_published/outreach/[today].md`:
+   `book-meeting — booked [lead_url] for [agreed_time] via [booking_link_url]`.
 
 ## Output
 

@@ -52,8 +52,8 @@ distinction matters: `pause` keeps the slug reserved to its leads;
    A lead that reached `accepted` or `replied` stays in that state so
    the metrics history is honest.
 5. **Save.**
-6. **Log.** Append to `/05_published/outreach/<today>.md`:
-   `<action>d campaign <slug> — <N> tasks cancelled`.
+6. **Log.** Append to `/05_published/outreach/[today].md`:
+   `[action]d campaign [slug] — [N] tasks cancelled`.
 
 ## Output
 

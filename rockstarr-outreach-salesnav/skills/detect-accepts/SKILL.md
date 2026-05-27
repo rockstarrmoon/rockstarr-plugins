@@ -1,6 +1,6 @@
 ---
 name: detect-accepts
-description: "This skill should be used in the daily outreach loop after preview-queue, or when the user says \"detect new accepts\", \"check who accepted my connection requests\", or \"scan for new connections\". It checks Sales Navigator and LinkedIn notifications via Chrome MCP for newly accepted connection requests, matches each accepted connection to a Leads row, and flips Leads.state to accepted (with date_accepted). For full-sequence campaigns, chains directly into generate-message-tasks so the 3-step sequence starts on the same run; for connect-only campaigns, the accept is the terminal state and no message tasks are seeded. Appends a named summary of connect-only accepts to /05_published/outreach/today.md so the operator sees who joined each network-build campaign without opening the workbook."
+description: "This skill should be used in the daily outreach loop after preview-queue, or when the user says \"detect new accepts\", \"check who accepted my connection requests\", or \"scan for new connections\". Checks Sales Nav + LinkedIn notifications via Chrome MCP for newly accepted connection requests, matches each to a Leads row, flips Leads.state to accepted. For full-sequence campaigns chains into generate-message-tasks; for connect-only the accept is terminal. Appends a connect-only accepts summary to /05_published/outreach/today.md."
 ---
 
 # detect-accepts
@@ -60,13 +60,13 @@ forward in the pipeline.
    summaries based on campaign type:
 
    ```
-   detect-accepts — <total> new accepts across <M> campaigns
-     Full-sequence: <count> (chained into generate-message-tasks)
-       <slug-a>: <n_a>
-       <slug-b>: <n_b>
-     Connect-only: <count> (terminal — accept IS the success metric)
-       <slug-c>: <n_c> — <Name> (<title> at <company>), <Name> (...), ...
-       <slug-d>: <n_d> — <Name> (...)
+   detect-accepts — [total] new accepts across [M] campaigns
+     Full-sequence: [count] (chained into generate-message-tasks)
+       [slug-a]: [n_a]
+       [slug-b]: [n_b]
+     Connect-only: [count] (terminal — accept IS the success metric)
+       [slug-c]: [n_c] — [Name] ([title] at [company]), [Name] (...), ...
+       [slug-d]: [n_d] — [Name] (...)
    ```
 
    The full-sequence sub-block is a count-only summary because the
@@ -79,12 +79,12 @@ forward in the pipeline.
    joined the network-build audience that day without opening the
    workbook.
 
-   Format for each connect-only name: `<Name> (<title> at
-   <company>)`. Pull from the matching Leads row. If `title` or
+   Format for each connect-only name: `[Name] ([title] at
+   [company])`. Pull from the matching Leads row. If `title` or
    `company` is missing on a lead, render the name alone — never
    render `(at )` or `( at )`. If a connect-only campaign has
    more than 15 named accepts in a single run, render the first
-   15 plus `... +<N> more` at the end of that campaign's line.
+   15 plus `... +[N] more` at the end of that campaign's line.
 
    If neither full-sequence nor connect-only accepts happened this
    run, skip the publish-log write entirely. The summary only
@@ -142,7 +142,7 @@ Structured summary:
   day — it would push more useful events off the visible scroll.
 - Do not list every connect-only acceptor name inline when the
   run produced more than 15 named accepts for one campaign.
-  Truncate at 15 with `... +<N> more` and let the weekly report
+  Truncate at 15 with `... +[N] more` and let the weekly report
   pick up the full named list.
 - Do not pull lead name / title / company from the Sales Nav
   notifications feed. Use the Leads row only — the workbook is

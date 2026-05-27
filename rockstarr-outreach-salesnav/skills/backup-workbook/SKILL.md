@@ -28,17 +28,17 @@ compare "what did we plan on Friday" against "what happened Monday."
    loud line to `_errors.md` — we've lost the state-of-truth, which
    is a real incident — and refuse.
 2. **Compute the target path.**
-   `/rockstarr-ai/06_reports/data/outreach-tasks-backup-<iso_week>.xlsx`.
+   `/rockstarr-ai/06_reports/data/outreach-tasks-backup-[iso_week].xlsx`.
 3. **Check for collisions.** If a backup already exists for this
    ISO week, keep both:
    - Rename the existing file to
-     `outreach-tasks-backup-<iso_week>-v1.xlsx`.
+     `outreach-tasks-backup-[iso_week]-v1.xlsx`.
    - Write the new one to the canonical name.
    - If both V1 and V2 already exist, append V3, V4, etc.
 4. **Copy the file.** Byte-for-byte. Do not open + re-serialize —
    a copy preserves the workbook exactly, including any manual
    client edits to sheets we did not touch.
-5. **Log.** Append to `/05_published/outreach/<today>.md`:
+5. **Log.** Append to `/05_published/outreach/[today].md`:
    `backup-workbook — snapshot written to <target path>`.
 
 ## Output

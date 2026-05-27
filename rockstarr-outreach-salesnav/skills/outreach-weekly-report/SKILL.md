@@ -31,7 +31,7 @@ else in the plugin feeds this moment.
 
 ## Output
 
-Write to `/rockstarr-ai/06_reports/weekly/outreach-<iso_week>.md`.
+Write to `/rockstarr-ai/06_reports/weekly/outreach-[iso_week].md`.
 Overwrite existing.
 
 ### Template
@@ -170,14 +170,14 @@ list:
 - Query Leads sheet for rows where `campaign_slug` matches a
   connect-only campaign, `state` is `accepted` or later, AND
   `date_accepted` falls inside the ISO week being rendered.
-- Render each as `<lead_name> — <lead_title> at <lead_company>`.
+- Render each as `[lead_name] — [lead_title] at [lead_company]`.
   If `title` or `company` is missing on a row, render the name
   alone; never render `— at` or trailing punctuation that implies
   missing data.
 - Sort by `date_accepted` descending (most recent first) within
   each campaign so the operator's eye lands on the latest names.
 - Soft cap at 15 names per campaign. Past the cap, render
-  `... (X more shown; +<N> over the soft cap, see workbook Leads
+  `... (X more shown; +[N] over the soft cap, see workbook Leads
   filtered to <filter expression>)` so the operator has a clear
   path to the full list without bloating the report.
 - Connect-only campaigns with zero accepts this week appear in the
@@ -213,7 +213,7 @@ client's style guide for tone; this is a client-facing report.
 - If nothing interesting moved, say so honestly: "Quiet week —
   numbers are in range. Worth watching next week."
 - If a number moved dramatically, say *why* as a hypothesis, not a
-  conclusion: "Accept rate dropped from 28% to 14% in <slug-b>.
+  conclusion: "Accept rate dropped from 28% to 14% in [slug-b].
   Message 1 is blank by spec, so suspect the saved-search filter or
   a change in the ICP's current environment — not the copy."
 - If the weekly cap bound (we hit 100 mid-week), flag it.

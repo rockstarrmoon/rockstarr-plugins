@@ -1,6 +1,6 @@
 ---
 name: confirm-session
-description: "This skill should be used as the first step of every daily outreach run, or whenever the user says \"confirm the LinkedIn session\", \"check we're logged in as the client\", or \"verify the Sales Nav session\". It opens LinkedIn in Cowork's Chrome session via Chrome MCP, reads the signed-in profile URL, and compares it to stack.md's linkedin_expected_profile_url. A mismatch or logged-out state aborts the entire daily loop: the failure is written loudly to _errors.md, surfaced in the daily summary, and no downstream skill runs. Wrong-account sending is the top reputational risk in this pillar — this check is non-negotiable."
+description: "This skill should be used as the first step of every daily outreach run, or whenever the user says \"confirm the LinkedIn session\", \"check we're logged in as the client\", or \"verify the Sales Nav session\". Opens LinkedIn via Chrome MCP, reads the signed-in profile URL, compares to stack.md's linkedin_expected_profile_url. A mismatch or logged-out state aborts the entire daily loop: failure is written loudly to _errors.md, surfaced in the daily summary, and no downstream skill runs. Wrong-account sending is the top reputational risk — this check is non-negotiable."
 ---
 
 # confirm-session
@@ -51,7 +51,7 @@ If that key is missing or empty, refuse and tell the user to run
 5. **On fail:**
    - Write a loud block to `/02_inputs/outreach/_errors.md`:
      ```
-     ## <YYYY-MM-DD HH:MM> — confirm-session FAIL (<reason>)
+     ## <YYYY-MM-DD HH:MM> — confirm-session FAIL ([reason])
      Expected: <expected URL>
      Detected: <detected URL or "(none — logged out)">
      Action: daily loop aborted. Log into the correct LinkedIn account

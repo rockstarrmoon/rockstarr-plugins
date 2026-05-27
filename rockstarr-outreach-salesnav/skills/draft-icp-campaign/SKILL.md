@@ -1,6 +1,6 @@
 ---
 name: draft-icp-campaign
-description: "This skill should be used when the user asks to \"draft a campaign\", \"write an outreach campaign\", \"draft the Sales Nav campaign\", \"turn this ICP into a campaign\", or names a campaign slug that has a lead-list pointer file at 02_inputs/outreach/lead-lists/. It reads the baseline ICP from 00_intake/client-profile.md, asks whether this is a full-sequence campaign (connect + three-message post-accept conversation) or a connect-only campaign (connect requests only, no post-accept sequence), walks the user through a per-campaign clarification pass (adjustments apply ONLY to this campaign, never back to client-profile.md), writes the resolved per-campaign ICP to 02_inputs/outreach/icps/, then produces a campaign spec in 03_drafts/outreach/ — full-sequence campaigns get a four-message Sales Nav sequence (blank connect + three post-accept messages), cadence, exit conditions, and booking-flow notes; connect-only campaigns get filter summary, target ICP, target_lead_count, and exit conditions only. Cites first-party KB for proof points; third-party material is reference only. SOURCE OF TRUTH: this skill ships inline in rockstarr-outreach-salesnav for V0.1 and will migrate to rockstarr-infra/skills/_shared/ when the Interceptly variant lands so both plugins share one implementation."
+description: "This skill should be used when the user asks to \"draft a campaign\", \"write an outreach campaign\", or \"turn this ICP into a Sales Nav campaign\". Reads baseline ICP from client-profile.md, asks full-sequence (connect + 3 post-accept) or connect-only, runs a per-campaign clarification pass (scoped to this campaign only — never writes back), writes resolved per-campaign ICP to 02_inputs/outreach/icps/ and the campaign spec to 03_drafts/outreach/. Full-sequence gets four-message sequence + cadence + exit + booking notes; connect-only gets filter summary + target_lead_count + exit."
 ---
 
 # draft-icp-campaign
@@ -21,32 +21,64 @@ spec. Output lives in `02_inputs/outreach/icps/` and
 ## When to run
 
 - User says "draft a campaign from this saved search", names a slug
-  that has `02_inputs/outreach/lead-lists/<slug>.md`, or points at
+  that has `02_inputs/outreach/lead-lists/[slug].md`, or points at
   any saved Sales Nav search URL and asks for a campaign.
-- A new `lead-lists/<slug>.md` appears and the user wants the
+- A new `lead-lists/[slug].md` appears and the user wants the
   campaign drafted.
 
-The per-campaign ICP file (`02_inputs/outreach/icps/<slug>.md`) is
+The per-campaign ICP file (`02_inputs/outreach/icps/[slug].md`) is
 NOT a precondition — this skill produces it. If it already exists
 for the slug, this skill offers to reuse it or re-derive fresh from
 `client-profile.md`.
 
 ## Preconditions
 
-- `/rockstarr-ai/00_intake/client-profile.md` exists and has an ICP
-  section. This is the baseline the campaign ICP derives from.
-- `/rockstarr-ai/00_intake/style-guide.md` exists and is approved.
-- `/rockstarr-ai/00_intake/stack.md` has the outreach keys set (see
-  README). If `outreach_tool` is not `salesnav`, refuse.
-- `02_inputs/outreach/lead-lists/<slug>.md` exists and contains a
-  `saved_search_url` pointing at a Sales Nav saved search.
-- **`rockstarr-infra:stop-slop` is available.** This skill is
-  mandatory on every prose artifact produced here (campaign spec,
-  sequence bodies). If `stop-slop` is not discoverable, refuse and
-  tell the user `rockstarr-infra` needs to be installed or updated.
+Per `rockstarr-infra/CLAUDE.md`'s "Defer expensive preconditions"
+section, split into two tiers:
 
-If any of the above is missing, stop and tell the user exactly
+**Tier 1 — cheap existence checks (silent, before the anchor):**
+
+- `/rockstarr-ai/00_intake/client-profile.md` exists.
+- `/rockstarr-ai/00_intake/style-guide.md` exists.
+- `/rockstarr-ai/00_intake/stack.md` exists with
+  `outreach_tool: salesnav` (small front-matter read).
+- `02_inputs/outreach/lead-lists/[slug].md` exists.
+- `rockstarr-infra:stop-slop` is discoverable.
+
+If any fail, refuse fast with a clear message naming exactly
 which file is missing and which upstream skill produces it.
+
+**Tier 2 — deferred to Phase 1 / Phase 2 content reads:**
+
+- The ICP section inside `client-profile.md` is present and
+  populated. The full profile read happens at Phase 1 Step 1.2.
+- `style-guide.md` is `approved` (front-matter status). Brand
+  personality / tone / channel-adaptation reads happen at
+  Phase 2 drafting time.
+- The lead-list file contains a `saved_search_url`. Full content
+  read happens at Phase 1.
+- KB files matching `kb_scope: owned` AND
+  `style_guide_eligible: true` exist for proof points. The walk
+  happens at Phase 2 drafting time.
+
+These reads can take several seconds (especially the KB walk on
+clients with a large processed-KB). Deferring them to AFTER the
+anchor message means the user sees activity immediately.
+
+## Anchor message
+
+Per `client-facing-output-voice.md` rule 7, fire this as the
+FIRST chat output after Tier 1 existence checks pass, before
+loading the profile / KB / style-guide content:
+
+> Drafting your campaign — reading your profile and pulling
+> proof points from your knowledge base…
+
+The skill is interactive (Phase 1 walks the user through ICP
+clarification one dimension at a time via `AskUserQuestion`),
+so the anchor sets the expectation that the bot is starting
+work, then immediately moves into the first user question
+without further filler.
 
 ## Inputs
 
@@ -55,9 +87,9 @@ Read, in this order:
 1. `00_intake/client-profile.md` — the BASELINE ICP lives here.
    Firmographics, seniority, signals, pains, disqualifiers, anchor
    language. Treat as canonical.
-2. `lead-lists/<slug>.md` — saved-search URL, any crawl notes,
+2. `lead-lists/[slug].md` — saved-search URL, any crawl notes,
    target lead count.
-3. `02_inputs/outreach/icps/<slug>.md` — IF it already exists.
+3. `02_inputs/outreach/icps/[slug].md` — IF it already exists.
    Optional; prior per-campaign overrides live here.
 4. `00_intake/style-guide.md` — full. Pay literal attention to:
    - **Brand Personality** + Do / Do Not behaviors
@@ -125,7 +157,7 @@ SKILL applies as written.
 
 ### Step 1.1 — Handle prior per-campaign ICP (if any)
 
-If `02_inputs/outreach/icps/<slug>.md` already exists:
+If `02_inputs/outreach/icps/[slug].md` already exists:
 
 - Show the user the existing file's audience summary + any
   overrides block.
@@ -207,9 +239,9 @@ amend before moving on.
 
 ### Step 1.4 — Write the per-campaign ICP file
 
-Write `/rockstarr-ai/02_inputs/outreach/icps/<slug>.md`. If a prior
+Write `/rockstarr-ai/02_inputs/outreach/icps/[slug].md`. If a prior
 file existed and the user chose "Re-derive," move the old file to
-`/rockstarr-ai/99_archive/icps/<slug>-<YYYY-MM-DD>.md` first. Never
+`/rockstarr-ai/99_archive/icps/[slug]-[YYYY-MM-DD].md` first. Never
 overwrite without archiving.
 
 Front-matter:
@@ -282,7 +314,7 @@ added once is excluded everywhere.
 Then tell the user:
 
 > Per-campaign ICP written to
-> `02_inputs/outreach/icps/<slug>.md`. This file governs this
+> `02_inputs/outreach/icps/[slug].md`. This file governs this
 > campaign only. Your `client-profile.md` is unchanged. Moving on
 > to draft the campaign spec now.
 
@@ -290,7 +322,7 @@ Proceed to Phase 2.
 
 ## Phase 2 — Draft the campaign spec
 
-Write to `/rockstarr-ai/03_drafts/outreach/campaign-<slug>.md`.
+Write to `/rockstarr-ai/03_drafts/outreach/campaign-[slug].md`.
 
 Front-matter:
 
@@ -770,8 +802,8 @@ the anchor phrase (verbatim), any `[CLIENT TO CONFIRM]` markers, the
 first-party sources cited, and confirmation that the stop-slop pass
 ran with no unresolved flags. End with:
 
-> Campaign draft landed at `03_drafts/outreach/campaign-<slug>.md`.
-> Per-campaign ICP at `02_inputs/outreach/icps/<slug>.md`.
+> Campaign draft landed at `03_drafts/outreach/campaign-[slug].md`.
+> Per-campaign ICP at `02_inputs/outreach/icps/[slug].md`.
 > Review and either edit in place, ask for a revised pass, or run
 > `rockstarr-infra:approve` when it is ready. `register-campaign`
 > only runs against an approved campaign file.
@@ -798,7 +830,7 @@ section.
 If the user supplies real overrides:
 
 1. **Append a "Per-campaign voice overrides" section** to the
-   campaign spec at `03_drafts/outreach/campaign-<slug>.md`
+   campaign spec at `03_drafts/outreach/campaign-[slug].md`
    (immediately above the `## What this campaign does NOT do`
    callout, or at the end if that section doesn't exist).
    Structure:
@@ -850,7 +882,7 @@ turn at the right moment.
 - Do not run without `client-profile.md` and the lead-list pointer
   file.
 - Do not modify `00_intake/client-profile.md` from this skill. Ever.
-  The per-campaign ICP lives at `02_inputs/outreach/icps/<slug>.md`
+  The per-campaign ICP lives at `02_inputs/outreach/icps/[slug].md`
   and is scoped to this campaign only.
 - Do not skip the Phase 1 clarification step. Even if the baseline
   ICP looks perfect, ask — the user should get one conscious beat

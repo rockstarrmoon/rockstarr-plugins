@@ -1,6 +1,6 @@
 ---
 name: register-campaign
-description: "This skill should be used when the user says \"register this campaign\", \"launch the campaign\", \"go live on this campaign\", or names an approved campaign spec in 04_approved/outreach/. It promotes the approved campaign, reads the campaign_type front-matter (full-sequence or connect-only), validates that connect-only specs do not contain a Sequence section, enforces ALL stack prerequisites upfront with a single consolidated remediation message instead of discovering them mid-flight, strips the volatile sessionId parameter from the saved-search URL before storing, scaffolds 02_inputs/outreach/_excluded-companies.md if it doesn't exist yet, adds a Campaigns row to outreach-tasks.xlsx with the type recorded, invokes crawl-lead-list to populate Leads from the saved Sales Navigator search URL, surfaces the partial-vs-complete crawl outcome to the user with the right next-step pointer, and seeds the initial connect tasks. Fails loudly if any lead already belongs to another active campaign."
+description: "This skill should be used when the user says \"register this campaign\", \"launch the campaign\", \"go live on this campaign\", or names an approved campaign spec in 04_approved/outreach/. Promotes the approved campaign live: reads campaign_type front-matter, validates the spec shape, enforces ALL stack prerequisites upfront with a single consolidated remediation message, strips the volatile sessionId from the saved-search URL, scaffolds _excluded-companies.md if missing, adds a Campaigns row, invokes crawl-lead-list, surfaces the crawl outcome with the right next-step pointer, and seeds the initial connect tasks. Fails loudly if any lead already belongs to another active campaign."
 ---
 
 # register-campaign
@@ -26,7 +26,7 @@ missing; do not partially register.
 
 ### Required (block registration if missing)
 
-- `/rockstarr-ai/04_approved/outreach/campaign-<slug>.md` exists.
+- `/rockstarr-ai/04_approved/outreach/campaign-[slug].md` exists.
 - `/rockstarr-ai/00_intake/stack.md` exists and contains:
   - `outreach_tool: salesnav`
   - `linkedin_expected_profile_url` matching `https://www.linkedin.com/in/...`
@@ -94,7 +94,7 @@ Do not partially register.
 
 Read:
 
-1. `04_approved/outreach/campaign-<slug>.md` — full front-matter and
+1. `04_approved/outreach/campaign-[slug].md` — full front-matter and
    body. Extract `campaign_type` (default `full-sequence` if absent
    for back-compat with pre-0.1.7 specs), `saved_search_url`,
    `target_lead_count`, sequence copy (full-sequence only), cadence,
@@ -138,7 +138,7 @@ writes so the workbook does not end up in a half-registered state.
    `sessionId` query parameter before storing — Sales Nav regenerates
    `sessionId` on every page load, so anything captured at draft
    time is stale by the time the daily loop runs. What identifies
-   the saved search is `savedSearchId=<n>`; everything else is
+   the saved search is `savedSearchId=[n]`; everything else is
    noise that hurts URL portability and shows up as confusing diff
    noise when re-comparing the campaign file against the workbook.
 
@@ -166,7 +166,7 @@ writes so the workbook does not end up in a half-registered state.
    NOT the right home for **disqualifier patterns** (titles to
    avoid, company-size bands to skip, geography exclusions). Those
    belong in the per-campaign ICP file at
-   `02_inputs/outreach/icps/<slug>.md` under the Disqualifiers
+   `02_inputs/outreach/icps/[slug].md` under the Disqualifiers
    section, and feed back into the Sales Nav saved search itself.
 
    One company per line. Case-insensitive substring match against
@@ -232,8 +232,8 @@ writes so the workbook does not end up in a half-registered state.
    - `completed_at`: empty
 8. **Save the workbook.** Let the `xlsx` skill handle the write +
    validation.
-9. **Log.** Append a line to `/05_published/outreach/<today>.md`:
-   `registered campaign <slug> — <lead_count> leads seeded, connects queued`.
+9. **Log.** Append a line to `/05_published/outreach/[today].md`:
+   `registered campaign [slug] — [lead_count] leads seeded, connects queued`.
 
 ## Output
 
@@ -246,20 +246,20 @@ Return a short summary to the user, structured as three blocks:
   stripped)
 - Number of leads seeded with the `crawl-lead-list` status verbatim:
   - `status: complete` (target met on the first pass) — say:
-    "<N> leads seeded; target met. Connects begin firing at the
+    "[N] leads seeded; target met. Connects begin firing at the
     next scheduled morning run."
   - `status: partial` (some leads seeded, target not yet met — this
     is normal under Chrome MCP × Sales Nav timing for larger
-    targets) — say: "<N> of <T> leads seeded on this pass.
+    targets) — say: "[N] of [T] leads seeded on this pass.
     `crawl-lead-list` is idempotent and will resume on subsequent
     runs. **Next step:** make sure your morning loop's
     `crawl-on-shortfall` pre-step is wired up (see README's
     'Scheduling the loop' section) — without it, no further leads
     will be crawled and `daily-connect` will stop sending once it
-    exhausts the <N> seeded. Alternative: invoke `crawl-lead-list
-    <slug>` manually now to top up before the first send."
+    exhausts the [N] seeded. Alternative: invoke `crawl-lead-list
+    [slug]` manually now to top up before the first send."
   - `status: noop` (target was already met from a prior register)
-    — say: "Target already met (<N> leads). No new crawl this run."
+    — say: "Target already met ([N] leads). No new crawl this run."
 - Number of conflicts rejected (should be 0 if we reached this step)
 
 **2. Warnings surfaced during preconditions** (recommended-but-

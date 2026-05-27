@@ -1,6 +1,6 @@
 ---
 name: crawl-lead-list
-description: "This skill should be used when register-campaign asks to \"crawl the saved search\", \"populate leads from Sales Nav\", or \"pull the lead list for a campaign\", or when a daily-loop self-heal step says \"the campaign has fewer queued leads than target — top it up\". Idempotent against the same campaign: re-runs skip leads already in the Leads sheet for this campaign (URL-dedup) and pick up where prior partial crawls left off, until target_lead_count is reached or Sales Nav runs out of results. Drives Sales Navigator through Chrome MCP — opens the saved-search URL, paginates through results, scrolls each row into view and waits for it to hydrate before extracting fields (name, company, title, LinkedIn URL, location), and writes only fully-hydrated leads into the Leads sheet of outreach-tasks.xlsx. Any lead already present in Leads for a DIFFERENT active or paused campaign is logged to _errors.md and causes the register operation to abort."
+description: "This skill should be used when register-campaign asks to \"crawl the saved search\", \"populate leads from Sales Nav\", \"pull the lead list for a campaign\", or when a daily-loop self-heal step says a campaign has fewer queued leads than target. Idempotent against the same campaign: re-runs URL-dedup against existing leads and pick up where partial crawls left off, until target_lead_count is reached or Sales Nav runs out. Drives Sales Nav through Chrome MCP with per-row scrollIntoView + hydration poll before extraction. Writes only fully-hydrated leads. Any lead already in Leads for a DIFFERENT active or paused campaign is logged and aborts the register."
 ---
 
 # crawl-lead-list
@@ -49,7 +49,7 @@ continues from where the prior run left off, until
    `remaining = target_lead_count - existing_count`.
    - If `remaining <= 0`, return early:
      `{ "status": "noop", "reason": "target_already_met",
-        "existing_count": <N>, "target": <T> }`.
+        "existing_count": [N], "target": [T] }`.
    - Otherwise, capture an `existing_lead_urls` set from the same
      query. Pagination will skip leads whose URLs are already in
      this set without treating them as conflicts.
@@ -64,7 +64,7 @@ continues from where the prior run left off, until
 3. **Paginate with per-row hydration.** For each result page:
    a. **Read the rendered row count.** Sales Nav's saved-search
       results page is virtualized — typically 25 placeholder rows
-      render immediately, but each row's `<article>` children
+      render immediately, but each row's `[article]` children
       (name link, company, title, location) lazy-load on scroll.
       Do NOT rely on whole-page hydration: a single `wait` after
       page-load returns long before all 25 rows finish loading.
@@ -73,7 +73,7 @@ continues from where the prior run left off, until
       individually:
       - Use a pure-JS one-shot inside `javascript_tool`:
         `document.querySelectorAll('[data-x-search-result]')[i].scrollIntoView({block: 'center'})`,
-        then poll for the row's `<article>` having both a non-empty
+        then poll for the row's `[article]` having both a non-empty
         accessible-name on the lead-link anchor AND a non-empty
         company/title text node. Polling cadence: 250ms, ceiling
         4000ms per row.
@@ -139,12 +139,12 @@ continues from where the prior run left off, until
    zero-insert runs.
 
    - Read the per-campaign ICP at
-     `02_inputs/outreach/icps/<slug>.md` for the audience summary
+     `02_inputs/outreach/icps/[slug].md` for the audience summary
      and disqualifier patterns.
    - Pick the first 5 (or up to 10 if `inserted_this_run >= 10`)
      leads from the rows just inserted, in insertion order.
    - Surface to the user with one `AskUserQuestion` turn:
-     "Quick sanity check — do these first <N> leads look like a
+     "Quick sanity check — do these first [N] leads look like a
      reasonable fit for the campaign's ICP? Listed by name +
      headline + company so you can eyeball them against the saved
      search filters."

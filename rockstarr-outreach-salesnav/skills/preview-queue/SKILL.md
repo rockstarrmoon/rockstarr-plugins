@@ -48,7 +48,7 @@ goes out.
    `status = pending` — listed here so the client sees the bot is
    about to run a booking form.
 6. **Write the preview file.** Overwrite
-   `/02_inputs/outreach/queue-<today>.md`. Template:
+   `/02_inputs/outreach/queue-[today].md`. Template:
 
 ```markdown
 # Outreach queue — <YYYY-MM-DD> (<client timezone>)

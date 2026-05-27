@@ -1,6 +1,6 @@
 ---
 name: detect-replies
-description: "This skill should be used in the daily outreach loop after send-scheduled-messages, optionally again as an afternoon pass, or when the user says \"check for new replies\", \"scan the Sales Nav inbox\", or \"pull today's inbound messages\". It reads inbound messages from Sales Navigator and LinkedIn via Chrome MCP, matches each to a Leads row, appends to the Replies sheet, cancels every pending message-step-N and follow-up task for that lead, creates a review-reply task, drives rockstarr-reply synchronously to stage a draft per inbound, and at end-of-run fires rockstarr-infra:notify-reply-ready as a single urgent client email summarizing every newly-staged draft. Booking detection happens via mark-booked, not here."
+description: "This skill should be used in the daily outreach loop after send-scheduled-messages, or when the user says \"check for new replies\", \"scan the Sales Nav inbox\", or \"pull today's inbound messages\". Reads inbound messages via Chrome MCP, matches each to a Leads row, appends to Replies, cancels pending message-step-N and follow-up tasks for that lead, drives rockstarr-reply synchronously per inbound, and at end-of-run fires rockstarr-infra:notify-reply-ready as one urgent email summarizing every newly-staged draft. Booking detection happens via mark-booked, not here."
 ---
 
 # detect-replies
@@ -136,7 +136,7 @@ staged on this pass.
         thread: {
           thread_id: "<Sales Nav conversation id, or lead_url slug>",
           messages: [
-            { direction: "outbound|inbound", ts: "<ISO>", body: "..." },
+            { direction: "outbound|inbound", ts: "[ISO]", body: "..." },
             ...
           ],
           thread_open_path: "<Sales Nav messaging URL for this thread>"
@@ -147,11 +147,11 @@ staged on this pass.
           persona_notes: ""
         },
         lead: {
-          url: "<lead_url>",
-          name: "<Leads.name>",
-          company: "<Leads.company>",
-          title: "<Leads.title>",
-          campaign_slug: "<slug>"
+          url: "[lead_url]",
+          name: "[Leads.name]",
+          company: "[Leads.company]",
+          title: "[Leads.title]",
+          campaign_slug: "[slug]"
         },
         icp_verdict: "unknown",
         icp_matching_rule: "",
@@ -202,8 +202,8 @@ staged on this pass.
         flags get resolved separately, not via reply approval.
 
    d. **rockstarr-reply not installed.** Skip steps 4a–4c entirely.
-      Write a Cowork notification: "Reply from `<name>` in
-      `<campaign_slug>` needs your attention — rockstarr-reply is
+      Write a Cowork notification: "Reply from `[name]` in
+      `[campaign_slug]` needs your attention — rockstarr-reply is
       not installed. Draft manually via Sales Nav." Log the
       fallback to `_errors.md`. The `review-reply` task remains
       pending in the workbook so it surfaces in the next daily
@@ -245,7 +245,7 @@ staged on this pass.
       - On error: `notify_message_id = null`. Append a row to
         `_errors.md` with the error response. Add an entry to
         `notify_skipped_reasons[]` with
-        `{reason: "notify_send_failed", detail: "<error>"}`. Do NOT
+        `{reason: "notify_send_failed", detail: "[error]"}`. Do NOT
         retry from this skill — `send-notification` already handles
         the one-retry on transient hiccups internally.
 

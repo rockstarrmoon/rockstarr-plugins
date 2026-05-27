@@ -40,7 +40,7 @@ state transitions stay consistent.
 
 1. **Find the Leads row.** If `state = booked` already, refuse with
    a clear message: "Jane is already marked booked on
-   `<date_booked>`. No action taken." Do not double-book history.
+   `[date_booked]`. No action taken." Do not double-book history.
 2. **Flip Leads.state.** `state = booked`, `date_booked = today`.
    If `meeting_datetime` was provided, store it in
    `Leads.meeting_datetime` (a nullable column; fine if blank
@@ -56,12 +56,12 @@ state transitions stay consistent.
    - `date` = now (ISO)
    - `lead_url`
    - `campaign_slug` = from the Leads row
-   - `raw_text` = `"[BOOKED — source=<source>] <notes or ''>"`
+   - `raw_text` = `"[BOOKED — source=[source]] <notes or ''>"`
    - `classification` = `booked`
    - `handoff_state` = `closed`
 5. **Save the workbook.**
-6. **Log.** Append to `/05_published/outreach/<today>.md`:
-   `mark-booked — <lead_url> (<campaign_slug>) booked <meeting_datetime> via <source>`.
+6. **Log.** Append to `/05_published/outreach/[today].md`:
+   `mark-booked — [lead_url] ([campaign_slug]) booked [meeting_datetime] via [source]`.
 7. **Return.** A short summary the caller can show the user: lead,
    campaign, meeting time, number of tasks cancelled.
 
