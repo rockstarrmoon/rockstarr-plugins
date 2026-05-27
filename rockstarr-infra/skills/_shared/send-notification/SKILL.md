@@ -24,7 +24,7 @@ place so individual skills do not drift.
   rather than only in the workspace.
 
 Do NOT use this to send email ON BEHALF of the client to leads or
-teammates. That flows through the `rockstarr-reply-<variant>` plugin
+teammates. That flows through the `rockstarr-reply-[variant]` plugin
 using the client's own Gmail or Outlook OAuth.
 
 ## Preconditions
@@ -33,7 +33,7 @@ using the client's own Gmail or Outlook OAuth.
   machine with at minimum:
 
   ```
-  ROCKSTARR_MAILER_TOKEN=<bearer>
+  ROCKSTARR_MAILER_TOKEN=[bearer]
   ROCKSTARR_CLIENT_ID=<client slug, e.g., rockstarr-internal>
   ROCKSTARR_NOTIFY_TO=<default recipient for this workspace>
   # optional:
@@ -138,8 +138,8 @@ The calling skill supplies:
    {
      "client_id": "<from env>",
      "to": "<resolved recipient — string or array>",
-     "subject": "<subject>",
-     "text": "<body_text>",
+     "subject": "[subject]",
+     "text": "[body_text]",
      "body_markdown": "<body_markdown, if provided>",
      "html": "<body_html, if provided>",
      "subtitle": "<subtitle, if provided>",
@@ -164,7 +164,7 @@ The calling skill supplies:
    ```bash
    payload=$(mktemp)
    cat > "$payload" <<'JSON'
-   <payload>
+   [payload]
    JSON
    curl_out=$(curl -sS -v -X POST https://mail.rockstarr.ai/send \
      -H "Authorization: Bearer $ROCKSTARR_MAILER_TOKEN" \
@@ -215,7 +215,7 @@ The calling skill supplies:
    the file if missing):
 
    ```
-   <ISO timestamp>  <client_id>  <tag or "(none)">  <message_id>  <first recipient>
+   <ISO timestamp>  [client_id]  <tag or "(none)">  [message_id]  <first recipient>
    ```
 
    This log is what the approvals-digest skill and audit reviews

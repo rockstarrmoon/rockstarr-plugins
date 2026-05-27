@@ -1,6 +1,6 @@
 ---
 name: intake-competitors
-description: "This skill should be used when the user asks to \"run the competitors step\", \"do the competition crusher exercise\", \"map the competitive landscape\", \"build the competitive grid\", or when run-intake dispatches to the competitors step of the intake flow. Walks the client through a seven-stage process — anchor (company + URL), competitor selection (1 to 3, client-named or suggested), per-competitor research via web fetch with graceful fallback to client paste-in, competitive grid synthesis, positioning artifacts (Brand Edge / Differentiation summary / Messaging opportunities / Risks / Quick wins), validation pass on Assumed items, and Key takeaways. One question at a time, in the unified intake voice. Checkpoints every answer to /00_intake/intake/competitors.md. Feeds the Competitors AND Positioning sections of client-profile.md."
+description: "This skill should be used when the user asks to \"run the competitors step\", \"do the competition crusher exercise\", \"map the competitive landscape\", or when run-intake dispatches to the competitors step. Walks the client through a seven-stage process: anchor (company + URL), competitor selection (1-3, client-named or suggested), per-competitor research via web fetch (graceful fallback to paste-in), competitive grid synthesis, positioning artifacts (Brand Edge / Differentiation / Messaging opportunities / Risks / Quick wins), validation pass on Assumed items, Key takeaways. One question at a time in the unified intake voice. Checkpoints to /00_intake/intake/competitors.md. Feeds both Competitors AND Positioning sections of client-profile.md."
 ---
 
 # intake-competitors
@@ -80,6 +80,35 @@ When the file exists with `status: complete`, ask the client:
 "Competitive grid is already captured. Redo from scratch, refresh a
 specific competitor, or exit?" Default action is exit.
 
+## Chat narration discipline
+
+Two shared voice references govern what this skill says:
+
+- **`skills/_shared/references/intake-interviewer-voice.md`** —
+  the AskUserQuestion turns themselves.
+- **`skills/_shared/references/client-facing-output-voice.md`** —
+  everything between the questions: stage-transition lines,
+  capture acknowledgments, the post-completion summary.
+
+Apply both. Specifically for this sub-skill:
+
+- **No "Stage 1 / Stage 2 / ..." labels in chat transitions.**
+  The seven stages (anchor, competitor selection, per-competitor
+  research, grid synthesis, positioning artifacts, validation,
+  takeaways) are bot-side structure. The client experiences a
+  natural flow: "Who are we comparing against? Let me pull what
+  I can find on them, then we'll work out where you stand."
+- **No artifact paths in capture acknowledgments.** The fact that
+  answers land in `00_intake/intake/competitors.md` is invisible
+  to the client.
+- **Web-fetch source attribution in narration is fine.** "Pulled
+  their About page and the latest case study from their site" is
+  useful context. URLs go in the artifact, not on every chat line.
+- **The Assumed → Validation pass surfaces in chat as one
+  natural question.** "I marked a few things as assumed earlier
+  — want me to walk through them so we can confirm?" Not "Stage
+  6 — Validation pass on Assumed items."
+
 ## Web fetch availability
 
 Some intake sessions run with browser / web-fetch tools available;
@@ -146,7 +175,7 @@ One `AskUserQuestion` turn with three branches:
    - `01_knowledge_base/processed/**` for any positioning research
      the client uploaded.
    - When web tools are available, a search like
-     `<company> competitors` or `<ICP-specific keyword>
+     `[company] competitors` or `<ICP-specific keyword>
      companies` to surface obvious candidates.
 
    Present the candidates with one-sentence "Why this one"
@@ -161,10 +190,10 @@ The cap of 3 is enforced. The original Competition Crusher GPT
 landed on 3 as the sweet spot — enough to triangulate a position,
 not so many that the grid becomes mush. Accept fewer than 3 when
 the client genuinely sees only 1 or 2 real competitors; flag the
-gap in front-matter as `competitor_count: <N>`.
+gap in front-matter as `competitor_count: [N]`.
 
 After the picks land, run the tool-availability check (described
-above) and write `web_fetch_available: <bool>` to front-matter.
+above) and write `web_fetch_available: [bool]` to front-matter.
 
 Append the competitor list to the artifact and mark `selection`
 in `stages_complete`.
@@ -216,7 +245,7 @@ differentiators), one `AskUserQuestion`:
 When web tools are unavailable (or the fetches returned
 nothing), skip 3a and ask the three fields cold:
 
-- "How does <competitor> describe what they do? One sentence."
+- "How does [competitor] describe what they do? One sentence."
 - "What products or services do they offer?"
 - "What do they call out as their differentiator?"
 
@@ -250,7 +279,7 @@ Competitive grid`:
 
 | Competitor & URL                 | Value proposition | The offering | Differentiators |
 |----------------------------------|-------------------|--------------|-----------------|
-| **<Name>** (<https://...>)       | ...               | ...          | ...             |
+| **[Name]** (<https://...>)       | ...               | ...          | ...             |
 ~~~
 
 `Assumed:` prefixes remain visible in the table; Stage 6 will
@@ -396,7 +425,7 @@ Body shape:
 
 <!-- source: 00_intake/client-profile.md or 00_intake/intake/background.md -->
 
-- Company: <name>
+- Company: [name]
 - URL: <https://...>
 
 ## ICPs in scope
@@ -425,7 +454,7 @@ Body shape:
 
 | Competitor & URL                 | Value proposition | The offering | Differentiators |
 |----------------------------------|-------------------|--------------|-----------------|
-| **<Name>** (<https://...>)       | ...               | ...          | ...             |
+| **[Name]** (<https://...>)       | ...               | ...          | ...             |
 
 ## Brand Edge
 
@@ -593,7 +622,7 @@ Confidence labels accompany every pre-draft.
 | ICP or transformations artifact missing            | Refuse to run. Tell the client which intake step still needs to finish.        |
 | Stage 2 web search fails                           | Mark `web_fetch_available: false` and proceed in paste-in mode for Stage 3.    |
 | Stage 3 fetch returns 404 / paywalled / empty      | Capture the failure in the competitor's block (`Notes: site unreachable on    |
-|                                                    | <ISO>`) and fall back to paste-in for that competitor.                         |
+|                                                    | [ISO]`) and fall back to paste-in for that competitor.                         |
 | Client lands at 1 competitor instead of 2 or 3     | Accept it. Mark `competitor_count: 1`. The grid still renders; the Brand Edge  |
 |                                                    | subsection works with thin signal.                                             |
 | Stage 5b revision loop hits cap                    | Capture the client's last-stated language verbatim, skip the polish pass.      |

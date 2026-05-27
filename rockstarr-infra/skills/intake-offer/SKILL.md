@@ -1,6 +1,6 @@
 ---
 name: intake-offer
-description: "This skill should be used when the user asks to \"run the offer step\", \"build the offer\", \"capture our services\", \"map what we sell\", \"run the offer builder\", or when run-intake dispatches to the offer step of the intake flow. Reads the upstream artifacts (icp.md, platinum-message.md, competitors.md, transformations.md) and walks the client through capturing one or more offers in the canonical eight-field shape (Name, Who it's for, Problem, Outcome, Process, Experience, Edge (optional), Why it works, Category-of-one positioning). Runs a Category-of-One check after each offer to confirm a competitor couldn't describe themselves the same way. One question at a time, in the unified intake voice. Checkpoints every answer to /00_intake/intake/offer.md. Feeds the Offers / services section of client-profile.md."
+description: "This skill should be used when the user asks to \"run the offer step\", \"build the offer\", \"capture our services\", \"map what we sell\", or when run-intake dispatches to the offer step. Reads upstream artifacts (icp.md, platinum-message.md, competitors.md, transformations.md) and walks the client through capturing one or more offers in the canonical eight-field shape (Name, Who it's for, Problem, Outcome, Process, Experience, Edge, Why it works, Category-of-one positioning). Runs a Category-of-One check after each offer. One question at a time in the unified intake voice. Checkpoints to /00_intake/intake/offer.md. Feeds the Offers/services section of client-profile.md."
 ---
 
 # intake-offer
@@ -74,6 +74,32 @@ offers are complete).
 When the file exists with `status: complete`, ask: "Offers already
 captured. Redo from scratch, redo one offer, add another offer, or
 exit?" Default action is exit.
+
+## Chat narration discipline
+
+Two shared voice references govern what this skill says:
+
+- **`skills/_shared/references/intake-interviewer-voice.md`** —
+  the AskUserQuestion turns themselves (one field per turn — the
+  eight fields per offer become eight separate questions, never
+  batched).
+- **`skills/_shared/references/client-facing-output-voice.md`** —
+  everything between the questions: per-offer transitions, the
+  Category-of-One check framing, the post-completion summary.
+
+Apply both. Specifically for this sub-skill:
+
+- **The eight fields are the bot's structure, not labels in
+  chat.** Don't say "Field 4: Outcome." Use the field's plain
+  meaning: "What's the outcome the client walks away with?"
+- **The Category-of-One check surfaces as one natural question
+  per offer**, after the field capture, not as a tagged "running
+  the Category-of-One check." Say "Quick check — could a
+  competitor describe themselves the same way?" Walking the
+  client through the exercise without naming the framework.
+- **Per-offer transitions** stay plain. "That's the first offer
+  captured. Add another, or that's the lineup?"
+- **No artifact paths in capture acknowledgments.**
 
 ## The eight fields
 
@@ -289,7 +315,7 @@ Body shape:
 
 <!-- source: 00_intake/intake/competitors.md (Company anchor) -->
 
-- Company: <name>
+- Company: [name]
 - URL: <https://...>
 
 ## ICPs available

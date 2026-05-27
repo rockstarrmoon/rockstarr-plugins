@@ -1,7 +1,7 @@
 ---
 name: approvals-backlog-alert
 description: |
-  This skill should be used when the scheduled weekly run fires (Monday 8 am local), or when the user says "send the backlog alert", "ping the strategist about the queue", "escalate the approvals backlog", or "run the backlog alert now". Counts pending items in /rockstarr-ai/03_drafts/ and emails the client's Rockstarr strategist when the count exceeds the configured threshold (default 25, configurable per-client in client.toml as strategist_alert_threshold under the [approvals] section). Re-fires every week as long as the count stays over the threshold; goes silent the moment the queue is back under. Recipient is the strategist via ROCKSTARR_STRATEGIST_EMAIL — not the client. Reply-to is set to the client so the strategist can respond and reach the client directly.
+  This skill should be used when the scheduled weekly run fires (Monday 8 am local), or when the user says "send the backlog alert", "ping the strategist about the queue", or "run the backlog alert now". Counts pending items in /rockstarr-ai/03_drafts/ and emails the strategist when the count exceeds the threshold (default 25, configurable in client.toml as strategist_alert_threshold). Re-fires weekly while over; silent the moment the queue drops under. Recipient is the strategist via ROCKSTARR_STRATEGIST_EMAIL — not the client. Reply-to is set to the client so the strategist can reply directly.
 ---
 
 # approvals-backlog-alert
@@ -90,7 +90,7 @@ None required. Optional override for testing or one-off sends:
 ### 1. Read the threshold
 
 Parse `/rockstarr-ai/client.toml`. Look for `[approvals]
-strategist_alert_threshold = <int>`. If missing, default to `25`.
+strategist_alert_threshold = [int]`. If missing, default to `25`.
 
 Validate: must be a positive integer. If the value is malformed
 (zero, negative, non-integer), warn loudly in chat, fall back to
@@ -131,7 +131,7 @@ configured threshold.
     with tag `approvals_backlog_alert_skipped`, message_id
     `(none)`, and the `count` / `threshold` for audit.
   - Print a one-line confirmation in chat:
-    `> Queue at <count> / <threshold>. No alert sent.`
+    `> Queue at [count] / [threshold]. No alert sent.`
   - Exit clean.
 - If `count > threshold` (or `force == true`): proceed.
 
@@ -219,11 +219,11 @@ deliverability.
 
 ### 8. Compose and send
 
-Subject: ``[Backlog alert] <client_name>: <count> items pending``
+Subject: ``[Backlog alert] [client_name]: [count] items pending``
 
-Subtitle: ``Strategist alert · <client_name>``
+Subtitle: ``Strategist alert · [client_name]``
 
-Reply hint: ``"Reply to this email to respond — it reaches <client_name> directly."``
+Reply hint: ``"Reply to this email to respond — it reaches [client_name] directly."``
 
 Tag: ``approvals_backlog_alert`` (or
 ``approvals_backlog_alert_forced`` if `force == true`).
@@ -254,8 +254,8 @@ extra logging needed.
 
 Print a one-line confirmation in chat:
 
-> Backlog alert sent. <count> items, threshold <threshold>.
-> message_id: <id>.
+> Backlog alert sent. [count] items, threshold [threshold].
+> message_id: [id].
 
 ## Edge cases
 

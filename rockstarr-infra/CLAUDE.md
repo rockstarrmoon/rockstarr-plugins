@@ -107,6 +107,117 @@ If you touch `scaffold-client`, verify these tasks still register
 correctly. Re-running `scaffold-client` is supposed to be idempotent
 — it should not double-register tasks.
 
+## Defer expensive preconditions
+
+The "is it even working?" perception problem (every client asks
+this during their first week) has two contributors plugins can
+address:
+
+1. **Skill descriptions** trimmed and on-point so routing
+   resolves fast. Covered by the description-cap rule and
+   `client-facing-output-voice.md` rule 7 (anchor message).
+2. **Precondition checks** that don't burn seconds reading
+   files before deciding whether the skill can even run.
+
+The second one is what this section is about. Several skills
+have historically opened with multi-file reads to "validate
+preconditions" — the audit script flagged
+`compile-profile` (reads 6 intake artifacts),
+`generate-style-guide` (reads `01_knowledge_base/index.md` plus
+every first-party processed file),
+`draft-icp-campaign` (reads `client-profile.md` + lead-list +
+style-guide + KB), and others. Those reads fire on every
+invocation, even when the skill ultimately refuses (a downstream
+key is missing, the user is on the wrong path, etc.). The user
+sees nothing for several seconds and assumes the bot is broken.
+
+### The pattern
+
+Split preconditions into two tiers:
+
+- **Tier 1: cheap existence checks.** Does this file exist?
+  Does this directory exist? Is this key set in `client.toml`?
+  These are sub-second filesystem stats and small text reads.
+  Run them first, before the anchor message. If any fail,
+  refuse fast with a clear remediation pointer — the user sees
+  the refusal without the bot looking dead.
+- **Tier 2: expensive content reads.** Reading a 2KB markdown
+  artifact and parsing front-matter, walking a directory tree
+  to count files, validating cross-references between
+  artifacts. These belong inside the skill's main work, AFTER
+  the anchor message has fired. The user sees "I'm starting"
+  and then the work happens.
+
+Pseudo-code for a long-running skill:
+
+```
+def run():
+    # Tier 1: cheap existence checks. Silent. ~10ms total.
+    if not exists("00_intake/client-profile.md"):
+        refuse("Your business profile isn't captured yet. Run
+                onboarding first to set it up.")
+        return
+    if not exists("00_intake/intake/icp.md"):
+        ...
+
+    # Anchor message. Fires after cheap checks, before the work.
+    print_anchor("Stitching your business profile together…")
+
+    # Tier 2: expensive content reads. Happens as part of the
+    # work, not as gatekeeping.
+    artifacts = read_all_intake_artifacts()  # ~2-3s
+    validate_internal_shape(artifacts)
+    ...
+```
+
+### Skills that should adopt the pattern
+
+The audit's specifically-named-as-heavy list:
+
+- **`compile-profile`** — reads 6 intake artifacts upfront. The
+  existence-check on each is cheap; the content reads can defer
+  to step 1 of the main assembly.
+- **`generate-style-guide`** — reads `01_knowledge_base/index.md`
+  plus every first-party processed file. The KB index is a small
+  read but the file walk is heavy. Defer the walk to the
+  pre-read step where the skill actually uses the content.
+- **`draft-icp-campaign`** (in `rockstarr-outreach-salesnav`) —
+  reads `client-profile.md`, `lead-list/<slug>.md`, style-guide,
+  and KB during precondition validation. All four can move to
+  the start of Phase 1 where they're actually used.
+- **`approvals-digest`** — walks `/03_drafts/` recursively to
+  find pending items. This IS the skill's work, not a precondition,
+  but the anchor message should fire before the walk so the
+  user sees activity immediately on a user-invoked run.
+
+### What the cheap checks should still cover
+
+The Tier 1 checks are still load-bearing — they're the safety net
+that prevents the skill from doing partial work and leaving the
+workspace in a weird state. Keep them strict:
+
+- File existence (use `os.path.exists`, not `read`).
+- Required config keys (parse stack.md / client.toml front-matter
+  only — the small front-matter block, not the full body).
+- Plugin / shared-reference availability (does
+  `_shared/stop-slop/` exist?).
+- Authorization signals (is the user authorized to act on this
+  client's behalf?).
+
+These are sub-second. Defer everything that requires reading a
+multi-paragraph artifact, walking a tree, or parsing structured
+content.
+
+### Don't defer the anchor message past expensive checks
+
+If a precondition check is genuinely expensive (e.g., a Chrome
+MCP session probe in `confirm-session`), the anchor message
+fires BEFORE the probe, not after. The user should see "Checking
+your LinkedIn session…" rather than 10 seconds of silence
+followed by either the probe result or a refusal. Per
+`client-facing-output-voice.md` rule 7, the anchor message is
+the first user-facing line of the skill, full stop.
+
 ## What's high-risk to change in this plugin
 
 Some areas need extra care because they affect every client + every

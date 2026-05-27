@@ -1,6 +1,6 @@
 ---
 name: intake-platinum-message
-description: "This skill should be used when the user asks to \"run the platinum message step\", \"build the platinum message\", \"draft the elevator pitch\", \"capture the messaging\", or when run-intake dispatches to the platinum-message step of the intake flow. Reads the three upstream artifacts (icp.md, transformations.md, competitors.md), captures the client's desired tone, and walks through a per-ICP loop: draft three pitch options, self-validate each against the four principles (Appeal, Exclusivity, Clarity, Credibility), revise any failure before presenting, capture the client's pick as the canonical Platinum Message, then draft three outcome statements with the same validation. Always emits one ### [ICP] — Platinum message H3 per ICP, even when there is one ICP. One question at a time, in the unified intake voice. Checkpoints every answer to /00_intake/intake/platinum-message.md."
+description: "This skill should be used when the user asks to \"run the platinum message step\", \"build the platinum message\", \"draft the elevator pitch\", or when run-intake dispatches to the platinum-message step. Reads icp.md, transformations.md, competitors.md, captures desired tone, then runs a per-ICP loop: draft three pitch options, self-validate each against Appeal/Exclusivity/Clarity/Credibility, revise failures before presenting, capture the client's pick as the canonical Platinum Message, then draft three outcome statements with the same validation. Always emits one `### [ICP] — Platinum message` H3 per ICP, even when there's only one. One question at a time in the unified intake voice. Checkpoints every answer to /00_intake/intake/platinum-message.md."
 ---
 
 # intake-platinum-message
@@ -70,6 +70,34 @@ When `intake/platinum-message.md` already exists with
 When the file exists with `status: complete`, ask: "Platinum
 message is already captured. Redo from scratch, redo one ICP, or
 exit?" Default action is exit.
+
+## Chat narration discipline
+
+Two shared voice references govern what this skill says:
+
+- **`skills/_shared/references/intake-interviewer-voice.md`** —
+  the AskUserQuestion turns themselves.
+- **`skills/_shared/references/client-facing-output-voice.md`** —
+  everything between the questions: stage-transition lines,
+  draft acknowledgments, the post-completion summary.
+
+Apply both. Specifically for this sub-skill:
+
+- **No "Stage 1 / Stage 2 / Stage 3" labels in chat transitions.**
+  The three stages (tone, pitch options + validation, outcome
+  statements) are bot-side structure. The client experiences
+  "Tell me your tone, I'll draft three pitch options, you pick
+  the one that feels right, then we'll write outcome statements."
+- **No "principle validation" announcements per pitch.** The four
+  principles (Appeal, Exclusivity, Clarity, Credibility) are how
+  the bot checks its own drafts before presenting. The client
+  sees three pitch options, not the bot's internal scoring of
+  each one. If a pitch fails a principle, the bot revises before
+  presenting — never "Pitch 2 failed Clarity; rewriting."
+- **Per-ICP loop transitions** stay plain. "Got the first ICP's
+  message. Move to the next ICP, or pause and look at what we
+  have?"
+- **No artifact paths in capture acknowledgments.**
 
 ## The four principles
 
@@ -245,7 +273,7 @@ sub_skill: "intake-platinum-message"
 sub_skill_version: "0.1.0"
 status: "in_progress"
 captured_at: "<ISO 8601 of last write>"
-icp_count: <N>
+icp_count: [N]
 icps_complete: []          # subset of ICP slugs from intake/icp.md
 desired_tone: []           # subset of: corporate, professional, friendly, direct, bold, conversational
 stages_complete: []        # subset of: anchor, tone, per_icp_messages
@@ -261,7 +289,7 @@ Body shape:
 
 <!-- source: 00_intake/intake/competitors.md (Company anchor) -->
 
-- Company: <name>
+- Company: [name]
 - URL: <https://...>
 
 ## ICPs in scope

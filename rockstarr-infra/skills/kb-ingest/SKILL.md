@@ -122,8 +122,8 @@ Directory layout:
       kb_scope: "owned"                   # or "third_party"
       source_file: "01_knowledge_base/raw/<relative path>"
       source_url: ""                      # set for URL-ingested files
-      source_mtime: "<ISO>"
-      ingested_at: "<ISO>"
+      source_mtime: "[ISO]"
+      ingested_at: "[ISO]"
       topic_tags: [tag1, tag2, tag3]
       format_tag: "article"
       style_guide_eligible: true          # false for third_party
@@ -175,7 +175,7 @@ When the user says "add this URL to the kb", "pull this article in",
    ```yaml
    source_file: ""
    source_url: "<the https URL>"
-   source_domain: "<host>"
+   source_domain: "[host]"
    author: "<if detected>"
    published_at: "<detected date or empty>"
    ```

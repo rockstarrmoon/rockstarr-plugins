@@ -35,12 +35,47 @@ already sitting in the profile.
 
 ## Preconditions
 
-- `/rockstarr-ai/00_intake/client-profile.md` exists and has been at
-  least lightly reviewed by a human.
-- Voice samples, if any, live in `/rockstarr-ai/00_intake/samples/` as
-  `.md`, `.txt`, or copy-pasted excerpts.
-- `references/style-guide-prompt.md` inside this skill is the canonical
-  Rockstarr Brand Voice and Style Architect prompt. Follow it exactly.
+Per `rockstarr-infra/CLAUDE.md`'s "Defer expensive preconditions"
+section:
+
+**Tier 1 — cheap existence checks (silent, before the anchor):**
+
+- `/rockstarr-ai/00_intake/client-profile.md` exists.
+- `references/style-guide-prompt.md` inside this skill exists (the
+  canonical Rockstarr Brand Voice and Style Architect prompt).
+
+If either fails, refuse fast with a remediation pointer
+(`generate-style-guide` needs the profile from `run-intake`
+first; if `style-guide-prompt.md` is missing, the plugin is
+broken — surface a support note).
+
+**Tier 2 — deferred to Phase 0:**
+
+- Voice samples (if any) live in `/rockstarr-ai/00_intake/samples/`
+  as `.md`, `.txt`, or copy-pasted excerpts. The directory walk
+  to enumerate samples + the per-file content reads happen
+  during Phase 0's pre-read, NOT during precondition checks.
+- KB processed-files walk (filtering for `style_guide_eligible:
+  true` AND `kb_scope: owned`) happens during Phase 0's
+  first-party material pull, NOT during precondition checks.
+
+These reads can take several seconds on a workspace with many
+samples or a large KB. Deferring them to AFTER the anchor
+message means the user sees activity immediately.
+
+## Anchor message
+
+Per `client-facing-output-voice.md` rule 7, fire this as the
+FIRST chat output after Tier 1 existence checks pass:
+
+> Reading your voice samples and drafting your style guide —
+> this takes a few minutes…
+
+The "few minutes" tail is honest — the full three-phase flow
+(pre-read + strategic interview + Phase 3 generation) takes
+~30–45 minutes of clock time including the interview turns.
+The anchor names the work and sets the duration expectation up
+front; the interview turns themselves are user-paced after that.
 
 ## First-party only — hard rule
 
@@ -99,17 +134,43 @@ question at a time, using `AskUserQuestion`. Never batch. Never skip.
 
 For each question:
 
-1. State the pre-drafted answer and its confidence rating, plus the
-   evidence pointer. Example:
+1. State the pre-drafted answer in colleague-voice prose, with
+   what it was drawn from. Internal confidence ratings (HIGH /
+   MEDIUM / LOW) and `Evidence: [path]` pointers stay out of the
+   chat surface per
+   [`skills/_shared/references/client-facing-output-voice.md`]
+   — they read as a librarian's footnote to non-technical
+   clients. The bot's confidence informs HOW the draft is
+   presented and how hard to probe on push-back; it is not
+   surfaced as a labeled tag.
 
-   > **Q (Positioning edge):** In one sentence, what makes you different
-   > that a competitor could not credibly claim?
+   The shape — same information density, colleague's voice:
+
+   > **Q (Positioning edge):** In one sentence, what makes you
+   > different that a competitor could not credibly claim?
    >
-   > **My draft (confidence: MEDIUM)** — "You sell to B2B founders who
-   > have scaled past first-generation marketing and need a system, not
-   > another freelancer."
-   > **Evidence:** `client-profile.md §Positioning` and
-   > `samples/linkedin-pinned-post.md`.
+   > Here's what I'd draft from your profile and your pinned
+   > LinkedIn post:
+   >
+   > "You sell to B2B founders who have scaled past
+   > first-generation marketing and need a system, not another
+   > freelancer."
+   >
+   > Confirm, amend, or rewrite?
+
+   When the bot's draft is HIGH-confidence (clearly stated in
+   the profile or samples), present cleanly and ask for confirm.
+   When MEDIUM (implied but not explicit), present with a soft
+   note: "This one is my read between the lines — does it land?"
+   When LOW (no real evidence), do NOT present a fabricated
+   draft. Lead with the underlying question, offer prompts or
+   multiple-choice suggestions per the reference, and mark the
+   answer as a gap if the client passes.
+
+   The internal HIGH / MEDIUM / LOW tracking remains in the
+   skill's working notes and the front-matter
+   `interview_gaps` field for operator review; it just doesn't
+   appear as a labeled tag in the chat turn.
 
 2. Offer the user four response options via `AskUserQuestion`:
    - **Confirm** the draft as-is.
@@ -119,14 +180,13 @@ For each question:
    - **Skip for now** (only allowed on non-core questions; mark as a
      GAP in the working answer sheet).
 
-3. For LOW-confidence questions, lead with the underlying question
-   rather than the weak draft, and provide the helpful prompts /
-   multiple-choice suggestions described in the reference. Never
-   fabricate positioning.
-
-4. Adapt the next question based on the last answer. If the user
+3. Adapt the next question based on the last answer. If the user
    rejects the pre-draft for Positioning Edge, probe harder on
-   differentiation before moving on.
+   differentiation before moving on. The pre-draft / confirm /
+   amend / reject / skip discipline follows the matched-pair
+   pattern in `intake-interviewer-voice.md` (with one difference:
+   the pre-draft text appears in the question body's plain prose,
+   not as a labeled `**My draft (confidence: MEDIUM)**` block).
 
 ### Phase 2 — Confirm positioning
 
@@ -188,11 +248,27 @@ If an existing `style-guide.md` is present, archive it to
 `/rockstarr-ai/99_archive/style-guide_<ISO timestamp>.md` before
 writing the new one.
 
-Print a summary — sections produced, interview gaps, any pre-drafts
-the user rejected — and end with:
+Print a chat summary per
+[`skills/_shared/references/client-facing-output-voice.md`]. V0.x
+listed "sections produced, interview gaps, any pre-drafts the user
+rejected" as field-bullets — that read as audit log. New shape:
 
-> Please review and either approve, or mark specific sections to
-> revise. Bots should not run until this guide is approved.
+- **First sentence**: confident past tense, what now exists.
+  "Your style guide is drafted and saved."
+- **Second sentence**: what's next in user verbs. "Review it
+  end-to-end and approve when it lands right — your drafting
+  bots wait on the approval before producing anything."
+
+The list of sections produced, gaps the client skipped, and
+pre-drafts they rejected goes in a collapsed `[details]` footer
+for operator audit. Internal QA data (confidence ratings,
+evidence pointers) lives in the front-matter `interview_gaps`
+field where downstream skills can read it.
+
+End the chat turn with:
+
+> Open the file when you have a focused 10 minutes. Approve when
+> it lands; until then your drafting bots stay quiet.
 
 ## Interview discipline
 

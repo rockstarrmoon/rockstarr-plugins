@@ -1,6 +1,6 @@
 ---
 name: run-intake
-description: "This skill should be used when the user asks to \"start intake\", \"run intake\", \"continue intake\", \"resume my onboarding\", \"redo a step of intake\", \"show me where I left off\", or when run-onboarding dispatches to the intake phase. Stateful orchestrator for the rockstarr-infra v0.9.x intake flow. Owns 00_intake/intake/_progress.md, handles the first-run workbook-or-interview path fork, dispatches to each of the six intake sub-skills (intake-background, intake-icp, intake-transformations, intake-competitors, intake-platinum-message, intake-offer) in order with redo / jump / switch-paths controls, and calls compile-profile once every sub-skill is complete. Honors pause / stop cleanly at every decision point."
+description: "This skill should be used when the user asks to \"start intake\", \"run intake\", \"continue intake\", \"resume my onboarding\", or \"redo a step of intake\", or when run-onboarding dispatches to the intake phase. Stateful orchestrator. Owns 00_intake/intake/_progress.md, handles the first-run workbook-or-interview fork, dispatches to the six sub-skills (background, icp, transformations, competitors, platinum-message, offer) in order with redo/jump/switch-paths controls, then calls compile-profile. Honors pause/stop cleanly."
 ---
 
 # run-intake
@@ -52,8 +52,46 @@ are dispatch decisions rather than evidence capture.
   same plugin, same install).
 - `intake-interviewer-voice.md` is on disk in the plugin's shared
   references.
+- `client-facing-output-voice.md` is on disk in the plugin's
+  shared references. This skill's chat narration (step transitions,
+  the top-of-loop turn preamble, the quality report) follows it.
 
 When any precondition fails, surface the issue and exit cleanly.
+
+## Chat narration discipline
+
+The two shared voice references cover different surfaces:
+
+- **`intake-interviewer-voice.md`** governs the AskUserQuestion
+  turns themselves (one question at a time, pre-draft / confirm /
+  amend / reject / skip pattern, the four discipline rules).
+  Sub-skills follow this for their interviews.
+- **`client-facing-output-voice.md`** governs everything else
+  this orchestrator emits — top-of-loop framing, dispatch
+  narration, return-handling acknowledgments, the step 9 quality
+  report.
+
+Specifically for this orchestrator:
+
+- **No "Phase 1.2 — Baseline ICP from client-profile.md" framing
+  in chat.** That kind of internal-phase labeling is structural
+  narration the client doesn't need. Step-transition lines stay
+  short and plain ("Got it. Next up: transformations — what your
+  best clients walked away with.").
+- **No artifact paths in chat by default.** The fact that
+  `intake-icp` writes to `00_intake/intake/icp.md` is invisible
+  to the client. Mention paths only in collapsed `[details]`
+  footers, and only on session-exit summaries.
+- **No internal step numbering in chat preambles** beyond "step
+  [N] of 6" framing. The canon table uses 1–6 for the step canon
+  (background through offer) and that's fine to reference in plain
+  English; deeper numbering ("Phase A step 4") stays out.
+- **Sub-skill names in chat only when the client genuinely needs
+  to invoke them.** Most of the time the user invokes
+  `run-intake` and lets the orchestrator dispatch — they never
+  need to type `intake-competitors` directly. Skill names appear
+  in operator-facing surfaces (AskUserQuestion option labels and
+  the `[details]` footer), not in prose narration.
 
 ## `_progress.md` shape
 
@@ -116,24 +154,24 @@ Body:
 
 | # | Step                | Status         | Last update         |
 |---|---------------------|----------------|---------------------|
-| 1 | Background          | ✓ complete     | <ISO>               |
-| 2 | ICP                 | ✓ complete     | <ISO>               |
-| 3 | Transformations     | • in progress  | <ISO>               |
+| 1 | Background          | ✓ complete     | [ISO]               |
+| 2 | ICP                 | ✓ complete     | [ISO]               |
+| 3 | Transformations     | • in progress  | [ISO]               |
 | 4 | Competitors         | not started    | —                   |
 | 5 | Platinum Message    | not started    | —                   |
 | 6 | Offer               | not started    | —                   |
 
 ## Compile profile
 
-Status: pending (or "complete at <ISO>").
+Status: pending (or "complete at [ISO]").
 
 ## History
 
-- <ISO> — run-intake initialized; intake_path: unknown
-- <ISO> — path chosen: interview
-- <ISO> — background marked complete (intake-background v0.1.0)
-- <ISO> — icp marked complete (intake-icp v0.1.0)
-- <ISO> — transformations started
+- [ISO] — run-intake initialized; intake_path: unknown
+- [ISO] — path chosen: interview
+- [ISO] — background marked complete (intake-background v0.1.0)
+- [ISO] — icp marked complete (intake-icp v0.1.0)
+- [ISO] — transformations started
 ~~~
 
 The History section is append-only; the Status grid is regenerated
@@ -193,9 +231,9 @@ Single step. One sub-skill call.
    client gives.
 2. Call `ingest-workbook` against that path.
 3. On return, mark all six steps `complete` in `_progress.md`
-   front-matter with `sub_skill_version: "ingest-workbook v<X>"`
-   and `completed_at: <ISO>`. Add a History line.
-4. Set `compile_profile_at: <ISO>` (ingest-workbook produces
+   front-matter with `sub_skill_version: "ingest-workbook v[X]"`
+   and `completed_at: [ISO]`. Add a History line.
+4. Set `compile_profile_at: [ISO]` (ingest-workbook produces
    `client-profile.md` directly — `compile-profile` doesn't run
    on this path).
 5. Set `status: complete`. Save.
@@ -242,13 +280,13 @@ complete, the loop enters the **final compile gate** (below).
 
 When a sub-skill is dispatched:
 
-1. Set the step's `status: in_progress` and `started_at: <ISO>`
+1. Set the step's `status: in_progress` and `started_at: [ISO]`
    in `_progress.md` front-matter (when not already in_progress).
    Save.
 2. Call the sub-skill.
 3. On return, inspect the sub-skill's artifact front-matter for
    `status: complete`. When complete, set the step's
-   `status: complete`, `completed_at: <ISO>`, and capture the
+   `status: complete`, `completed_at: [ISO]`, and capture the
    sub-skill's `sub_skill_version` value.
 4. When the sub-skill returned with `status: in_progress` (the
    client paused), keep the step `in_progress`. Save.
@@ -277,7 +315,7 @@ On **Compile now**:
    is `in_progress`; `run-intake`'s state should prevent this,
    but the check is a belt-and-suspenders.
 2. On compile-profile's clean return, set
-   `compile_profile_at: <ISO>` in `_progress.md` front-matter,
+   `compile_profile_at: [ISO]` in `_progress.md` front-matter,
    `status: complete`, add a History line, save.
 3. Print the orchestrator's quality report (below) and return to
    `run-onboarding` or the user.
@@ -299,7 +337,7 @@ state. The client confirms they want to switch:
 
 1. Archive every file in `00_intake/intake/` to
    `99_archive/intake/<ISO date>/`. This includes
-   `_progress.md`, every `<artifact>.md`, and any audit notes.
+   `_progress.md`, every `[artifact].md`, and any audit notes.
    The archive preserves the audit trail.
 2. Archive any companion files written by `intake-background`
    that the workbook path will also write — specifically
@@ -361,19 +399,37 @@ fine — archives are the safety net.
 8. **Final compile gate** when all six steps complete.
 
 9. **Quality report.** When `run-intake` finishes a session — at
-   any clean exit, not only at full completion — print:
+   any clean exit, not only at full completion — print a short
+   chat summary that follows
+   [`skills/_shared/references/client-facing-output-voice.md`].
+   The V0.x bullet-list of internal fields (`Path: interview`,
+   `compile_profile_at value`, "the path to the assembled
+   `client-profile.md`") read as state-dump to non-technical
+   clients. Replace with two sentences:
 
-   - Path (interview / workbook).
-   - Current step status (which steps complete, which in
-     progress, which not started).
-   - The `compile_profile_at` value (or "pending").
-   - When applicable, the path to the assembled
-     `client-profile.md`.
-   - Next-step prompt: when intake is complete, surface
-     `kb-ingest` and `generate-style-guide` as the natural next
-     skills (run-onboarding does this too; the orchestrator
-     surfaces it so standalone invocations don't drop the
-     prompt). Otherwise: "Resume any time with `run-intake`."
+   - **First sentence**: where the client is, in plain English.
+     One of:
+     - *In progress:* "You're [N] of 6 steps into your business
+       intake."
+     - *Just completed* (compile fired this session): "Your
+       business profile is captured and assembled."
+     - *Already complete on session entry*: "Your intake is
+       complete — your business profile is ready to read."
+   - **Second sentence**: what's next, in user verbs.
+     - *In progress, paused*: "Pick it back up any time by saying
+       'continue intake'."
+     - *Just completed*: "Next: process your knowledge base, then
+       build your style guide. I can walk you through both."
+     - *Already complete*: "Want to redo a step, refresh the
+       profile, or move on to the knowledge base?"
+
+   File paths (the path to `client-profile.md`, the
+   `_progress.md` location) go in a collapsed `[details]` footer
+   if at all. The skill names `kb-ingest` and
+   `generate-style-guide` stay out of the chat summary — they
+   appear in the AskUserQuestion options surface (where they're
+   labels on the operator side) but not in the prose. Same
+   discipline as `run-onboarding`'s Step 3.
 
 ## Drop handling
 
@@ -413,7 +469,7 @@ just paused.
 
 ## Drop and route — special "redo" semantics
 
-When the client picks "Redo: <step>", the sub-skill's own resume
+When the client picks "Redo: [step]", the sub-skill's own resume
 logic kicks in. Every intake sub-skill handles its own
 "already complete — redo from scratch?" prompt. `run-intake` just
 dispatches; the sub-skill owns the user-facing redo question.
@@ -422,7 +478,7 @@ After a redo completes, `compile-profile` (if it has already run)
 is stale — the `compile_profile_at` timestamp predates the redo.
 Surface this in the quality report:
 
-> "Step <N> was redone after compile-profile ran. The current
+> "Step [N] was redone after compile-profile ran. The current
 > client-profile.md is stale. Run `compile-profile` again, or
 > the next time intake is run."
 
@@ -436,7 +492,7 @@ Don't auto-re-run compile-profile. The client decides.
 | `00_intake/intake/` missing                      | Same — tell the client to run `scaffold-client` first.                         |
 | `_progress.md` malformed (manual hand-edit broke | Surface the malformation. Offer two options: restore from the most recent      |
 |   the YAML)                                      | History timestamp by rebuilding from sub-skill artifacts, or restart from      |
-|                                                  | scratch (archives current state to 99_archive/intake/<ISO>/).                  |
+|                                                  | scratch (archives current state to 99_archive/intake/[ISO]/).                  |
 | Sub-skill refuses to run due to missing upstream | Surface the sub-skill's error message verbatim. Re-render the status grid and  |
 |                                                  | ask the top-of-loop turn again. The client likely needs to run the missing     |
 |                                                  | upstream step first.                                                            |

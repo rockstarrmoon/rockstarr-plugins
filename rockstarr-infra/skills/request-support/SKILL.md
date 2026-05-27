@@ -1,7 +1,7 @@
 ---
 name: request-support
 description: |
-  This skill should be used when the client says "email Rockstarr support", "I need help from R&M", "contact support", "file a support ticket", "something is broken, tell Rockstarr", "ask Jon and Rachel for help", or otherwise asks to get an issue to the Rockstarr AI team by email. Collects the client's description of the issue, gathers workspace context automatically (client_id, plugin versions, recent errors if relevant), shows the draft for approval, then sends it to ai_support@rockstarrandmoon.com via the send-notification helper. Reply-to is set to the client's own ROCKSTARR_NOTIFY_TO so Rachel or Jon can reply directly. Not for sending email to leads or teammates — that flows through the reply plugin.
+  This skill should be used when the client says "email Rockstarr support", "I need help from R&M", "contact support", "file a support ticket", or "ask Jon and Rachel for help". Collects the client's description of the issue, gathers workspace context automatically (client_id, plugin versions, recent errors if relevant), shows the draft for approval, then sends to ai_support@rockstarrandmoon.com via send-notification. Reply-to is the client's ROCKSTARR_NOTIFY_TO so Rachel or Jon can reply directly. Not for emailing leads or teammates — that flows through the reply plugin.
 ---
 
 # request-support
@@ -25,7 +25,7 @@ the send so both sides have a record.
 Do NOT run this for:
 
 - Emailing the client's own leads, teammates, or external contacts.
-  Those flow through `rockstarr-reply-<variant>` using the client's
+  Those flow through `rockstarr-reply-[variant]` using the client's
   mailbox OAuth, not the Rockstarr mailer.
 - Silent auto-send. This skill ALWAYS shows the draft to the client
   and waits for explicit approval before sending.
@@ -86,7 +86,7 @@ offer them an edit pass on the draft instead.
    ````markdown
    ## Summary
 
-   <issue_summary>
+   [issue_summary]
 
    ## Detail
 
@@ -94,8 +94,8 @@ offer them an edit pass on the draft instead.
 
    ## Workspace
 
-   - **Client:** <client_name> (<client_id>)
-   - **rockstarr-infra:** <version>
+   - **Client:** [client_name] ([client_id])
+   - **rockstarr-infra:** [version]
    - **Installed plugins:** <list or "(not captured)">
    - **Urgency:** <blocker|high|normal|low>
 
@@ -106,7 +106,7 @@ offer them an edit pass on the draft instead.
 
    ---
 
-   *Sent from <client_name>'s Rockstarr AI workspace via /request-support*
+   *Sent from [client_name]'s Rockstarr AI workspace via /request-support*
    ````
 
    **Plaintext body** — same content flattened, no markdown syntax.
@@ -115,15 +115,15 @@ offer them an edit pass on the draft instead.
    Never include the mailer bearer token, the Resend API key, or any
    `NOTIFY_*` / `STRATEGIST_EMAIL` value in either body. If a captured
    log tail contains anything that looks like a credential, redact it
-   as `<redacted>` before including.
+   as `[redacted]` before including.
 
 4. Compose the subject:
 
    ```
-   [<URGENCY>] <client_name>: <issue_summary>
+   [[URGENCY]] [client_name]: [issue_summary]
    ```
 
-   where `<URGENCY>` is uppercase (`BLOCKER`, `HIGH`, `NORMAL`, `LOW`).
+   where `[URGENCY]` is uppercase (`BLOCKER`, `HIGH`, `NORMAL`, `LOW`).
    Example: `[BLOCKER] Acme Corp: approve skill is throwing mailer auth errors`.
 
 5. Show the client the full draft — subject and body — and ask for
@@ -138,7 +138,7 @@ offer them an edit pass on the draft instead.
    to            = "ai_support@rockstarrandmoon.com"
    reply_to      = <ROCKSTARR_NOTIFY_TO from env>
    subject       = <subject from step 4>
-   subtitle      = "Support request · <client_name>"
+   subtitle      = "Support request · [client_name]"
    body_markdown = <markdown body from step 3>
    body_text     = <plaintext body from step 3>
    reply_hint    = "Reply to this email to respond — it reaches the client directly."
@@ -156,7 +156,7 @@ offer them an edit pass on the draft instead.
 7. On success, tell the client:
 
    - The `message_id` returned by the mailer (for their records).
-   - That Rachel or Jon will reply to `<ROCKSTARR_NOTIFY_TO>`
+   - That Rachel or Jon will reply to `[ROCKSTARR_NOTIFY_TO]`
      directly.
    - The local log line that was appended to
      `/rockstarr-ai/05_published/_mailer.log`.
@@ -172,7 +172,7 @@ offer them an edit pass on the draft instead.
   user" requires explicit permission per the safety rules.
 - Do NOT include secrets in the body. No bearer tokens, no API keys,
   no raw OAuth tokens. If a log tail contains anything that looks
-  like a credential, redact it as `<redacted>` before including.
+  like a credential, redact it as `[redacted]` before including.
 - Do NOT bypass `send-notification`. All email from Rockstarr AI
   skills must go through the shared helper so the endpoint, auth,
   payload shape, and mailer log stay consistent.

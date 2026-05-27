@@ -1,6 +1,6 @@
 ---
 name: intake-icp
-description: "This skill should be used when the user asks to \"run the ICP interview\", \"capture the ideal client profile\", \"do the ICP step\", \"build the ICP\", or \"run the perception gap exercise\", or when run-intake dispatches to the ICP step of the intake flow. Walks the client through Phase A (a 7-step ICP interview) and Phase B (a 7-step Perception Gap exercise), one question at a time, in the unified intake voice. Supports multiple ICPs via an explicit loop. Checkpoints every answer to /00_intake/intake/icp.md so the long interview survives pauses. Phase A output is the ICP section of client-profile.md; Phase B output feeds the Positioning section."
+description: "This skill should be used when the user asks to \"run the ICP interview\", \"capture the ideal client profile\", \"build the ICP\", \"run the perception gap exercise\", or when run-intake dispatches to the ICP step. Walks the client through Phase A (7-step ICP interview) and Phase B (7-step Perception Gap exercise), one question at a time in the unified intake voice. Supports multiple ICPs via explicit loop. Checkpoints to /00_intake/intake/icp.md. Phase A output is the ICP section of client-profile.md; Phase B feeds the Positioning section."
 ---
 
 # intake-icp
@@ -54,6 +54,31 @@ unanswered question. Don't re-ask anything already captured.
 When `intake/icp.md` exists and shows `status: complete`, ask the
 client: "ICP is already captured. Redo from scratch, add another
 ICP, or exit?" Default action is exit.
+
+## Chat narration discipline
+
+Two shared voice references govern what this skill says:
+
+- **`skills/_shared/references/intake-interviewer-voice.md`** —
+  the AskUserQuestion turns themselves.
+- **`skills/_shared/references/client-facing-output-voice.md`** —
+  everything between the questions: phase-transition lines,
+  capture acknowledgments, the post-completion summary.
+
+Apply both. Specifically for this sub-skill:
+
+- **No "Phase A" / "Phase B" labels in chat transitions.** Use
+  plain English: "Now let's pressure-test how your clients describe
+  you" not "Phase B — Perception Gap exercise."
+- **No artifact paths in capture acknowledgments.** The fact that
+  answers land in `00_intake/intake/icp.md` is invisible to the
+  client.
+- **One short sentence per phase transition.** The pre-draft /
+  confirm pattern (from `intake-interviewer-voice.md`) is the
+  question discipline; what surrounds it stays short.
+- **Multi-ICP loop transitions** stay plain: "Got the first ICP.
+  Want to capture another one or stop here?" Not "ICP #1 status:
+  complete. Multi-ICP loop continuing."
 
 ## The two phases
 

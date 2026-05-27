@@ -1,6 +1,6 @@
 ---
 name: publish-log
-description: "This skill should be used when the user says \"log that I published this\", \"record the send\", \"mark this shipped\", or after a Rockstarr bot finishes posting/sending something. It writes a publish record to /rockstarr-ai/05_published/ with the metadata needed for performance review and attribution."
+description: "This skill should be used when the user says \"log that I published this\", \"record the send\", \"mark this shipped\", or after a Rockstarr bot finishes posting/sending something. It writes a publish record to /rockstarr-ai/05_published/ with the metadata needed for performance review and attribution. Chat confirmation follows skills/_shared/references/client-facing-output-voice.md — past tense, channel-aware noun, names when performance shows up next (e.g. \"Logged. Your LinkedIn post is live as of 9:14am — performance shows up in this Friday's report.\")."
 ---
 
 # publish-log
@@ -29,7 +29,10 @@ ran when.
   `/04_approved/_approvals.log`, or the user confirms it was approved
   and explains why it bypassed the log (e.g., client edited post-
   approval).
-- `/rockstarr-ai/05_published/<channel>/` exists; create it if missing.
+- `/rockstarr-ai/05_published/[channel]/` exists; create it if missing.
+- The shared client-facing output voice reference is available at
+  `rockstarr-infra/skills/_shared/references/client-facing-output-voice.md`.
+  Step 5 follows its rules. Refuse if missing.
 
 ## Steps
 
@@ -54,19 +57,19 @@ ran when.
 2. Compute the log filename:
 
    ```
-   /rockstarr-ai/05_published/<channel>/<yyyy-mm-dd>_<slug>.md
+   /rockstarr-ai/05_published/[channel]/[yyyy-mm-dd]_[slug].md
    ```
 
-   where `<slug>` is derived from the approved file's slug. If two
+   where `[slug]` is derived from the approved file's slug. If two
    publishes share a slug on the same day, append `-2`, `-3` etc.
 
 3. Write the log file with this front-matter:
 
    ```yaml
    # ---
-   channel: "<channel>"
-   published_at: "<ISO>"
-   published_by: "<actor>"
+   channel: "[channel]"
+   published_at: "[ISO]"
+   published_by: "[actor]"
    source_approved_file: "04_approved/<filename or empty>"
    external_url: "<url or empty>"
    external_id: "<id or empty>"
@@ -83,13 +86,56 @@ ran when.
    if missing):
 
    ```
-   <ISO>  <channel>  <published_by>  <published filename>  <external_url>
+   [ISO]  [channel]  [published_by]  <published filename>  [external_url]
    ```
 
-5. Print a confirmation with the new path and a one-liner:
+5. Print a confirmation in chat per the voice guide's rule 1 (lead
+   with the outcome, past tense) and rule 4 (one or two sentences).
+   The shape:
 
-   > Shipped. When results come in, `metrics-review` will read this log
-   > and attribute performance back to the draft.
+   - **First sentence**: confident past tense, what is now live, in
+     the user's terms. Includes a humanized timestamp from
+     `published_at` (e.g. "9:14am today", "yesterday at 4pm",
+     "April 25, 2026 at 8:14am" — match the client's reading
+     pattern, not raw ISO).
+   - **Second sentence**: when performance shows up. Use "this
+     Friday's report" for sends that happen during the week and
+     "next Friday's report" for weekend sends. Outreach sends
+     surface in the weekly outreach report; content sends in the
+     weekly content report; both are Friday-cadence today.
+   - **File paths**: in a collapsed `[details]` footer.
+
+   ### Channel → noun mapping for the confirmation
+
+   | `channel` value | Noun for the first sentence |
+   |---|---|
+   | `blog` | "blog post" |
+   | `linkedin` (when it's a post; the `linkedin-post` lane goes here too) | "LinkedIn post" |
+   | `email` / `newsletter` | "newsletter" |
+   | `outreach` | "outreach send" |
+   | `social-other` | "social post" |
+   | any other / unknown | "post" (generic fallback) |
+
+   For `outreach` specifically, the noun pluralizes naturally
+   ("Your outreach send is logged — 20 connects went out today")
+   because connects are batches, not single posts.
+
+   ### Shape
+
+   ~~~markdown
+   Logged. Your <channel-aware noun> is live as of <humanized
+   timestamp>. Performance shows up in <this/next> Friday's
+   report.
+
+   **Details**
+
+   - Publish log: `05_published/[channel]/[filename]`
+   - External URL: <url, if external_url was provided>
+   ~~~
+
+   The external URL bullet appears in the Details footer only when
+   `external_url` is non-empty — outreach / DM sends often have no
+   public URL, so the bullet is omitted in those cases.
 
 ## Idempotency and duplicates
 
@@ -107,3 +153,13 @@ ran when.
 - Do not create publish records for drafts that were never approved.
   If the user insists, require an explicit `bypass_reason` field in the
   front-matter, and print a prominent warning.
+- Do not use the passive-tense "When results come in, `metrics-review`
+  will read this log..." phrasing in chat output. That sentence read
+  as vague-future-tense to clients (they wanted confirmation the
+  thing actually went live, not a forward-looking promise about an
+  unfamiliar skill). The Step 5 confident-past-tense shape is the
+  canonical replacement.
+- Do not surface internal skill names like `metrics-review`,
+  `outreach-weekly-report`, or `metrics-weekly` in the chat
+  confirmation. The user-facing phrase is "this Friday's report" —
+  same content, the user's noun.

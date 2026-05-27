@@ -1,6 +1,6 @@
 ---
 name: compile-profile
-description: "This skill should be used when the user asks to \"compile the profile\", \"assemble the client profile\", \"build client-profile.md from the intake artifacts\", or when run-intake reports every intake sub-skill is complete. Reads the six intake artifacts from 00_intake/intake/ (icp.md, transformations.md, competitors.md, platinum-message.md, offer.md, plus background captured by intake-background) and assembles the canonical /rockstarr-ai/00_intake/client-profile.md in the single shape every downstream Rockstarr bot reads. Deterministic stitcher — no editing, no fabrication. Archives the prior profile before overwriting."
+description: "This skill should be used when the user asks to \"compile the profile\", \"assemble the client profile\", \"build client-profile.md from the intake artifacts\", or when run-intake reports every intake sub-skill is complete. Reads the six intake artifacts from 00_intake/intake/ (icp, transformations, competitors, platinum-message, offer, background) and assembles the canonical /rockstarr-ai/00_intake/client-profile.md in the single shape every downstream bot reads. Deterministic stitcher — no editing, no fabrication. Archives the prior profile before overwriting."
 ---
 
 # compile-profile
@@ -34,13 +34,46 @@ front-matter `source` field, which they generally don't).
 
 ## Preconditions
 
+Per `rockstarr-infra/CLAUDE.md`'s "Defer expensive preconditions"
+section, split checks into two tiers:
+
+**Tier 1 — cheap existence checks (run silently, before the
+anchor message):**
+
 - `/rockstarr-ai/00_intake/intake/_progress.md` exists.
-- The six intake artifacts named below exist and each carries
-  `status: complete` in front-matter.
+- All six intake artifact files exist at their expected paths
+  (use `os.path.exists`, not `read` — this is a sub-second stat).
 - `client.toml` exists at the workspace root.
 
-If any precondition fails, write a clear message naming what's
-missing and exit. Do not partially assemble.
+If any of these fail, refuse FAST with a clear remediation
+pointer naming what's missing. The user sees the refusal
+immediately, not after a multi-second silence.
+
+**Tier 2 — content-level validation (deferred to Step 1 of
+Behavior):**
+
+- Each intake artifact carries `status: complete` in
+  front-matter. This requires reading + parsing the front-matter
+  block of each file (still cheap individually, but together
+  with the body reads in Step 1 it makes more sense to do as
+  part of the actual work, not pre-flight).
+- Cross-artifact consistency (the campaign_slug referenced in
+  `competitors.md` matches the one in `icp.md`, etc.).
+
+These run AFTER the anchor message has fired, as part of the
+main assembly work.
+
+## Anchor message
+
+Per `client-facing-output-voice.md` rule 7, fire this as the
+FIRST chat output after Tier 1 existence checks pass:
+
+> Stitching your business profile together from the six intake
+> steps…
+
+If Tier 1 fails (a file is missing), the anchor doesn't fire —
+the refusal is the only output. The user sees the refusal
+immediately without bot-looking-dead silence.
 
 ## Input artifacts
 
@@ -79,7 +112,7 @@ icp_count: <integer N>
 ~~~
 
 `source` discriminates between paths. `compile-profile` always writes
-`"intake-interview v<version>"`. `ingest-workbook` writes its own
+`"intake-interview v[version]"`. `ingest-workbook` writes its own
 source string (and may include workbook-specific fields like
 `source_workbook`, `getting_started_complete`, `modules_present` —
 those belong only to the legacy path and are not added here).
@@ -334,18 +367,44 @@ ship.
    front-matter, provenance comments, bullet-list mechanical
    structure) are exempt.
 
-9. **Print a quality report.** Surface to the user:
+9. **Print a chat summary** per
+   [`skills/_shared/references/client-facing-output-voice.md`].
+   V0.x bullet-listed the internal fields (`icp_count` and
+   `source` field, "which sections rendered `_not provided._`",
+   "whether `samples/voice-notes.md` exists") — that read as
+   audit log to non-technical clients. The new shape:
 
-   - File path written.
-   - `icp_count` and `source` field.
-   - Which sections rendered `_not provided._`.
-   - Which sections rendered a partial gap note.
-   - Whether `samples/voice-notes.md` exists (Voice samples section
-     is only useful when it does).
-   - Next-step prompt: "Open `client-profile.md` and read it
-     end-to-end. If any section is off, redo the matching intake
-     step via `run-intake`. Then run `kb-ingest` and
-     `generate-style-guide`."
+   - **First sentence**: confident past tense, what now exists in
+     the user's terms.
+     - Clean run, no gaps: "Your business profile is assembled
+       and ready to read."
+     - Partial — one or more sections empty or gappy: "Your
+       business profile is assembled. A few sections are still
+       waiting on input — you can fill them in any time by
+       redoing those intake steps."
+   - **Second sentence**: what comes next, in user verbs.
+     "Next: process your knowledge base and build your style
+     guide. I can walk you through both whenever you're ready."
+
+   Gap detail (which sections came up empty or partial, ICP count,
+   voice-samples presence) goes in a collapsed `[details]` footer
+   for the user who wants to navigate to specifics:
+
+   ~~~markdown
+   **Details**
+
+   - File: `00_intake/client-profile.md`
+   - ICPs captured: [N]
+   - Sections still waiting on input: <comma list, or "none">
+   - Voice samples available: <yes / no, with a one-line note
+     when no, since the absence affects style-guide quality>
+   ~~~
+
+   The skill names `run-intake`, `kb-ingest`, and
+   `generate-style-guide` stay out of the chat summary's prose.
+   The orchestrator (`run-onboarding` / `run-intake`) is the
+   surface that asks the next-step AskUserQuestion using
+   user-facing labels — this skill just hands back cleanly.
 
 ## Resume and idempotency
 

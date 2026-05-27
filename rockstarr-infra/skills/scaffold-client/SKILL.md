@@ -137,7 +137,7 @@ Create these directories and placeholder files under the workspace root:
    # needs to send as a different tenant.
 
    ROCKSTARR_MAILER_TOKEN=
-   ROCKSTARR_CLIENT_ID=<client_id>
+   ROCKSTARR_CLIENT_ID=[client_id]
 
    # Default recipient for most notifications (drafts ready, digests,
    # publish confirmations). Required — send-notification aborts if
@@ -260,7 +260,7 @@ Create these directories and placeholder files under the workspace root:
      Worker, etc.) — print a shorter warning noting the failure and
      advising the user to re-run the probe from their next chat:
 
-     > ⚠ Mailer probe returned `<outcome>`. Scaffold is complete; check
+     > ⚠ Mailer probe returned `[outcome]`. Scaffold is complete; check
      > with Rockstarr support if notifications do not work.
 
    This preflight is advisory. Never block scaffolding on its

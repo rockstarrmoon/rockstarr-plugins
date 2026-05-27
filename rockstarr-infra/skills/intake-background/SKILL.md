@@ -1,6 +1,6 @@
 ---
 name: intake-background
-description: "This skill should be used when the user asks to \"start intake\", \"run the background step\", \"capture company background\", \"set up the knowledge base inputs\", \"capture voice samples\", or when run-intake dispatches to the first step of the intake flow. Captures the three foundational inputs every other intake sub-skill depends on — tech stack (via capture-stack), content library URLs and notes, and voice samples plus brand/style notes — plus a one-to-three-paragraph Company description that compile-profile uses for the canonical profile's Company section. One question at a time, in the unified intake voice. Checkpoints every answer to /00_intake/intake/background.md. Writes the three downstream-readable artifacts: stack.md, samples/content-library.md, samples/voice-notes.md."
+description: "This skill should be used when the user asks to \"start intake\", \"run the background step\", \"capture company background\", \"capture voice samples\", or when run-intake dispatches to the first step. Captures the three foundational inputs every other intake sub-skill depends on — tech stack (via capture-stack), content-library URLs + notes, voice samples + brand/style notes — plus a 1-3 paragraph Company description for the canonical profile's Company section. One question at a time in the unified intake voice. Checkpoints to /00_intake/intake/background.md. Writes downstream artifacts: stack.md, samples/content-library.md, samples/voice-notes.md."
 ---
 
 # intake-background
@@ -70,6 +70,32 @@ When the file exists with `status: complete`, ask the client:
 "Background already captured. Refresh the stack, add more content
 library entries or voice samples, redo the company description, or
 exit?" Default action is exit.
+
+## Chat narration discipline
+
+Two shared voice references govern what this skill says:
+
+- **`skills/_shared/references/intake-interviewer-voice.md`** —
+  the AskUserQuestion turns themselves (one question at a time,
+  pre-draft → confirm / amend / reject / skip, the four discipline
+  rules).
+- **`skills/_shared/references/client-facing-output-voice.md`** —
+  everything between the questions: stage-transition lines,
+  capture acknowledgments, the post-completion summary.
+
+Apply both. Specifically for this sub-skill:
+
+- **No stage labels in chat transitions.** "Stage 3 — Content
+  library" reads as internal structure. Use plain English: "Got
+  it. Next: where can we find your published thinking?"
+- **No artifact paths in capture acknowledgments.** The fact that
+  answers land in `00_intake/intake/background.md` is invisible
+  to the client.
+- **One short sentence per stage transition.** Not "Captured: 4
+  fields. Stage 2 complete."
+- **Post-completion summary**: one sentence what's captured, one
+  sentence about what comes next (which the orchestrator
+  handles). File paths in a collapsed `[details]` footer.
 
 ## Stage 1 — Tech stack
 
@@ -147,8 +173,8 @@ Routing on capture:
   matching `## First-party content` or `## Third-party content`
   section. `kb-ingest` reads this file on its next run and fetches
   the URLs.
-- **Paste**: write to `01_knowledge_base/raw/<slug>.md` (first-
-  party) or `01_knowledge_base/raw/third-party/<slug>.md` (third-
+- **Paste**: write to `01_knowledge_base/raw/[slug].md` (first-
+  party) or `01_knowledge_base/raw/third-party/[slug].md` (third-
   party). Reference it from `samples/content-library.md`.
 - **Dropped file**: route to `01_knowledge_base/raw/` or `raw/third-
   party/` per scope. Reference it from `samples/content-library.md`.
@@ -180,7 +206,7 @@ sample has three fields:
 |                | available.                                                                                        |
 
 Each sample gets appended to `00_intake/samples/voice-notes.md`
-under its own `## <Title>` H2 with a `<!-- source: <kind>,
+under its own `## [Title]` H2 with a `<!-- source: <kind>,
 captured <ISO> -->` provenance comment.
 
 After each sample, ask: "Add another? (yes / no / done)". Encourage
@@ -347,7 +373,7 @@ Captured during intake-background, <ISO date>.
 
 <!-- source: <kind>, captured <ISO> -->
 
-<paste content, or `<see 01_knowledge_base/raw/<slug>.md>` when the
+<paste content, or `<see 01_knowledge_base/raw/[slug].md>` when the
 sample landed as a file drop>
 
 ## <Sample 2 title>

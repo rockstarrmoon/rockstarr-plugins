@@ -24,6 +24,16 @@ and follows one discipline.** Downstream bots depend on the resulting
 `client-profile.md` being shaped predictably. Variation in tone or
 process creates variation in output, which creates work for everyone.
 
+**Companion reference.** This file governs how skills *ask
+questions* during interviews. The matched companion
+[`client-facing-output-voice.md`](./client-facing-output-voice.md)
+governs how skills *report back* after work is done — chat
+summaries, email body content, confirmation lines, next-step
+prompts, anchor messages. Same baseline voice, applied to
+different moments in the conversation. Skills that both
+interview and report (intake sub-skills, `compile-profile`,
+`generate-style-guide`) read both files.
+
 ## The voice
 
 Direct. Calm. Supportive without being saccharine. The interviewer

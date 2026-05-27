@@ -56,6 +56,28 @@ skill.
 
 No other preconditions. The chain handles everything else.
 
+## Chat narration discipline
+
+Every chat message this skill emits — step-transition lines, the
+post-intake next-step prompt, the deferred-prompt reminder, the
+all-set quality report — follows
+[`skills/_shared/references/client-facing-output-voice.md`].
+
+Specifically for this orchestrator:
+
+- **No internal skill names in client-facing labels.** "Process
+  the knowledge base now" not "Process the knowledge base now
+  (`kb-ingest`)". Operators reading the backscroll can ask for the
+  skill name if they need it.
+- **No "step [N] of 6 on the interview path" framing in transitions.**
+  "You're 3 of 6 steps into the intake" is fine — short, plain
+  English, no internal label ("the interview path") that distinguishes
+  the workbook path from the interview path (the client doesn't
+  care which path; they care which step).
+- **Quality reports follow the voice-guide pattern.** One sentence
+  about what's captured, one sentence about what's next, file
+  paths in a `[details]` footer.
+
 ## The chain
 
 ### Step 1 — `scaffold-client`
@@ -82,37 +104,47 @@ interview path question and proceeds from there. On a resume,
 ### Step 3 — Post-intake next-step prompt
 
 On `run-intake` return, inspect `_progress.md` for
-`status: complete`.
+`status: complete`. Chat narration follows
+`skills/_shared/references/client-facing-output-voice.md` —
+short, plain-English, file paths in a footer if at all.
 
 **When intake is complete:**
 
-Surface a one-paragraph summary:
+Surface a two-sentence summary:
 
-> "Intake is complete. `client-profile.md` is assembled at
-> `/rockstarr-ai/00_intake/client-profile.md`. Open it and read it
-> end to end. If any section reads off, you can redo the matching
-> step via `run-intake`."
+> "Your business profile is captured and assembled. Open it and
+> read it end-to-end; if anything reads off, you can redo that
+> step any time."
+>
+> *(File path in a collapsed Details footer for the user who
+> wants to navigate to it directly:
+> `00_intake/client-profile.md`.)*
 
 Then ask one `AskUserQuestion`:
 
-- **Process the knowledge base now (`kb-ingest`)** — dispatches
+- **Process the knowledge base now** — dispatches
   to `kb-ingest`, which reads `samples/content-library.md` plus
   anything in `01_knowledge_base/raw/` and produces the
   processed library. After `kb-ingest` returns clean, ask the
-  follow-up about `generate-style-guide`.
-- **Build the style guide now (`generate-style-guide`)** —
-  warns that style-guide quality is meaningfully better when KB
-  has been processed, then dispatches to `generate-style-guide`
-  directly. On the client's confirm.
+  follow-up about the style guide.
+- **Build the style guide now** —
+  warns that style-guide quality is meaningfully better when the
+  knowledge base has been processed, then dispatches to
+  `generate-style-guide` directly. On the client's confirm.
 - **Stop here** — exits cleanly with the deferred-prompt reminder
   (below).
 
+Option labels stay in plain English (not "Process the knowledge
+base now (`kb-ingest`)" with the skill name in parens). The
+follow-up route names the skill in backticks when needed for
+operator-level clarity, but the client-facing label is plain.
+
 **When intake is in progress** (the client paused mid-flow):
 
-Surface a brief status echo from `run-intake`'s quality report:
+One short sentence per voice-guide rule 4:
 
-> "Intake is paused. You're at step <N> of 6 on the interview
-> path. Resume any time by running `run-intake`."
+> "You're [N] of 6 steps into the intake. Pick it back up any time
+> by saying 'continue intake'."
 
 Exit cleanly. Don't ask about `kb-ingest` or `generate-style-guide`
 — those skills aren't useful until intake produces
@@ -149,10 +181,15 @@ client picked "Stop here" before running `kb-ingest` and / or
 `generate-style-guide`, the exit message includes a clear
 reminder:
 
-> "You can run `kb-ingest` and `generate-style-guide` any time.
-> Both are required before your drafting bots produce usable
-> output, but neither is on a timer. Pick them up when you have
-> the focused time."
+> "Two more steps to unlock your drafting bots: process your
+> knowledge base and build the style guide. Neither is on a timer
+> — pick them up when you have focused time."
+
+(The skill names `kb-ingest` and `generate-style-guide` stay out
+of the client-facing message; the user can ask "what are the
+next steps?" if they want more detail and the response will
+expand. Operators reading the chat backscroll know the right
+skill names without surfacing them to the client at exit.)
 
 When `generate-style-guide` is the only one left, the reminder
 narrows to that skill.

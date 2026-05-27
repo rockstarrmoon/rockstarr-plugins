@@ -216,7 +216,7 @@ subsection.
 | Key                              | Type    | Default               | Prompt / guidance                                                                                          |
 |----------------------------------|---------|-----------------------|------------------------------------------------------------------------------------------------------------|
 | `page_invite_enabled`            | boolean | `false`               | Run the monthly LinkedIn page-follower invite?                                                             |
-| `page_invite_target_url`         | URL     | —                     | Public URL for the LinkedIn company page (`https://www.linkedin.com/company/<slug>/`).                     |
+| `page_invite_target_url`         | URL     | —                     | Public URL for the LinkedIn company page (`https://www.linkedin.com/company/[slug]/`).                     |
 | `page_invite_company_id`         | string  | —                     | Numeric LinkedIn company id (visible in the page admin URL).                                               |
 | `page_invite_admin_display_name` | string  | —                     | Admin's full name as shown on their LinkedIn profile photo. Used in the strict identity gate.              |
 | `page_invite_schedule_cron`      | cron    | `"0 14 8-14 * 2"`     | When the monthly invite run fires. Default 2pm second Tuesday client-local.                                |
@@ -240,7 +240,7 @@ account, ask one `AskUserQuestion` at a time:
 | Field             | Type   | Required | Prompt                                                                                                |
 |-------------------|--------|----------|-------------------------------------------------------------------------------------------------------|
 | `name`            | string | yes      | Account holder's full name (e.g. `"Phil Katz"`).                                                      |
-| `slug`            | string | yes      | The `linkedin.com/in/<slug>` slug for that account (e.g. `"philipkatz1"`).                            |
+| `slug`            | string | yes      | The `linkedin.com/in/[slug]` slug for that account (e.g. `"philipkatz1"`).                            |
 | `voice_notes`     | text   | yes      | Short description of the account holder's reply voice. The skill drafts replies in this voice.        |
 | `brand_kit_url`   | URL    | no       | Optional link to a brand kit or style sheet the bot should reference for this account.                |
 | `clickup_task_id` | string | no       | **Ask only when `task_system: clickup`.** ClickUp task id the comment-check loop closes when a send completes. Required only when `li_comment_clickup_enabled: true`. Omit the field entirely when `task_system` is anything else. |
@@ -339,7 +339,7 @@ Rules:
    ~~~markdown
    # ---
    client_id: "<from client.toml>"
-   captured_at: "<ISO>"
+   captured_at: "[ISO]"
    capture_skill_version: "0.5.0"
    # ---
 
@@ -393,7 +393,7 @@ Rules:
 
    # Page-follower invites (only when page_invite_enabled: true)
    page_invite_enabled: false
-   page_invite_target_url: "https://www.linkedin.com/company/<slug>/"
+   page_invite_target_url: "https://www.linkedin.com/company/[slug]/"
    page_invite_company_id: "<numeric id>"
    page_invite_admin_display_name: "<full name>"
    page_invite_schedule_cron: "0 14 8-14 * 2"
@@ -432,13 +432,13 @@ Rules:
 
    ~~~yaml
    outreach_tool: salesnav
-   linkedin_expected_profile_url: https://www.linkedin.com/in/<handle>
+   linkedin_expected_profile_url: https://www.linkedin.com/in/[handle]
    outreach_campaign_mode: full   # full | connect_only | none — default preference, not a hard gate
    outreach_daily_run_time: "09:00"
    outreach_daily_preview: true
    booking_mode: automated
    availability_source: booking_link
-   booking_link_url: https://calendly.com/<client>/<slug>
+   booking_link_url: https://calendly.com/[client]/[slug]
    booking_link_required_fields:
      - email
    booking_link_optional_fields:
@@ -484,11 +484,11 @@ Rules:
    - Email = Gmail → `rockstarr-reply-gmail`
    - Email = Outlook → `rockstarr-reply-outlook`
    - Email = Same as CRM → no separate `rockstarr-reply` variant; the
-     CRM's `rockstarr-ops-<crm>` handles inbox actions.
+     CRM's `rockstarr-ops-[crm]` handles inbox actions.
    - Social scheduler = Publer → `rockstarr-social` (Publer is the
      default; no variant)
    - Social scheduler = Buffer / Hootsuite / Later →
-     `rockstarr-social-<tool>`
+     `rockstarr-social-[tool]`
    - Task system = ClickUp / Asana / Linear / Notion / none → no
      plugin variant attaches today. The answer is captured to gate
      task-closure features inside other plugins (currently the

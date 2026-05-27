@@ -1,6 +1,6 @@
 ---
 name: intake-transformations
-description: "This skill should be used when the user asks to \"run the transformations step\", \"capture top results\", \"do the top transformations exercise\", \"list our wins\", or when run-intake dispatches to the transformations step of the intake flow. Walks the client through a five-stage process — ICP review, evidence pre-read, candidate list (5 to 10 transformations with specifics), pressure-test each (repeatable, why-it-worked, right-fit dependency), and narrow to top 3 to 5. One question at a time, in the unified intake voice. Checkpoints every answer to /00_intake/intake/transformations.md so the long interview survives pauses. Feeds the Proof / results section of client-profile.md."
+description: "This skill should be used when the user asks to \"run the transformations step\", \"capture top results\", \"do the top transformations exercise\", \"list our wins\", or when run-intake dispatches to the transformations step. Walks the client through five stages: ICP review, evidence pre-read, candidate list (5-10 with specifics), pressure-test each (repeatable / why-it-worked / right-fit dependency), narrow to top 3-5. One question at a time in the unified intake voice. Checkpoints to /00_intake/intake/transformations.md. Feeds the Proof/results section of client-profile.md."
 ---
 
 # intake-transformations
@@ -63,6 +63,32 @@ unanswered question.
 When the file exists with `status: complete`, ask the client: "Top
 results are already captured. Redo from scratch, add more, or exit?"
 Default action is exit.
+
+## Chat narration discipline
+
+Two shared voice references govern what this skill says:
+
+- **`skills/_shared/references/intake-interviewer-voice.md`** —
+  the AskUserQuestion turns themselves.
+- **`skills/_shared/references/client-facing-output-voice.md`** —
+  everything between the questions: stage-transition lines,
+  capture acknowledgments, the post-completion summary.
+
+Apply both. Specifically for this sub-skill:
+
+- **No "Stage 1 / Stage 2 / ..." labels in chat transitions.**
+  Use plain English: "Now let's pressure-test each one — was it
+  repeatable, why did it work, did the client need to be a
+  right-fit?" not "Stage 3 — Pressure-test each candidate."
+- **No artifact paths in capture acknowledgments.** The fact that
+  answers land in `00_intake/intake/transformations.md` is
+  invisible to the client.
+- **The five-stage process is a thinking scaffold for the bot, not
+  a label set for the client.** The client experiences five
+  natural progressions: review ICPs, look at the evidence,
+  brainstorm candidates, pressure-test them, narrow to the top 3
+  to 5. The bot navigates the structure; the client follows the
+  conversation.
 
 ## Scope decision: transformations are global, not per-ICP
 

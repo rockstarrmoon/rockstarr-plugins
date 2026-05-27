@@ -233,7 +233,7 @@ treated as finished knowledge-base content.
 
 Before writing any file in step 6 or 7, if a non-draft version already
 exists, move it to
-`/rockstarr-ai/99_archive/<filename>_<ISO timestamp>.md`. Never
+`/rockstarr-ai/99_archive/[filename]_<ISO timestamp>.md`. Never
 silently overwrite a live intake artifact.
 
 ### 9. Print the quality report
