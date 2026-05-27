@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rockstarr Social</title>
+  <style>
+  /* Rockstarr & Moon brand-aligned guide stylesheet.
+     Fonts and colors per the brand guide (Sep 2025).
+     Used by both HTML and PDF outputs of every founder guide. */
+
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --rs-blue:    #0069AA;
+    --rs-teal:    #04E6F7;
+    --rs-black:   #000000;
+    --rs-ink:     #1a1a1a;       /* body text — easier on the eye than pure black */
+    --rs-muted:   #5a6470;
+    --rs-rule:    #e3e8ee;
+    --rs-bg:      #ffffff;
+    --rs-callout: #eef9fc;       /* very light teal tint */
+    --rs-code-bg: #f2f5f8;
+
+    --font-display: 'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif;
+    --font-body:    'Manrope', -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --font-mono:    ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--rs-bg);
+    color: var(--rs-ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Top hero band: thin Blue → Teal gradient so every guide reads as
+     "from Rockstarr." */
+  body::before {
+    content: "";
+    display: block;
+    height: 8px;
+    background: linear-gradient(90deg, var(--rs-blue) 0%, var(--rs-teal) 100%);
+  }
+
+  main, .content {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* === Typography === */
+
+  h1, h2, h3, h4, h5 {
+    font-family: var(--font-display);
+    font-weight: 400;          /* Bebas Neue is display-weight by default */
+    letter-spacing: 0.02em;
+    color: var(--rs-blue);
+    margin: 0 0 0.4em;
+    line-height: 1.1;
+  }
+
+  h1 {
+    font-size: 3.0rem;
+    text-transform: uppercase;
+    color: var(--rs-black);
+    margin-top: 0;
+    padding-bottom: 0.3em;
+    border-bottom: 4px solid var(--rs-teal);
+    margin-bottom: 0.6em;
+  }
+
+  h2 {
+    font-size: 1.9rem;
+    text-transform: uppercase;
+    margin-top: 2.4em;
+    padding-bottom: 0.2em;
+    border-bottom: 2px solid var(--rs-rule);
+  }
+
+  h3 {
+    font-size: 1.35rem;
+    text-transform: uppercase;
+    color: var(--rs-ink);
+    margin-top: 2em;
+    letter-spacing: 0.04em;
+  }
+
+  h4 {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    color: var(--rs-muted);
+    margin-top: 1.6em;
+    letter-spacing: 0.06em;
+  }
+
+  p {
+    margin: 0 0 1.1em;
+  }
+
+  strong, b {
+    font-weight: 700;
+    color: var(--rs-ink);
+  }
+
+  em, i { font-style: italic; }
+
+  a {
+    color: var(--rs-blue);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(0, 105, 170, 0.3);
+    transition: border-color 0.15s, color 0.15s;
+  }
+  a:hover {
+    color: var(--rs-teal);
+    border-bottom-color: var(--rs-teal);
+  }
+
+  /* Subtitle: pandoc renders the line just under H1 as a paragraph; for the
+     founder guides this is the "User guide for founder-led clients — v0.7.3"
+     line. Italicize and mute it. */
+  h1 + p em:first-child,
+  h1 + p {
+    /* If the para after H1 is fully italicized, treat as subtitle. */
+  }
+
+  /* === Lists === */
+
+  ul, ol {
+    margin: 0 0 1.2em;
+    padding-left: 1.6em;
+  }
+  li {
+    margin-bottom: 0.5em;
+    line-height: 1.55;
+  }
+  li > p { margin: 0 0 0.5em; }
+  li > p:last-child { margin-bottom: 0; }
+
+  ol {
+    list-style: decimal;
+  }
+  ol > li::marker {
+    font-weight: 700;
+    color: var(--rs-blue);
+  }
+
+  ul > li::marker {
+    color: var(--rs-teal);
+  }
+
+  /* === Callout: blockquote === */
+
+  blockquote {
+    margin: 1.8em 0;
+    padding: 1.2em 1.4em 1em;
+    background: var(--rs-callout);
+    border-left: 4px solid var(--rs-teal);
+    border-radius: 2px;
+    font-size: 0.97rem;
+  }
+  blockquote p { margin: 0 0 0.6em; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote strong:first-child {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 1.05rem;
+    color: var(--rs-blue);
+    display: block;
+    margin-bottom: 0.4em;
+  }
+  blockquote ul, blockquote ol {
+    margin: 0.6em 0 0;
+    padding-left: 1.4em;
+  }
+
+  /* === Code === */
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    background: var(--rs-code-bg);
+    padding: 0.12em 0.4em;
+    border-radius: 3px;
+    color: var(--rs-blue);
+  }
+
+  pre {
+    font-family: var(--font-mono);
+    background: var(--rs-code-bg);
+    padding: 1em 1.2em;
+    border-radius: 4px;
+    border-left: 3px solid var(--rs-blue);
+    overflow-x: auto;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 1.4em 0;
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    color: var(--rs-ink);
+  }
+
+  /* === Horizontal rule === */
+
+  hr {
+    border: none;
+    height: 1px;
+    background: var(--rs-rule);
+    margin: 2.4em 0;
+  }
+
+  /* === Tables (for if any guide adds one) === */
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.4em 0;
+    font-size: 0.95rem;
+  }
+  th, td {
+    padding: 0.6em 0.8em;
+    text-align: left;
+    border-bottom: 1px solid var(--rs-rule);
+  }
+  th {
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--rs-blue);
+    border-bottom: 2px solid var(--rs-blue);
+  }
+
+  /* === Footer (for the version + footer link if we add one) === */
+
+  .guide-footer {
+    margin-top: 5em;
+    padding-top: 1.6em;
+    border-top: 1px solid var(--rs-rule);
+    font-size: 0.85rem;
+    color: var(--rs-muted);
+    text-align: center;
+  }
+  .guide-footer a {
+    color: var(--rs-muted);
+    border-bottom-color: transparent;
+  }
+
+  /* === Print / PDF specifics === */
+
+  @page {
+    size: letter;
+    margin: 0.8in 0.75in 0.9in;
+
+    @bottom-center {
+      content: counter(page) " of " counter(pages);
+      font-family: 'Manrope', sans-serif;
+      font-size: 9pt;
+      color: #5a6470;
+    }
+  }
+
+  @media print {
+    /* Avoid the top gradient eating a page slice in PDFs — keep the
+       band but rely on @page margins for the white frame. */
+    body::before { height: 6px; }
+    main, .content { padding: 24px 0 40px; max-width: none; }
+    h1 { font-size: 28pt; }
+    h2 { font-size: 18pt; page-break-after: avoid; }
+    h3 { font-size: 13pt; page-break-after: avoid; }
+    h4 { font-size: 11pt; page-break-after: avoid; }
+    p, li { font-size: 10.5pt; line-height: 1.5; }
+    blockquote { page-break-inside: avoid; }
+    pre { page-break-inside: avoid; }
+    a { color: var(--rs-blue); border-bottom: none; }
+    /* Show links inline in print, so the URL isn't lost on paper. */
+    a[href^="http"]::after {
+      content: " (" attr(href) ")";
+      font-size: 0.8em;
+      color: var(--rs-muted);
+      word-break: break-all;
+    }
+  }
+
+  </style>
+</head>
+<body>
+  <main class="content">
+<h1 id="rockstarr-social">Rockstarr Social</h1>
+<p><em>User guide for founder-led clients — v0.1.4</em></p>
+<p>This is the guide to rockstarr-social, the Rockstarr short-form social plugin your Rockstarr lead installed in your Cowork workspace. It does the drafting, the weekly batching, and the daily LinkedIn engagement work — then hands every batch through the standard approve / publish-log lifecycle.</p>
+<p>Two things this guide is not: a setup manual (your Rockstarr lead handles that) and a technical reference (maintained separately). This is the founder’s guide to what the system does, what it asks of you, and how you know it is working.</p>
+<h2 id="1-what-the-system-does-and-doesnt-do">1. What the system does (and doesn’t do)</h2>
+<p>What it does</p>
+<ul>
+<li><p>Drafts daily / weekly short-form social posts in your approved voice, drawing from first-party material you have vetted.</p></li>
+<li><p>Builds a balanced weekly batch by reading your cadence + mix from stack.md and looping the draft skill once per slot.</p></li>
+<li><p>Exports approved batches to a Publer-shaped CSV that you drop into your scheduler.</p></li>
+<li><p>Drafts batched LinkedIn poll sets with hard character-limit enforcement and an audience-altitude pre-check before any prose runs.</p></li>
+<li><p>Runs the monthly LinkedIn page-follow invite action against your company page, with an identity gate that refuses to fire on the wrong account.</p></li>
+<li><p>Runs the daily LinkedIn comment check on each managed account, drafts in-voice replies, and gates every send on your per-comment approval.</p></li>
+<li><p>Runs the shared stop-slop pass on every prose output before the draft saves.</p></li>
+</ul>
+<p>What it does not do</p>
+<ul>
+<li><p>Does not post, schedule, or send. Publer (or the GrowthAmp planner, when that variant ships) is the publish surface. The plugin produces import files, not posts.</p></li>
+<li><p>Does not draft long-form content. Blogs, thought leadership, newsletters, and case studies live in rockstarr-content.</p></li>
+<li><p>Does not generate outreach connect-and-message sequences — those live in rockstarr-outreach-&lt;variant&gt;.</p></li>
+<li><p>Does not auto-fire the Publer export on approval. You ask for the export explicitly, so you stay in control of when the CSV lands.</p></li>
+<li><p>Does not handle account sign-in for the comment-check or page-invite flows. Your Rockstarr lead (or you) signs into the right LinkedIn account in Chrome — the plugin verifies before acting.</p></li>
+<li><p>Does not approve its own drafts. Human review through the approve flow is the only path to 04_approved/.</p></li>
+</ul>
+<h2 id="2-what-you-get">2. What you get</h2>
+<p>Every week (the post batch)</p>
+<ul>
+<li><p>A balanced weekly batch of 5 to 10 short-form posts (LinkedIn primary; X and Instagram if enabled), landing in 03_drafts/social/week-YYYY-WW.md as a single manifest with one per-post file per slot.</p></li>
+<li><p>Slot-by-slot transparency — the manifest names the brief, the post-type, the recommended hook variant, and any swaps (e.g., a promo slot that flipped to insight because no eligible long-form piece was available that week).</p></li>
+<li><p>A Publer CSV at 05_published-staging/social/YYYY-WW.csv after you run the export, plus a sidecar manifest that records what got exported.</p></li>
+</ul>
+<p>Every poll cycle (monthly, quarterly, or on-demand)</p>
+<ul>
+<li><p>A full set of 10 LinkedIn polls per persona, lands as a single batched file in 03_drafts/social/. The set is the approval unit — polls are not approved individually.</p></li>
+<li><p>Hard char-limit enforcement (question ≤ 140, options ≤ 30, 2 to 4 options) computed at write time, not eyeballed.</p></li>
+<li><p>An audience-altitude pre-check that catches off-altitude topic drift before any prose runs.</p></li>
+</ul>
+<p>Every month (the page-invite run)</p>
+<ul>
+<li><p>One scheduled page-follow invite run — default the second Tuesday of the month, 2pm client-local. Uses up the page’s monthly credit pool by inviting the admin’s first-degree connections to follow the page.</p></li>
+<li><p>A run log in 05_published/social/page-invites/YYYY-MM.md recording how many were sent, the credits remaining, the next refill date, and whether the run was the scheduled fire or a catch-up.</p></li>
+</ul>
+<p>Every workday (the comment check)</p>
+<ul>
+<li><p>A walk-through of every unanswered comment on every managed account, with drafted replies in that account holder’s voice. Default 08:30 weekdays; configurable per workspace.</p></li>
+<li><p>A run log in 05_published/social/li-comments/YYYY-MM-DD.md recording which accounts were processed, how many replies posted, which were flagged for your follow-up, and any account that got skipped (and why).</p></li>
+</ul>
+<h2 id="3-what-we-need-from-you-before-we-start">3. What we need from you before we start</h2>
+<ul>
+<li><p>Your approved style guide. The plugin reads Brand Personality, Tone Definition, Style Rules, and — critically — Channel Adaptation → LinkedIn (and X / Instagram if those channels are enabled). For polls, the Channel Adaptation → LinkedIn polls subsection carries the brand hashtag, persona list, voice rhythm, and hashtag mix. The polls lane refuses to run without it.</p></li>
+<li><p>Your client profile in 00_intake/client-profile.md, including a clear audience definition. The polls altitude check reads this directly.</p></li>
+<li><p>Your stack.md, including the social block (cadence, mix, channels, scheduler, Publer account labels) and — if you use them — the polls cadence, the page-invite block, and the LI-comment-check block. Your Rockstarr lead captures these during onboarding.</p></li>
+<li><p>Enough first-party material in 01_knowledge_base/processed/ for the bot to have real voice signal. Third-party content can be referenced with a link, never paraphrased as if you said it.</p></li>
+<li><p>Roughly 30 minutes a week for batch review, 10 minutes a day on comment-check days, and a few minutes a month to run the page-invite (it is mostly autopilot).</p></li>
+</ul>
+<h2 id="4-the-drafting-lanes">4. The drafting lanes</h2>
+<p>Three drafting surfaces, plus two action surfaces. Each lane is gated by a cadence field in stack.md — if you do not publish in a lane, the bot will not draft for it.</p>
+<ul>
+<li><p>Free-form short-form posts. The weekly batch (fill-week) is the default rhythm; one-off drafts (draft-social) handle event recaps, spontaneous reactions, and posts that fall outside the weekly mix.</p></li>
+<li><p>LinkedIn polls. A structurally-constrained lane (4-option questions, hard char limits, altitude-checked). Polls cadence is an enum — monthly, quarterly, on-demand, or off — because the 10-poll batched-set unit does not fit a numeric per-month count.</p></li>
+<li><p>Page-follow invites. Monthly action, scheduled by default. Driven through the LinkedIn admin dashboard via Chrome MCP.</p></li>
+<li><p>LinkedIn comment engagement. Daily walk-through of managed accounts; you approve every reply per comment.</p></li>
+</ul>
+<h2 id="5-the-weekly-post-flow">5. The weekly post flow</h2>
+<p>You do not run these steps by hand. Your Rockstarr lead runs them, or they run on a schedule. This is the rhythm.</p>
+<ul>
+<li><p>Friday morning — fill-week. The skill reads stack.md (social_posts_per_week and social_mix), expands the mix into a flat slot list, picks one topic per slot from your knowledge base and recently approved long-form pieces, then loops draft-social once per slot. The output is one manifest plus one per-post file per slot, all landing in 03_drafts/social/.</p></li>
+<li><p>Friday afternoon — review. You read the manifest, open per-slot drafts you want to edit, and approve the whole batch when you are happy. Edits go in the per-post files; the system never rewrites over your edits.</p></li>
+<li><p>Friday afternoon — approve the batch. "Approve this batch" promotes the manifest and the per-post files to 04_approved/social/ with a date stamp.</p></li>
+<li><p>Friday afternoon — export. You ask for "Export to Publer." The skill writes 05_published-staging/social/YYYY-WW.csv plus a sidecar manifest. You drop the CSV into Publer.</p></li>
+<li><p>Publishing. Publer schedules. As each post fires, your Rockstarr lead (or a future detect-publishes skill) logs it via publish-log so the publish history stays accurate.</p></li>
+</ul>
+<h2 id="6-the-slot-mix-and-why-it-matters">6. The slot mix and why it matters</h2>
+<p>Your weekly mix lives in stack.md. The default for a five-post week is one promo, two insight, one case, one engagement. The mix is the source of truth for distribution — the post count is the budget.</p>
+<ul>
+<li><p>Promo slots reach for an approved long-form piece (blog, TL piece, newsletter) and tease it. One promo per long-form piece across all of social — the system will swap promo for insight if nothing fresh is available.</p></li>
+<li><p>Insight slots draw from first-party knowledge base material. No asset link; the body carries your perspective and the CTA is usually a question.</p></li>
+<li><p>Case slots reach for customer wins. Named customer (with permission) or anonymized consistently. Quantified outcome, one-line takeaway. The system surfaces if no eligible case material exists rather than backfilling with vague material.</p></li>
+<li><p>Engagement slots are open-ended questions or two-side framings. Fastest to draft and easiest to swap; the system prioritizes a topic your audience can answer in one sentence.</p></li>
+</ul>
+<p>Slot swaps are always surfaced in the manifest. You see them on Friday afternoon, not as a surprise mid-week.</p>
+<h2 id="7-the-polls-lane">7. The polls lane</h2>
+<p>Polls are batched 10 at a time. The batch is the approval unit; individual polls inside the batch are the publish unit. The lane has three quality gates, in order.</p>
+<p>Altitude pre-check</p>
+<p>The plugin generates 12 to 15 candidate topics across talent / growth / culture / trends themes, then asks for each one: "Would the audience defined in client-profile.md actually care about this question?" Topics that fail altitude (e.g., field-level topics for a C-suite audience) get marked. If 3 or more fail, the batch stops — the whole set re-picks at the corrected altitude rather than patching individual polls.</p>
+<p>Topic diversity</p>
+<p>Topics already covered in the last 2 to 3 approved sets are filtered out. The final 10 spread across at least 3 of the 4 themes so the set does not read as monothematic.</p>
+<p>Character-limit enforcement</p>
+<p>LinkedIn’s hard caps — question ≤ 140, options ≤ 30, 2 to 4 options — are counted at write time. Common 31-character mistakes are auto-fixed (e.g., "Chief Innovation / Tech Officer" → "Chief Innovation/Tech Officer"). If a question or option cannot be auto-fixed, the system surfaces it with rewrite candidates rather than shipping a too-long line.</p>
+<p>After altitude and diversity pass, the system drafts the set, runs stop-slop on every prose element, and lands one batched file. You approve the whole set; your lead then publishes one poll at a time over the cadence window (typically every other day) and logs each via publish-log.</p>
+<h2 id="8-the-page-invite-action">8. The page-invite action</h2>
+<p>Once a month, the plugin uses your company page’s invite credits to invite the admin’s first-degree connections to follow the page. It is parallel to outreach in mechanism (Chrome MCP) but it is page-growth, not lead-pipeline.</p>
+<ul>
+<li><p>Identity gate. Two checks. First, the signed-in profile photo’s alt-text must contain the configured admin display name. Second, navigating to the admin dashboard must succeed (the configured admin must actually have admin rights on the page). Either check fails — the skill aborts loudly. Wrong-account sending burns someone else’s monthly invite quota and spams their network.</p></li>
+<li><p>Cycle deduplication. The skill refuses to fire twice in the same credit cycle without an explicit override. The default credit target is 50 (LinkedIn’s standard-tier cap as of May 2026); workspaces on a paid tier with a higher ceiling can raise it in stack.md.</p></li>
+<li><p>Run log. Every run — scheduled, manual, catch-up, or forced — writes to 05_published/social/page-invites/YYYY-MM.md so the audit trail is intact.</p></li>
+</ul>
+<h2 id="9-the-daily-linkedin-comment-check">9. The daily LinkedIn comment check</h2>
+<p>This is the only daily-loop surface in rockstarr-social. It engages with comments on already-published posts; it does not produce new posts.</p>
+<p>Account rotation</p>
+<p>Managed accounts come from stack.md.li_comment_accounts[]. Each account carries a display name, a profile slug, voice notes specific to that person, optionally a brand-kit URL for extra voice context, and — if your workspace runs ClickUp closure — a ClickUp task ID. Your Rockstarr lead signs into each account in Chrome before the workflow runs on that account.</p>
+<p>Workflow per account</p>
+<ul>
+<li><p>Identity gate. The system reads the signed-in profile photo / name and confirms it matches the expected account. Wrong account — it stops and asks for a switch.</p></li>
+<li><p>Notifications + recent activity. The system checks both the post-comments notifications page and the account’s recent-activity page (the second catches comments that did not trigger a notification).</p></li>
+<li><p>Draft replies. Each unanswered comment gets a draft in that account holder’s voice — short (1 to 3 sentences), specific to what the commenter said, no generic "thanks for your comment."</p></li>
+<li><p>Per-comment approval. You read each draft. Approve, edit, reject, or flag. The system does not post anything without your explicit approval per comment.</p></li>
+<li><p>Post + log. Approved replies go via Chrome MCP — the system asks you for a one-time confirm before clicking Submit on each one. The run log captures every reply for audit.</p></li>
+<li><p>Optional ClickUp closure. If your workspace runs ClickUp and an account has a clickup_task_id configured, the matching task closes on a clean run. Skipped accounts (wrong sign-in not corrected, browser issues) leave the task open with a comment naming why.</p></li>
+</ul>
+<p>Time window</p>
+<p>On Monday, the system checks back through the prior Friday. All other days, it checks the trailing 24 hours. You can override (e.g., "check the last week") if you missed a day.</p>
+<h2 id="10-the-approve--publish-lifecycle">10. The approve / publish lifecycle</h2>
+<p>Every drafting lane in rockstarr-social lands files in 03_drafts/social/. The promotion path is the standard rockstarr-infra approve flow.</p>
+<ul>
+<li><p>A weekly post batch promotes as one unit — the manifest plus every per-post file inside.</p></li>
+<li><p>A poll set promotes as one unit — the batched file.</p></li>
+<li><p>A one-off draft promotes by itself.</p></li>
+</ul>
+<p>After approval, the Publer CSV export is a separate explicit step. The page-invite and comment-check flows write directly to 05_published/social/ because they are actions, not drafts — there is nothing to review after the fact, only an audit trail to record.</p>
+<h2 id="11-quality-gates">11. Quality gates</h2>
+<ul>
+<li><p>Stop-slop pass on every prose output. The same shared pass that runs on rockstarr-content drafts. It catches "delve," "navigate," "unlock," "tapestry," em-dash overuse, three-same-length-sentence runs, and the usual AI tells. Scores below 35/50 flag for reviewer.</p></li>
+<li><p>Polls altitude check. The number-one failure mode for the polls lane. A polished set of off-altitude polls wastes every later step.</p></li>
+<li><p>Polls char-limit enforcement. Counted programmatically. 31-character options pass visual scan and fail at publish time.</p></li>
+<li><p>Identity gates on every Chrome MCP action. Page-invites and comment replies both refuse to fire if the wrong account is signed in. No soft-fail path — wrong-account sending is the highest-stakes failure mode in this plugin.</p></li>
+<li><p>Per-comment approval on every reply. The plugin does not post anything to LinkedIn without your explicit "send it" per comment.</p></li>
+</ul>
+<h2 id="12-sister-plugins">12. Sister plugins</h2>
+<ul>
+<li><p>rockstarr-content. Long-form drafts — blog, thought leadership, newsletters, case studies. The polls lane lived here until v0.6; it moved to rockstarr-social in v0.1 because polls are short-form social. Repurpose still lives in rockstarr-content because it fans approved long-form into short-form derivatives; those derivatives can route into rockstarr-social’s approve flow.</p></li>
+<li><p>rockstarr-outreach-&lt;variant&gt;. LinkedIn outreach campaigns. The page-invite skill lived in the salesnav variant until v0.1.6; it moved to rockstarr-social v0.1 because page-follower growth is a social-audience task, not a lead-pipeline task. The two plugins do not share workbooks or credit pools.</p></li>
+<li><p>rockstarr-reply. Inbox reply drafting. Adjacent surface to li-comment-check — reply handles DMs and email, li-comment-check handles post comments.</p></li>
+<li><p>rockstarr-infra. The foundation every Rockstarr plugin sits on — scaffold, intake, stack capture, knowledge-base ingest, style-guide generation, approve, publish-log, stop-slop.</p></li>
+</ul>
+<h2 id="13-faq">13. FAQ</h2>
+<p>Can the plugin post directly?</p>
+<p>No. Publishing remains in the scheduler tool you already pay for (Publer by default). The plugin produces import files, comment replies, and the page-invite action only.</p>
+<p>Can I change the weekly post count or mix mid-month?</p>
+<p>Yes. Your Rockstarr lead updates stack.md. The next Friday’s fill-week run picks up the new cadence. The current week’s batch already ran against the old cadence.</p>
+<p>What happens if I miss a Friday review?</p>
+<p>Nothing breaks. The batch sits in 03_drafts/social/ until you approve it. The export will not run on un-approved work. If you skip a week entirely, the next week’s fill-week run still works — it just lands on top of the prior batch.</p>
+<p>Can I run a one-off post outside the weekly mix?</p>
+<p>Yes. "Draft a LinkedIn post about [topic]" runs draft-social directly. The one-off does not count against the weekly mix.</p>
+<p>Why are polls a separate lane?</p>
+<p>They have hard structural constraints (4-option questions, char limits) that ordinary short-form posts do not. The 10-poll batched-set unit also does not fit a per-week mix — it is its own cadence.</p>
+<p>What if the comment-check finds nothing on an account?</p>
+<p>Still logs the check (so the audit trail shows the check ran) and — if ClickUp closure is enabled — still closes the task. "No comments today" is a real outcome.</p>
+<p>Can comment-check support task systems other than ClickUp?</p>
+<p>Not in v0.1. The closure step is opt-in via li_comment_clickup_enabled in stack.md. Asana, Linear, Notion, or no task tracker are all valid configurations — the closure just gets skipped. Wider cross-system support waits for a real client need.</p>
+<p>What if the wrong account is signed in for the comment check?</p>
+<p>The system stops at the identity gate, tells your lead the expected vs. actual name, and waits for the correct account to be signed in. If the switch cannot happen (MFA failure, locked account), it logs the skip and moves on to the next account — partial completion is better than all-or-nothing.</p>
+<p>What if the monthly page-invite’s credits are already used up?</p>
+<p>The skill writes a "credits exhausted this cycle, skipping" entry to the run log and exits cleanly. It never burns clicks on a zero-credit modal.</p>
+<p>Where do GrowthAmp planner exports live?</p>
+<p>Deferred. The plugin ships publer-export in v0.1. social-export-ga gets built when a signed client’s stack.md first sets social_scheduler to growthamp. The export shape changes but the upstream flow does not.</p>
+<p>What happens if I pause or end my engagement?</p>
+<p>Your workspace stays intact. The plugin stops receiving updates through the Rockstarr marketplace. Nothing in 03_drafts/, 04_approved/, or 05_published/ disappears.</p>
+<h2 id="14-when-to-contact-rockstarr">14. When to contact Rockstarr</h2>
+<ul>
+<li><p>A draft reads off-voice. Call your Rockstarr lead before re-running.</p></li>
+<li><p>You want to change the cadence, mix, or channels on the weekly batch.</p></li>
+<li><p>A LinkedIn account got a warning or restriction — page-invite or comment-check related. Stop the relevant flow and tell your lead immediately.</p></li>
+<li><p>The polls altitude check keeps flagging. The underlying audience definition probably needs sharpening upstream in client-profile.md.</p></li>
+<li><p>A reply went out on the wrong account (the identity gate should have prevented this, but if it slips, tell your lead immediately).</p></li>
+<li><p>You want to add a new managed account to the comment-check rotation, change a brand-kit URL, or change a voice-notes block.</p></li>
+<li><p>Anything else you are not sure about.</p></li>
+</ul>
+<p>Your Rockstarr lead is the primary contact. The plugin is the tool. We are the humans behind it.</p>
+    <footer class="guide-footer">
+      Rockstarr &amp; Moon · <a href="https://rockstarrandmoon.com">rockstarrandmoon.com</a>
+    </footer>
+  </main>
+</body>
+</html>

@@ -1,6 +1,6 @@
 ---
 name: publer-export
-description: "This skill should be used when the user asks to \"export to Publer\", \"build the Publer CSV\", \"export this week's batch\", \"generate the scheduler import\", or names an approved batch in 04_approved/social/. Reads the approved weekly batch manifest plus its per-post files, builds a Publer-shaped CSV (Date, Time, Account, Post, Media, Link, First Comment, Labels), and writes it to 05_published-staging/social/ as a YYYY-WW.csv file. Manual trigger only — does not auto-run on approval (V0.1 design choice). Refuses if stack.md.social_scheduler is not 'publer' (route to social-export-ga instead). Does not post; the client imports the CSV into Publer themselves."
+description: "This skill should be used when the user asks to \"export to Publer\", \"build the Publer CSV\", or \"generate the scheduler import\" for an approved batch. Reads the approved weekly batch manifest + per-post files and writes a Publer-shaped CSV (Date, Time, Account, Post, Media, Link, First Comment, Labels) to 05_published-staging/social/YYYY-WW.csv. Manual trigger only — does not auto-run on approval. Refuses if stack.md.social_scheduler is not 'publer'. Does not post — the client imports the CSV into Publer themselves."
 ---
 
 # publer-export
@@ -31,7 +31,7 @@ manual step proves friction.)
   demand). If `"native"`, refuse with a note that the client
   publishes manually and no export file is produced.
 - The named approved manifest file exists in
-  `04_approved/social/week-<YYYY-WW>.md`. If the user named a
+  `04_approved/social/week-[YYYY-WW].md`. If the user named a
   per-post file or a draft file by mistake, refuse with the
   expected path shape.
 - `05_published-staging/social/` exists (create on first run).
@@ -39,7 +39,7 @@ manual step proves friction.)
 ## Inputs
 
 1. The approved batch manifest at
-   `04_approved/social/week-<YYYY-WW>.md`.
+   `04_approved/social/week-[YYYY-WW].md`.
 2. Each per-post file the manifest references (in
    `04_approved/social/`).
 3. `stack.md.social_channels` — drives the Account column
@@ -74,12 +74,12 @@ Publer's standard CSV import shape (May 2026):
 |-----------------|----------------------------------------------------------|
 | Date            | `posts[i].proposed_publish_date` (`YYYY-MM-DD`)          |
 | Time            | `stack.md.social_default_post_time` (24h `HH:MM`)        |
-| Account         | `stack.md.publer_accounts[<channel>]`                    |
+| Account         | `stack.md.publer_accounts[[channel]]`                    |
 | Post            | full body text — hook + body + CTA + hashtags, joined    |
 | Media           | empty (V0.1 doesn't attach media; surface if a draft references an image) |
 | Link            | first URL in the post body if any (Publer auto-attaches) |
 | First Comment   | empty by default; populated if the per-post file's front-matter has a `first_comment` field |
-| Labels          | `rockstarr-social,<post_type>,<iso_week>`                |
+| Labels          | `rockstarr-social,[post_type],[iso_week]`                |
 
 ### Variant resolution
 
@@ -111,9 +111,9 @@ edit-then-approve loop), then re-runs this skill.
 
 ## Phase 3: Write the CSV
 
-Path: `/rockstarr-ai/05_published-staging/social/<YYYY-WW>.csv`.
+Path: `/rockstarr-ai/05_published-staging/social/[YYYY-WW].csv`.
 If the file exists from a prior export attempt, append a
-timestamp suffix (`<YYYY-WW>-<HHMMSS>.csv`) — never overwrite
+timestamp suffix (`[YYYY-WW]-[HHMMSS].csv`) — never overwrite
 silently.
 
 CSV format: standard RFC 4180 quoting, UTF-8, comma-delimited,
@@ -123,7 +123,7 @@ or double-quotes. Newlines inside the Post column are preserved
 
 ## Phase 4: Write a sidecar manifest
 
-Path: `/rockstarr-ai/05_published-staging/social/<YYYY-WW>.manifest.md`.
+Path: `/rockstarr-ai/05_published-staging/social/[YYYY-WW].manifest.md`.
 Records what the CSV reflects, for audit:
 
 ```markdown
@@ -155,7 +155,7 @@ Print:
 
 End with:
 
-> Publer CSV at `05_published-staging/social/<YYYY-WW>.csv`.
+> Publer CSV at `05_published-staging/social/[YYYY-WW].csv`.
 > Drop it into Publer → Bulk import → CSV. The week is ready
 > for the client to schedule.
 

@@ -1,6 +1,6 @@
 ---
 name: draft-polls
-description: "This skill should be used when the user asks to \"draft the polls\", \"write the LinkedIn polls\", \"build the polls for [client]\", \"draft 10 polls for [persona]\", \"build set [N] polls\", or otherwise wants to produce a batched set of LinkedIn polls. Originally shipped in rockstarr-content v0.6; moved to rockstarr-social v0.1 — polls are short-form social, not long-form content. Drafts a full set of LinkedIn polls (default 10, configurable) for a given client persona, applying the canonical structure (post copy + question + 4 options + hashtags), enforcing LinkedIn's hard character limits (question ≤140, options ≤30, 2-4 options), running an audience-altitude pre-check before any prose runs (the #1 failure mode for this lane), pattern-matching the style of the most recent approved set, and writing the whole set as a single batched file in 03_drafts/social/. Reads brand hashtag and persona context from the LinkedIn polls subsection of style-guide.md. Cadence is gated by polls_cadence enum in stack.md (monthly | quarterly | on-demand | off)."
+description: "This skill should be used when the user asks to \"draft the polls\", \"write the LinkedIn polls\", or \"draft 10 polls for [persona]\". Drafts a batched set of LinkedIn polls (default 10) for a persona — post copy + question + 4 options + hashtags — enforcing LinkedIn's character limits (question up to140, options up to30, 2-4 options), running the audience-altitude pre-check (the #1 failure mode for this lane), pattern-matching the most recent approved set, writing as one batched file in 03_drafts/social/. Batch is the unit of approval. Cadence-gated by polls_cadence (monthly | quarterly | on-demand | off)."
 ---
 
 # draft-polls
@@ -92,7 +92,7 @@ Read in this order:
    is enabled.
 4. **The most recent 1-3 approved poll sets** in
    `04_approved/social/` matching the pattern
-   `polls_set-<N>_<persona-slug>.md`. The newest set is the
+   `polls_set-[N]_[persona-slug].md`. The newest set is the
    primary style reference; older sets are for topic
    de-duplication only.
 5. **First-party KB files** (`kb_scope: owned`) — for
@@ -128,7 +128,7 @@ list. The slug is what determines the filename pattern.
 ### 1B. Set number resolution
 
 List filenames in `04_approved/social/` matching
-`polls_set-<N>_<persona-slug>.md`. Take the maximum N, add 1.
+`polls_set-[N]_[persona-slug].md`. Take the maximum N, add 1.
 If no files match (first set for this persona), N = 1.
 
 Surface the chosen set number to the user before drafting.
@@ -333,7 +333,7 @@ summary. Below 35/50 flags for reviewer.
 ## Output
 
 Write to
-`/rockstarr-ai/03_drafts/social/polls_set-<N>_<persona-slug>.md`.
+`/rockstarr-ai/03_drafts/social/polls_set-[N]_[persona-slug].md`.
 If the file exists, append `-v2`, `-v3`. Never overwrite a
 previous draft without archiving to `99_archive/`.
 
@@ -447,7 +447,7 @@ Body structure:
 2. End with:
 
    > Polls Set [N] for [Persona] landed at
-   > `03_drafts/social/polls_set-<N>_<persona-slug>.md`.
+   > `03_drafts/social/polls_set-[N]_[persona-slug].md`.
    > Review the whole set as one approval — polls aren't
    > approved individually. When ready, run
    > `rockstarr-infra:approve` to promote the set to

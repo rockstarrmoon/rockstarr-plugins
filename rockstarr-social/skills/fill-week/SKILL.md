@@ -1,6 +1,6 @@
 ---
 name: fill-week
-description: "This skill should be used when the user asks to \"fill the week\", \"build next week's social batch\", \"draft this week's posts\", \"build the weekly social mix\", or when the scheduled Friday-morning run fires. Builds a balanced weekly batch of 5-10 short-form social posts (LinkedIn primary, X / IG secondary if enabled) by reading social_posts_per_week + social_mix from stack.md, picking topics from the first-party knowledge base + recently approved long-form pieces, deduplicating against the publish log, and looping draft-social once per slot. Output is a single batch manifest in 03_drafts/social/ named week-YYYY-WW.md plus per-post draft files. The batch file is the unit of approval; once approved, run publer-export (or social-export-ga) to write the scheduler import."
+description: "This skill should be used when the user asks to \"fill the week\", \"build next week's social batch\", or when the scheduled Friday-morning run fires. Builds a balanced weekly batch of 5-10 short-form posts: reads social_posts_per_week + social_mix from stack.md, picks topics from first-party KB + recently approved long-form, dedups against the publish log, loops draft-social per slot. Writes a batch manifest week-YYYY-WW.md in 03_drafts/social/ plus per-post drafts. Batch is the approval unit; once approved, run publer-export."
 ---
 
 # fill-week
@@ -147,7 +147,7 @@ silently skip a slot.
 
 ## Phase 4: Write the batch manifest
 
-Write `/rockstarr-ai/03_drafts/social/week-<YYYY-WW>.md`. This
+Write `/rockstarr-ai/03_drafts/social/week-[YYYY-WW].md`. This
 is the human-review entry point; per-post files are the
 artifacts.
 
@@ -246,7 +246,7 @@ Print a single concise summary:
 
 End with:
 
-> Weekly batch landed at `03_drafts/social/week-<YYYY-WW>.md`.
+> Weekly batch landed at `03_drafts/social/week-[YYYY-WW].md`.
 > Review the manifest, edit per-slot drafts as needed, then run
 > `rockstarr-infra:approve` to promote the whole batch.
 

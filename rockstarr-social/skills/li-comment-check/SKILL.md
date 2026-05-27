@@ -1,6 +1,6 @@
 ---
 name: li-comment-check
-description: "This skill should be used when the user asks to \"run the LI comments\", \"check LinkedIn comments\", \"daily LinkedIn check\", \"comment check\", or names one of the configured managed LinkedIn accounts. Daily LinkedIn comment check and response workflow for one or more managed accounts. Walks the configured account list one at a time, verifies the correct account is signed in (identity gate via profile-photo alt-text), reads notifications + the account's recent activity, drafts in-voice responses to unanswered comments, gates every reply on operator approval before posting, and closes the matching ClickUp task on success when ClickUp closure is enabled in stack.md. Generic and config-driven: managed accounts (name, profile slug, voice notes, ClickUp task ID) are read from stack.md.li_comment_accounts[]. Refuses to send anything without explicit operator approval per comment."
+description: "This skill should be used when the user asks to \"run the LI comments\", \"check LinkedIn comments\", or names a managed LinkedIn account. Daily comment-check and response workflow across stack.md.li_comment_accounts[]. For each account: verifies sign-in via profile-photo alt-text gate, reads notifications + recent activity, drafts in-voice replies to unanswered comments, gates every reply on per-comment operator approval before posting. Closes the matching ClickUp task on success when enabled. Refuses to batch-send — every reply requires explicit approval."
 ---
 
 # li-comment-check
@@ -37,7 +37,7 @@ closure step is opt-in.
   li_comment_clickup_enabled: false       # default false; opt-in
   li_comment_accounts:
     - name: "Phil Katz"
-      slug: "philipkatz1"               # linkedin.com/in/<slug>
+      slug: "philipkatz1"               # linkedin.com/in/[slug]
       voice_notes: |
         Corporate, professional. Seasoned executive in his 70s.
         Measured, appreciative, authoritative. No slang, no
@@ -148,8 +148,8 @@ continuing.
 
 If the operator cannot or will not switch (e.g., session
 issues, MFA failure), abort this account, log to
-`/05_published/social/li-comments/<YYYY-MM-DD>.md` with
-`status: "skipped"` and `reason: "operator could not switch to <name>"`,
+`/05_published/social/li-comments/[YYYY-MM-DD].md` with
+`status: "skipped"` and `reason: "operator could not switch to [name]"`,
 and move on.
 
 ### Step 2 — Check notifications
@@ -325,11 +325,11 @@ sign out and sign into the next account. Loop to Step 1.
    - ClickUp tasks (if enabled) are closed only for cleanly-
      processed accounts.
 3. Write the run summary to
-   `/05_published/social/li-comments/<YYYY-MM-DD>.md`.
+   `/05_published/social/li-comments/[YYYY-MM-DD].md`.
 
 ## Run log shape
 
-Path: `/05_published/social/li-comments/<YYYY-MM-DD>.md`. One
+Path: `/05_published/social/li-comments/[YYYY-MM-DD].md`. One
 file per day; if multiple runs happen the same day (rare —
 operator catch-up after a missed scheduled fire), append.
 
@@ -402,9 +402,9 @@ Print at the end of the run:
 
 End with:
 
-> Daily LI comment check complete. <N> replies posted, <M>
+> Daily LI comment check complete. [N] replies posted, [M]
 > flagged for follow-up. Run log at
-> `05_published/social/li-comments/<YYYY-MM-DD>.md`.
+> `05_published/social/li-comments/[YYYY-MM-DD].md`.
 
 ## Edge cases
 

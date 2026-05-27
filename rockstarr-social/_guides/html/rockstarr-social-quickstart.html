@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rockstarr Social Quickstart</title>
+  <style>
+  /* Rockstarr & Moon brand-aligned guide stylesheet.
+     Fonts and colors per the brand guide (Sep 2025).
+     Used by both HTML and PDF outputs of every founder guide. */
+
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --rs-blue:    #0069AA;
+    --rs-teal:    #04E6F7;
+    --rs-black:   #000000;
+    --rs-ink:     #1a1a1a;       /* body text — easier on the eye than pure black */
+    --rs-muted:   #5a6470;
+    --rs-rule:    #e3e8ee;
+    --rs-bg:      #ffffff;
+    --rs-callout: #eef9fc;       /* very light teal tint */
+    --rs-code-bg: #f2f5f8;
+
+    --font-display: 'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif;
+    --font-body:    'Manrope', -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --font-mono:    ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--rs-bg);
+    color: var(--rs-ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Top hero band: thin Blue → Teal gradient so every guide reads as
+     "from Rockstarr." */
+  body::before {
+    content: "";
+    display: block;
+    height: 8px;
+    background: linear-gradient(90deg, var(--rs-blue) 0%, var(--rs-teal) 100%);
+  }
+
+  main, .content {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* === Typography === */
+
+  h1, h2, h3, h4, h5 {
+    font-family: var(--font-display);
+    font-weight: 400;          /* Bebas Neue is display-weight by default */
+    letter-spacing: 0.02em;
+    color: var(--rs-blue);
+    margin: 0 0 0.4em;
+    line-height: 1.1;
+  }
+
+  h1 {
+    font-size: 3.0rem;
+    text-transform: uppercase;
+    color: var(--rs-black);
+    margin-top: 0;
+    padding-bottom: 0.3em;
+    border-bottom: 4px solid var(--rs-teal);
+    margin-bottom: 0.6em;
+  }
+
+  h2 {
+    font-size: 1.9rem;
+    text-transform: uppercase;
+    margin-top: 2.4em;
+    padding-bottom: 0.2em;
+    border-bottom: 2px solid var(--rs-rule);
+  }
+
+  h3 {
+    font-size: 1.35rem;
+    text-transform: uppercase;
+    color: var(--rs-ink);
+    margin-top: 2em;
+    letter-spacing: 0.04em;
+  }
+
+  h4 {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    color: var(--rs-muted);
+    margin-top: 1.6em;
+    letter-spacing: 0.06em;
+  }
+
+  p {
+    margin: 0 0 1.1em;
+  }
+
+  strong, b {
+    font-weight: 700;
+    color: var(--rs-ink);
+  }
+
+  em, i { font-style: italic; }
+
+  a {
+    color: var(--rs-blue);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(0, 105, 170, 0.3);
+    transition: border-color 0.15s, color 0.15s;
+  }
+  a:hover {
+    color: var(--rs-teal);
+    border-bottom-color: var(--rs-teal);
+  }
+
+  /* Subtitle: pandoc renders the line just under H1 as a paragraph; for the
+     founder guides this is the "User guide for founder-led clients — v0.7.3"
+     line. Italicize and mute it. */
+  h1 + p em:first-child,
+  h1 + p {
+    /* If the para after H1 is fully italicized, treat as subtitle. */
+  }
+
+  /* === Lists === */
+
+  ul, ol {
+    margin: 0 0 1.2em;
+    padding-left: 1.6em;
+  }
+  li {
+    margin-bottom: 0.5em;
+    line-height: 1.55;
+  }
+  li > p { margin: 0 0 0.5em; }
+  li > p:last-child { margin-bottom: 0; }
+
+  ol {
+    list-style: decimal;
+  }
+  ol > li::marker {
+    font-weight: 700;
+    color: var(--rs-blue);
+  }
+
+  ul > li::marker {
+    color: var(--rs-teal);
+  }
+
+  /* === Callout: blockquote === */
+
+  blockquote {
+    margin: 1.8em 0;
+    padding: 1.2em 1.4em 1em;
+    background: var(--rs-callout);
+    border-left: 4px solid var(--rs-teal);
+    border-radius: 2px;
+    font-size: 0.97rem;
+  }
+  blockquote p { margin: 0 0 0.6em; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote strong:first-child {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 1.05rem;
+    color: var(--rs-blue);
+    display: block;
+    margin-bottom: 0.4em;
+  }
+  blockquote ul, blockquote ol {
+    margin: 0.6em 0 0;
+    padding-left: 1.4em;
+  }
+
+  /* === Code === */
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    background: var(--rs-code-bg);
+    padding: 0.12em 0.4em;
+    border-radius: 3px;
+    color: var(--rs-blue);
+  }
+
+  pre {
+    font-family: var(--font-mono);
+    background: var(--rs-code-bg);
+    padding: 1em 1.2em;
+    border-radius: 4px;
+    border-left: 3px solid var(--rs-blue);
+    overflow-x: auto;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 1.4em 0;
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    color: var(--rs-ink);
+  }
+
+  /* === Horizontal rule === */
+
+  hr {
+    border: none;
+    height: 1px;
+    background: var(--rs-rule);
+    margin: 2.4em 0;
+  }
+
+  /* === Tables (for if any guide adds one) === */
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.4em 0;
+    font-size: 0.95rem;
+  }
+  th, td {
+    padding: 0.6em 0.8em;
+    text-align: left;
+    border-bottom: 1px solid var(--rs-rule);
+  }
+  th {
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--rs-blue);
+    border-bottom: 2px solid var(--rs-blue);
+  }
+
+  /* === Footer (for the version + footer link if we add one) === */
+
+  .guide-footer {
+    margin-top: 5em;
+    padding-top: 1.6em;
+    border-top: 1px solid var(--rs-rule);
+    font-size: 0.85rem;
+    color: var(--rs-muted);
+    text-align: center;
+  }
+  .guide-footer a {
+    color: var(--rs-muted);
+    border-bottom-color: transparent;
+  }
+
+  /* === Print / PDF specifics === */
+
+  @page {
+    size: letter;
+    margin: 0.8in 0.75in 0.9in;
+
+    @bottom-center {
+      content: counter(page) " of " counter(pages);
+      font-family: 'Manrope', sans-serif;
+      font-size: 9pt;
+      color: #5a6470;
+    }
+  }
+
+  @media print {
+    /* Avoid the top gradient eating a page slice in PDFs — keep the
+       band but rely on @page margins for the white frame. */
+    body::before { height: 6px; }
+    main, .content { padding: 24px 0 40px; max-width: none; }
+    h1 { font-size: 28pt; }
+    h2 { font-size: 18pt; page-break-after: avoid; }
+    h3 { font-size: 13pt; page-break-after: avoid; }
+    h4 { font-size: 11pt; page-break-after: avoid; }
+    p, li { font-size: 10.5pt; line-height: 1.5; }
+    blockquote { page-break-inside: avoid; }
+    pre { page-break-inside: avoid; }
+    a { color: var(--rs-blue); border-bottom: none; }
+    /* Show links inline in print, so the URL isn't lost on paper. */
+    a[href^="http"]::after {
+      content: " (" attr(href) ")";
+      font-size: 0.8em;
+      color: var(--rs-muted);
+      word-break: break-all;
+    }
+  }
+
+  </style>
+</head>
+<body>
+  <main class="content">
+<h1 id="rockstarr-social-quickstart">Rockstarr Social Quickstart</h1>
+<p><em>v0.1.4</em></p>
+<p>How you talk to the system</p>
+<p>You type short, plain-English instructions into a Cowork task. No commands, no menus. The system asks follow-up questions when it needs to and shows you drafts before anything ships. You do not need to know skill names — "Draft this week’s LinkedIn posts" and "Fill the week" both work.</p>
+<p>Your first week (about 45 min total)</p>
+<ul>
+<li><p>Confirm the cadence with your Rockstarr lead. How many posts per week. The promo / insight / case / engagement mix. Which channels (LinkedIn primary; X and Instagram on if you actually run them). This lives in stack.md and your lead sets it before your first batch.</p></li>
+<li><p>Confirm your Publer account name. The system uses that exact label in the CSV export, so it has to match Publer letter-for-letter.</p></li>
+<li><p>Friday morning, type "Fill next week’s posts." The system reads your cadence + mix, picks topics from your first-party knowledge base and any recently approved long-form pieces, and drafts one post per slot. The whole batch lands in 03_drafts/social/ as a weekly manifest.</p></li>
+<li><p>Friday afternoon, review the batch. Approve, edit, or send back. Edits go in the per-post files; "Approve this batch" promotes the manifest and every post inside.</p></li>
+<li><p>Type "Export to Publer." The system writes the week’s CSV to 05_published-staging/social/. You drop it into Publer → Bulk import → CSV and schedule the week.</p></li>
+</ul>
+<p>Your weekly rhythm (about 30 min)</p>
+<ul>
+<li><p>Friday morning, 2 min. "Fill next week’s posts." Walk away.</p></li>
+<li><p>Friday afternoon, 20 to 25 min. Open the manifest. For each slot, read the hook, scan the body, fix or approve. Edits in your own words land on the file directly — the system does not rewrite over your changes.</p></li>
+<li><p>Friday afternoon, 3 min. "Export to Publer." Drop the CSV in. Schedule the week.</p></li>
+</ul>
+<p>Daily LinkedIn comment check (about 10 min)</p>
+<p>On the days your Rockstarr lead is doing the comment check, you stay in the loop one comment at a time.</p>
+<ul>
+<li><p>Your lead signs into the right managed LinkedIn account in Chrome. The system verifies the account on screen and refuses to proceed if the wrong one is signed in.</p></li>
+<li><p>For each unanswered comment, the system shows you the post topic, the commenter, what they said, and a drafted reply in that account holder’s voice.</p></li>
+<li><p>You respond per comment: "Approve," "Edit: [your change]," "Reject," or "Flag — I’ll handle it."</p></li>
+<li><p>Nothing posts without your per-comment approval.</p></li>
+</ul>
+<p>Other things you will type</p>
+<ul>
+<li><p>One-off post: "Draft a LinkedIn post about [topic]." The system asks the post-type (promo / insight / case / engagement), drafts, and shows two hook variants if you ask.</p></li>
+<li><p>Repurpose an approved blog: ask your Rockstarr lead — that flow lives in rockstarr-content. The two plugins cooperate.</p></li>
+<li><p>LinkedIn polls: "Draft 10 polls for [persona]." The system runs an audience-altitude pre-check, drafts a full set of 10 with character-limit enforcement, and lands a single approval file. Polls are batched 10 at a time — that is the unit of review.</p></li>
+<li><p>Page-follow invites (monthly): "Run the monthly page-follow invites." The system verifies the right admin account is signed in, opens the invite modal, selects up to your credit balance, and sends.</p></li>
+<li><p>Approval: "Approve this batch" (weekly post manifest) or "Approve this poll set" (poll file). Moves the file from 03_drafts/ to 04_approved/ with a date stamp.</p></li>
+<li><p>Any question: just describe what you want. "Why did Slot 3 swap from promo to insight?" works. So does "Show me the last three weeks of posts."</p></li>
+</ul>
+<p>If something goes sideways</p>
+<ul>
+<li><p>A draft reads off-voice. Tell your Rockstarr lead before re-running. Voice issues almost always point at the style guide, not the drafting skill.</p></li>
+<li><p>The Publer CSV row count is short. Check the manifest for slot swaps or skipped slots; the system never silently drops a slot, but it will swap promo → insight if no eligible long-form piece is available.</p></li>
+<li><p>A comment-check session ran on the wrong account. The identity gate should have stopped it before any reply went out. If a reply landed under the wrong name, tell your lead immediately.</p></li>
+<li><p>The monthly page-invite ran and used zero credits. The cycle was already done this month — the system refuses to re-fire in the same credit window without an explicit override.</p></li>
+<li><p>A poll set is mostly off-altitude. The altitude check should have surfaced before drafting; if it slipped through, re-run the skill and the system re-picks the whole batch rather than patching individual polls.</p></li>
+<li><p>Anything else. Call your Rockstarr lead.</p></li>
+</ul>
+    <footer class="guide-footer">
+      Rockstarr &amp; Moon · <a href="https://rockstarrandmoon.com">rockstarrandmoon.com</a>
+    </footer>
+  </main>
+</body>
+</html>

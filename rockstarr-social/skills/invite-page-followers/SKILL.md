@@ -1,6 +1,6 @@
 ---
 name: invite-page-followers
-description: "This skill should be used when the scheduled monthly run fires (default cron 0 14 8-14 * 2 — 2pm second Tuesday of the month, configurable per workspace), or when the user says \"invite page followers\", \"run the monthly page-follow invites\", \"invite my connections to follow the company page\", or \"do the page-invite run for this month\". Drives the LinkedIn admin dashboard via Chrome MCP for the configured company page, opens the Invite Connections modal on the admin dashboard with invite=true, verifies the signed-in profile photo matches the configured admin display name AND that the admin redirect succeeded, reads the credit balance, lazy-loads the connections list, selects up to min(credits_available, page_invite_credit_target) connections, clicks Invite, captures the confirmation, and logs the run to a YYYY-MM.md file under /05_published/social/page-invites/. Cycle-deduplicated — refuses to fire twice in the same credit cycle without an explicit force_rerun override. Default credit_target is 50 (LinkedIn's standard-tier monthly cap as of May 2026); operators on a paid LinkedIn tier with a higher ceiling can raise the value in stack.md. Page-invite credits are page-level and refill monthly; they do NOT share the 20/day + 100/week connect-request cap that governs daily-connect."
+description: "This skill should be used when the scheduled monthly run fires (default 2pm second Tuesday), or when the user says \"invite page followers\" or \"run the monthly page-follow invites\". Drives the LinkedIn company-page admin dashboard via Chrome MCP, verifies the signed-in admin via profile-photo alt-text gate, reads credit balance, selects up to the configured invite target, clicks Invite, logs to /05_published/social/page-invites/YYYY-MM.md. Cycle-deduplicated — refuses to fire twice in the same credit cycle without force_rerun. Credits are separate from the daily-connect 20/day + 100/week cap."
 ---
 
 # invite-page-followers
@@ -38,7 +38,7 @@ its own monthly run log under `/05_published/social/page-invites/`.
 
   ```yaml
   page_invite_enabled: true
-  page_invite_target_url: "https://www.linkedin.com/company/<slug>/"
+  page_invite_target_url: "https://www.linkedin.com/company/[slug]/"
   page_invite_company_id: "<numeric id>"          # used in admin URLs
   page_invite_admin_display_name: "<full name>"   # for alt-text check
   page_invite_schedule_cron: "0 14 8-14 * 2"
@@ -62,7 +62,7 @@ its own monthly run log under `/05_published/social/page-invites/`.
 ## Inputs
 
 - The page-invite block from `stack.md`.
-- The run log at `/05_published/social/page-invites/<YYYY-MM>.md`
+- The run log at `/05_published/social/page-invites/[YYYY-MM].md`
   for the current month (read for the cycle-dedup check; created if
   missing on first run of the month).
 
@@ -100,7 +100,7 @@ person's monthly invite quota.
 Log to `_errors.md`. Do NOT navigate to the admin dashboard. Exit.
 
 **1b. Admin-redirect.** Navigate to
-`https://www.linkedin.com/company/<page_invite_company_id>/admin/dashboard/?invite=true`.
+`https://www.linkedin.com/company/[page_invite_company_id]/admin/dashboard/?invite=true`.
 If LinkedIn redirects to a non-admin page (the public company page,
 or LinkedIn's home), or returns a 404, the configured admin user
 does not have admin rights on this page. Abort with:
@@ -115,7 +115,7 @@ access on linkedin.com first, then re-run.
 Log to `_errors.md`. Exit.
 
 Both checks must pass before any further step runs. The redirect to
-`/company/<id>/admin/dashboard/?invite=true` is the legitimate
+`/company/[id]/admin/dashboard/?invite=true` is the legitimate
 landing state; verify the URL before proceeding.
 
 ### Step 2 — Open the Invite Connections modal
@@ -132,7 +132,7 @@ naming the page and the URL. Log to `_errors.md`.
 ### Step 3 — Read the credit balance
 
 Parse the modal header for the credit display (typical shape:
-`<N>/<max> credits available · Credit refill: <date>`). Capture:
+`[N]/[max] credits available · Credit refill: [date]`). Capture:
 
 - `credits_available` — current cycle balance
 - `credits_max` — LinkedIn's per-cycle ceiling for this workspace's
@@ -146,8 +146,8 @@ Parse the modal header for the credit display (typical shape:
 If `credits_available == 0`:
 
 - Write a "credits exhausted this cycle, skipping" entry to the run
-  log at `/05_published/social/page-invites/<YYYY-MM>.md`.
-- Exit cleanly with `{status: "skipped", reason: "no_credits_this_cycle", next_refill: <date>}`.
+  log at `/05_published/social/page-invites/[YYYY-MM].md`.
+- Exit cleanly with `{status: "skipped", reason: "no_credits_this_cycle", next_refill: [date]}`.
 
 Never click into an empty pool — the modal will let you select
 checkboxes but the Invite button stays disabled, and the
@@ -169,7 +169,7 @@ available.
 
 ### Step 5 — Cycle-dedup
 
-Read `/05_published/social/page-invites/<YYYY-MM>.md`. If a prior
+Read `/05_published/social/page-invites/[YYYY-MM].md`. If a prior
 successful run exists THIS MONTH:
 
 - If that prior run sent the full credit pool (left
@@ -200,7 +200,7 @@ catch-up run later if leftover credits are still useful.
 
 ### Step 7 — Select connections
 
-Click each connection's `<label>` element (NOT the raw `<input>`
+Click each connection's `[label]` element (NOT the raw `[input]`
 checkbox — the BBN process docs name this specifically; LinkedIn's
 click handler binds to the label). Pause briefly every ~20 clicks
 for the selection counter to keep up.
@@ -208,8 +208,8 @@ for the selection counter to keep up.
 Stop when:
 
 - `target_select` clicks have been registered AND the dialog footer
-  reads `<target_select> selected` AND the Invite button label
-  shows `Invite <target_select>`. Verify all three.
+  reads `[target_select] selected` AND the Invite button label
+  shows `Invite [target_select]`. Verify all three.
 - OR the connection pool is exhausted before reaching `target_select`
   (handle per Step 6's plateau case).
 
@@ -221,11 +221,11 @@ than `credits_available`, which LinkedIn rejects.
 
 ### Step 8 — Send
 
-Click the blue "Invite <N>" button at the bottom-right of the modal.
+Click the blue "Invite [N]" button at the bottom-right of the modal.
 Wait for the confirmation screen:
 
-- Confirmation: `<N> connections are invited to follow your Page`
-- Toast: `<N> people invited to follow Page`
+- Confirmation: `[N] connections are invited to follow your Page`
+- Toast: `[N] people invited to follow Page`
 
 If neither appears within 10 seconds, log to `_errors.md` with the
 modal state captured (use Chrome MCP `read_page` for context) and
@@ -240,7 +240,7 @@ Click "No thanks." If the prompt doesn't appear, no action needed.
 
 ### Step 10 — Log the run
 
-Append a row to `/05_published/social/page-invites/<YYYY-MM>.md`
+Append a row to `/05_published/social/page-invites/[YYYY-MM].md`
 (create the file with a header if it doesn't exist):
 
 ```markdown
@@ -257,7 +257,7 @@ Append a row to `/05_published/social/page-invites/<YYYY-MM>.md`
 ran it on-demand within the cycle), `catch-up` (Step 5's leftover-
 credits case), `forced` (Step 5's force_rerun override).
 
-Also append a one-liner to the day's `/05_published/outreach/<today>.md`
+Also append a one-liner to the day's `/05_published/outreach/[today].md`
 (the daily activity log) for the cross-cutting view:
 
 ```
@@ -281,12 +281,12 @@ Return a structured summary to the caller:
 Returns the structured summary in Step 11 plus a short message in
 chat:
 
-> Invited <N> connections to follow <page slug>. <credits_remaining>
-> credits remaining for this cycle. Next refill: <date>.
+> Invited [N] connections to follow <page slug>. [credits_remaining]
+> credits remaining for this cycle. Next refill: [date].
 
 If skipped:
 
-> Page-follow invite skipped: <reason>. Next eligible run: <date>.
+> Page-follow invite skipped: [reason]. Next eligible run: [date].
 
 ## What NOT to do
 
@@ -296,7 +296,7 @@ If skipped:
 - Do NOT use pixel coordinates for any click. Chrome MCP `find` with
   accessible-name queries is the only stable lookup. Viewport
   changes will move absolute coordinates but accessible names stay.
-- Do NOT click `<input>` checkboxes directly. Click the `<label>`.
+- Do NOT click `[input]` checkboxes directly. Click the `[label]`.
   LinkedIn's handler binds to the label and bare-input clicks
   occasionally fail silently.
 - Do NOT exceed `credits_available`. The Invite button will reject

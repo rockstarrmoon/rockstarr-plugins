@@ -1,6 +1,6 @@
 ---
 name: draft-social
-description: "This skill should be used when the user asks to \"draft a social post\", \"write a LinkedIn post\", \"draft a post about [topic]\", \"turn this blog into a LinkedIn post\", \"draft today's post\", or names a topic, URL, or approved long-form piece they want turned into a short-form social post. Drafts a single LinkedIn (or X / IG) short-form post in the client's approved voice, optionally producing two A/B hook variants. Reads first-party knowledge base for anecdotes; third-party content is reference-only and never paraphrased as the client. Runs the shared stop-slop pass before saving. Output lands in 03_drafts/social/ as a date-stamped post-YYYY-MM-DD-slug.md file for review through the standard approve flow."
+description: "This skill should be used when the user asks to \"draft a social post\", \"write a LinkedIn post\", \"draft a post about [topic]\", or \"turn this blog into a LinkedIn post\". Drafts a single short-form social post (LinkedIn primary, X / IG secondary) in the client's approved voice, optionally with two A/B hook variants. Reads first-party KB for anecdotes; third-party content is reference-only. Runs the shared stop-slop pass before saving. Output lands in 03_drafts/social/ as post-YYYY-MM-DD-slug.md for the standard approve flow."
 ---
 
 # draft-social
@@ -169,7 +169,7 @@ reviewer.
 
 ## Output
 
-Write to `/rockstarr-ai/03_drafts/social/post-<YYYY-MM-DD>-<slug>.md`.
+Write to `/rockstarr-ai/03_drafts/social/post-[YYYY-MM-DD]-[slug].md`.
 Slug is a 3-6 word kebab from the topic. If the file exists,
 append `-v2`, `-v3`. Never overwrite a previous draft without
 archiving to `99_archive/`.
@@ -256,7 +256,7 @@ Body structure:
    - File path.
 2. End with:
 
-   > Draft landed at `03_drafts/social/post-<YYYY-MM-DD>-<slug>.md`.
+   > Draft landed at `03_drafts/social/post-[YYYY-MM-DD]-[slug].md`.
    > Review the draft and run `rockstarr-infra:approve` to promote
    > to `04_approved/social/`.
 
